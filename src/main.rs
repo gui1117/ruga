@@ -2,7 +2,6 @@ extern crate piston;
 extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
-extern crate collision_manager;
 
 use piston::event_loop::Events;
 use piston::input::{ 
@@ -15,11 +14,12 @@ use piston::input::{
 pub use geometry::Shape;
 pub use character::Character;
 pub use body::Body;
-pub use collision_manager::{ Collidable, CollisionManager };
 
 pub mod geometry;
 pub mod body;
+pub mod world;
 pub mod character;
+pub mod quadtree;
 
 pub struct App {
 	gl: opengl_graphics::GlGraphics,

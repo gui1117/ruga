@@ -2,7 +2,6 @@
 name = "ruga"
 version = "0.1.0"
 dependencies = [
- "collision_manager 0.1.0",
  "piston 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-graphics 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-opengl_graphics 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -64,13 +63,6 @@ dependencies = [
  "core-graphics 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "objc 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "collision_manager"
-version = "0.1.0"
-dependencies = [
- "rand 0.3.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

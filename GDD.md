@@ -1,10 +1,11 @@
 top-down,
 
 character 
-* sword 
+* shotgun courte porté (canon frag)
 * grenade
-* some magic spell with other player
 * teleportation (replace jump)
+
+* some magic spell with other player
 
 random map of different type
 

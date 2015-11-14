@@ -1,19 +1,20 @@
 use character;
 use character::Character;
-use collision_manager::{ Collidable, Identifiable, Localisable };
-use std::f64::consts::PI;
+use quadtree::{ Identifiable, Localisable };
 use geometry::{ Shape, Rectangle, Point };
+use std::f64::consts::PI;
 
-const DL: f64 = 1.;
+use graphics::context::Context;
+use opengl_graphics::GlGraphics;
 
 pub struct Body {
-	pub id: usize,
-	pub mask: u32,
-	pub weight: f64,
-	pub group: u32,
-	pub x: f64,
-	pub y: f64,
-	pub velocity: f64,
+	id: usize,
+	mask: u32,
+	weight: f64,
+	group: u32,
+	x: f64,
+	y: f64,
+	velocity: f64,
 	angle: f64,
 	bounds: Rectangle,
 	shape: Shape,
@@ -33,13 +34,24 @@ pub struct BodyCollision {
 	body_type_collision: BodyTypeCollision,
 }
 
+impl BodyCollision {
+	pub fn new() -> BodyCollision {
+		BodyCollision {
+			delta_velocity: 0.,
+			delta_angle: 0.,
+			delta_x: 0.,
+			delta_y: 0.,
+			body_type_collision: BodyTypeCollision::Nil,
+		}
+	}
+}
+
 pub enum BodyTypeCollision {
 	Character(character::Collision),
 	Nil,
 }
 
 pub struct BodySettings {
-	pub id: usize, 
 	pub weight: f64,
 	pub mask: u32, 
 	pub group: u32, 
@@ -51,10 +63,22 @@ pub struct BodySettings {
 	pub body_type: BodyType,
 }
 
+pub struct OverlapInformation {
+	pub overlap: bool,
+	pub length: f64,
+	pub angle: f64,
+}
+
+impl Identifiable for Body {
+	fn id(&self) -> usize {
+		self.id
+	}
+}
+
 impl Body {
-	pub fn new(b: BodySettings) -> Body {
+	pub fn new(id: usize, b: BodySettings) -> Body {
 		let mut body = Body {
-			id: b.id,
+			id: id,
 			mask: b.mask,
 			weight: b.weight,
 			group: b.group,
@@ -79,7 +103,63 @@ impl Body {
 		body
 	}
 
-	pub fn get_angle(&self) -> f64 {
+	pub fn weight(&self) -> f64 {
+		self.weight
+	}
+
+	pub fn set_weight(&mut self, weight: f64) {
+		self.weight = weight;
+	}
+
+	pub fn add_weight(&mut self, weight: f64) {
+		self.weight += weight;
+	}
+
+	pub fn mask(&self) -> u32 {
+		self.mask
+	}
+
+	pub fn group(&self) -> u32 {
+		self.group
+	}
+
+	pub fn x(&self) -> f64 {
+		self.x
+	}
+
+	pub fn set_x(&mut self, x: f64) {
+		self.x = x;
+	}
+
+	pub fn add_x(&mut self, x: f64) {
+		self.x += x;
+	}
+
+	pub fn y(&self) -> f64 {
+		self.y
+	}
+
+	pub fn set_y(&mut self, y: f64) {
+		self.y = y;
+	}
+
+	pub fn add_y(&mut self, y: f64) {
+		self.y += y;
+	}
+
+	pub fn velocity(&self) -> f64 {
+		self.velocity
+	}
+
+	pub fn set_velocity(&mut self, velocity: f64) {
+		self.velocity = velocity;
+	}
+
+	pub fn add_velocity(&mut self, velocity: f64) {
+		self.velocity += velocity;
+	}
+
+	pub fn angle(&self) -> f64 {
 		self.angle
 	}
 
@@ -98,7 +178,12 @@ impl Body {
 		}
 	}
 
-	pub fn get_shape(&self) -> &Shape {
+	pub fn add_angle(&mut self, da: f64) {
+		let a = self.angle();
+		self.set_angle(a+da);
+	}
+
+	pub fn shape(&self) -> &Shape {
 		&self.shape
 	}
 
@@ -118,49 +203,46 @@ impl Body {
 		}
 	}
 
-	pub fn basic_collision(a: &Body, a_col: &mut BodyCollision, b: &Body, b_col: &mut BodyCollision) {
-
-		let a_dl = a.weight/(a.weight+b.weight)*DL;
-		let b_dl = DL - a_dl;
-
-		let ab_angle = (Point { x: b.x-a.x, y: b.y-a.y }).angle_0x();
-
-		let a_dx = -a_dl*ab_angle.cos();
-		let a_dy = -a_dl*ab_angle.sin();
-
-		let b_dx = b_dl*ab_angle.cos();
-		let b_dy = b_dl*ab_angle.sin();
-
-		let mut i = 1.;
-
-		while Shape::overlap(
-			a.x+i*a_dx,
-			a.y+i*a_dy,
-			a.angle,
-			&a.shape,
-			b.x+i*b_dx,
-			b.y+i*b_dy,
-			b.angle,
-			&b.shape) {
-
-			i += 1.
+	pub fn overlap(a: &Body, b: &Body) -> OverlapInformation {
+		let (overlap,length,angle) = Shape::overlap(a.x,a.y,a.angle,&a.shape,b.x,b.y,b.angle,&b.shape);
+		OverlapInformation {
+			overlap: overlap,
+			length: length, 
+			angle: angle,
 		}
-
-		a_col.delta_x = i*a_dx;
-		a_col.delta_y = i*a_dy;
-		b_col.delta_x = i*b_dx;
-		b_col.delta_y = i*b_dy;
 	}
 
-//	pub fn get_elastic_collision(&self, other: &Body) -> (BodyCollision,BodyCollision) {
+	pub fn collision(a: &Body, b: &Body, info: OverlapInformation) -> (BodyCollision, BodyCollision) {
+		(BodyCollision::new(),BodyCollision::new())
+	}
+
+	pub fn resolve_collision(&mut self, col: BodyCollision) {
+		self.add_velocity(col.delta_velocity);
+		self.add_angle(col.delta_angle);
+		self.add_x(col.delta_x);
+		self.add_y(col.delta_y);
+		match self.body_type {
+			BodyType::Character(ref mut character) => {
+				if let BodyTypeCollision::Character(character_col) = col.body_type_collision {
+					character.resolve_collision(character_col);
+				}
+			},
+			BodyType::Nil => (),
+		}
+	}
+
+	pub fn update(&mut self, dt: f64) {
+		if self.velocity.abs() == 0. {
+			return;
+		}
+		self.x += dt*self.velocity*self.angle.cos();
+		self.y += dt*self.velocity*self.angle.sin();
+	}
+
+//	pub fn render_debug<F: FnOnce(Context,&mut GlGraphics)>(&self) -> F {
+//		| contect, gl | {
+//		}
 //	}
-}
-
-
-impl Identifiable for Body {
-	fn get_id(&self) -> usize {
-		self.id
-	}
 }
 
 impl Localisable for Body {
@@ -178,76 +260,9 @@ impl Localisable for Body {
 	}
 }
 
-impl Collidable for Body {
-	type Collision = BodyCollision;
-
-	fn get_mask(&self) -> u32 {
-		self.mask
-	}
-
-	fn get_group(&self) -> u32 {
-		self.group
-	}
-
-	fn collide(&self, other: &Self) -> bool {
-		Shape::overlap(self.x,self.y,self.angle,&self.shape,other.x,other.y,other.angle,&other.shape)
-	}
-
-	fn update_position(&mut self, dt: f64) {
-		if self.velocity.abs() == 0. {
-			return;
-		}
-		self.x += dt*self.velocity*self.angle.cos();
-		self.y += dt*self.velocity*self.angle.sin();
-	}
-
-	fn get_collision(&self, other: &Self) -> (Self::Collision,Self::Collision) {
-		let a = &self;
-		let b = other;
-
-		let a_col = BodyCollision {
-			delta_velocity: 0.,
-			delta_angle: 0.,
-			delta_x: 0.,
-			delta_y: 0.,
-			body_type_collision: BodyTypeCollision::Nil,
-		};
-
-		let b_col = BodyCollision {
-			delta_velocity: 0.,
-			delta_angle: 0.,
-			delta_x: 0.,
-			delta_y: 0.,
-			body_type_collision: BodyTypeCollision::Nil,
-		};
-
-		match self.body_type {
-
-			BodyType::Character(ref a_c) => {
-
-				match other.body_type {
-					BodyType::Character(ref b_c) => {
-
-					},
-					BodyType::Nil => {},
-				}
-
-			},
-			BodyType::Nil => {},
-
-		}
-
-		(a_col,b_col)
-	}
-
-	fn solve_collision(&mut self, col: &Self::Collision) {
-	}
-}
-
 #[test]
 fn bounds_angle_shape() {
-	let b = Body::new(BodySettings {
-		id: 23,
+	let b = Body::new(12,BodySettings {
 		x: 2.,
 		y: 2.,
 		weight: 2.,

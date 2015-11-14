@@ -1,4 +1,5 @@
 use std::f64;
+use std::f64::consts::PI;
 
 /// simple structure, it represents a coordinate
 pub struct Point {
@@ -24,6 +25,45 @@ impl Point {
 			&Point { x: 1., y: 0. },
 			&Point { x: 0., y: 0. },
 			self)
+	}
+
+	/// return whether the point is in the shape or not
+	pub fn in_shape(&self, x: f64, y: f64, angle: f64, shape: &Shape,) -> bool {
+		let (h_min,h_max) = shape.min_max(x, y, angle, 0.);
+		if self.x < h_min || self.x > h_max {
+			return false;
+		}
+
+		let (v_min,v_max) = shape.min_max(x, y, angle, PI/2.);
+		if self.y < v_min || self.y > v_max {
+			return false;
+		}
+
+		false
+	}
+}
+
+pub struct Segment {
+	origin: Point,
+	length: f64,
+	angle: f64,
+}
+
+impl Segment {
+	/// return (whether the segment is intersecting the shape, the first intersection, the second
+	/// intersection)
+	pub fn intersect(&self, x: f64, y: f64, angle: f64, shape: &Shape) -> bool {
+		let (dir_min,dir_max) = shape.min_max(x, y, angle, self.angle);
+		let (nor_min,nor_max) = shape.min_max(x, y, angle, self.angle + PI/2.);
+
+		if self.origin.x > dir_max || self.origin.x + self.length < dir_min {
+			return false;
+		}
+		if self.origin.y < nor_min || self.origin.y > nor_max {
+			return false;
+		}
+
+		true
 	}
 }
 
@@ -105,15 +145,41 @@ impl Shape {
 
 	/// compute if two shape each relative to a point x and y and also with an angle
 	/// are overlapping or not
-	pub fn overlap(a_x: f64, a_y: f64, a_angle: f64, a_shape: &Shape, b_x: f64, b_y: f64, b_angle:f64, b_shape: &Shape) -> bool {
+	/// it return a boolean for overlapping or not and the angle of minimal overlap and the length
+	/// of overlapping 
+	pub fn overlap(a_x: f64, a_y: f64, a_angle: f64, a_shape: &Shape, b_x: f64, b_y: f64, b_angle:f64, b_shape: &Shape) -> (bool,f64,f64) {
+		let mut min_angle = 0.;
+		let mut min_length = f64::NEG_INFINITY;
+
 		for n in &a_shape.normals {
 			let (a_min,a_max) = a_shape.min_max(a_x, a_y, a_angle, *n);
 			let (b_min,b_max) = b_shape.min_max(b_x, b_y, b_angle, *n + a_angle);
-			if a_min > b_max || b_min > a_max {
-				return false;
+			
+			let length = (a_max-b_min).min(b_max-a_min);
+
+			if length <= 0. {
+				return (false,0.,0.);
+			} else if min_length < length {
+				min_length = length;
+				min_angle = *n + a_angle;
 			}
 		}
-		true
+
+		for n in &b_shape.normals {
+			let (b_min,b_max) = b_shape.min_max(b_x, b_y, b_angle, *n);
+			let (a_min,a_max) = a_shape.min_max(a_x, a_y, a_angle, *n + a_angle);
+
+			let length = (a_max-b_min).min(b_max-a_min);
+
+			if length <= 0. {
+				return (false,0.,0.);
+			} else if min_length < length {
+				min_length = length;
+				min_angle = *n + a_angle;
+			}
+		}
+
+		(true,min_length,min_angle)
 	}
 
 }
@@ -242,9 +308,15 @@ fn shape_overlap() {
 	let p3 = Point{ x: 0., y: 1. };
 	let s1 = Shape::new(vec![p1,p2,p3]);
 
-	assert!(! Shape::overlap(0.,0.,0.,&s1,2.,0.,0.,&s1));
-	assert!(Shape::overlap(0.,0.,0.,&s1,0.5,0.,0.,&s1));
+	let (o,_,_) = Shape::overlap(0.,0.,0.,&s1,2.,0.,0.,&s1);
+	assert!(!o);
 
-	assert!(! Shape::overlap(0.,0.,0.,&s1,1.1,1.,PI,&s1));
-	assert!(Shape::overlap(0.,0.,0.,&s1,0.9,1.,PI,&s1));
+	let (o,_,_) = Shape::overlap(0.,0.,0.,&s1,0.5,0.,0.,&s1);
+	assert!(o);
+
+	let (o,_,_) = Shape::overlap(0.,0.,0.,&s1,1.1,1.,PI,&s1);
+	assert!(!o);
+
+	let (o,_,_) = Shape::overlap(0.,0.,0.,&s1,0.9,1.,PI,&s1);
+	assert!(o);
 }
