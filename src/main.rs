@@ -1,7 +1,7 @@
 extern crate piston;
-extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
+extern crate graphics;
 
 use piston::event_loop::Events;
 use piston::input::{ 
@@ -9,11 +9,12 @@ use piston::input::{
 	UpdateArgs, 
 	RenderEvent, 
 	UpdateEvent,
+	Event,
+	Input,
 };
 
-pub use geometry::Shape;
-pub use character::Character;
-pub use body::Body;
+use character::Character;
+use world::World;
 
 pub mod geometry;
 pub mod body;
@@ -23,35 +24,33 @@ pub mod quadtree;
 
 pub struct App {
 	gl: opengl_graphics::GlGraphics,
-	rotation: f64,
+	world: world::World,
 }
 
 impl App {
 	fn render(&mut self, args: &RenderArgs) {
 		use graphics::*;
 
-		const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
-		const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0]; 
+		const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
-		let square = graphics::rectangle::square(0.0,0.0,50.0);
-		let rotation = self.rotation;
-		let (x,y) = ((args.width / 2) as f64, (args.height / 2) as f64);
-
-		self.gl.draw(args.viewport(), |context, gl| {
-			graphics::clear(GREEN, gl);
-
-			let transform = context.transform.trans(x,y)
-				.rot_rad(rotation)
-				.trans(-25.0, -25.0);
-
-			graphics::rectangle(RED, square, transform, gl);
+		self.gl.draw(args.viewport(), |_, gl| {
+			graphics::clear(BLACK, gl);
 		});
+
+		self.world.render_debug(args,&mut self.gl);
 	}
 
 	fn update(&mut self, args: &UpdateArgs) {
-		self.rotation += 2.0 * args.dt;
+		self.world.update(args.dt);
 	}
 }
+
+fn callback(world: &mut World) {
+	println!("hello world !");
+	world.add_event(0.1,CALL);
+}
+
+static CALL: &'static (Fn(&mut World)) = &callback;
 
 fn main() {
 	let opengl = opengl_graphics::OpenGL::V3_3;
@@ -65,15 +64,26 @@ fn main() {
 
 	let mut app = App {
 		gl: opengl_graphics::GlGraphics::new(opengl),
-		rotation: 0.0
+		world: world::World::new(0.,0.,100.,100.),
 	};
 
-	for e in window.events() {
-		if let Some(r) = e.render_args() {
-			app.render(&r);
-		}
-		if let Some(u) = e.update_args() {
-			app.update(&u);
+
+	app.world.add_body(Character::new());
+	app.world.add_event(0.1,CALL);
+
+	for event in window.events() {
+		match event {
+			Event::Render(args) => app.render(&args),
+			Event::Update(args) => app.update(&args),
+			Event::AfterRender(_args) => (),
+			Event::Idle(_args) => (),
+			Event::Input(Input::Press(_button)) => (),
+			Event::Input(Input::Release(_button)) => (),
+			Event::Input(Input::Move(_motion)) => (),
+			Event::Input(Input::Text(_text)) => (),
+			Event::Input(Input::Resize(_width, _height)) => (),
+			Event::Input(Input::Focus(_focus)) => (),
+			Event::Input(Input::Cursor(_cursor)) => (),
 		}
 	}
 }

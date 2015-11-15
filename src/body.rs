@@ -1,11 +1,13 @@
+extern crate graphics;
+use opengl_graphics::GlGraphics;
+use piston::input::RenderArgs;
+
 use character;
 use character::Character;
 use quadtree::{ Identifiable, Localisable };
 use geometry::{ Shape, Rectangle, Point };
 use std::f64::consts::PI;
 
-use graphics::context::Context;
-use opengl_graphics::GlGraphics;
 
 pub struct Body {
 	id: usize,
@@ -213,7 +215,21 @@ impl Body {
 	}
 
 	pub fn collision(a: &Body, b: &Body, info: OverlapInformation) -> (BodyCollision, BodyCollision) {
-		(BodyCollision::new(),BodyCollision::new())
+		let mut a_col = BodyCollision::new();
+		let mut b_col = BodyCollision::new();
+
+		let delta_x = info.length*info.angle.cos();
+		let delta_y = info.length*info.angle.sin();
+
+		let rate = a.weight()/(a.weight()+b.weight());
+
+		a_col.delta_x = rate*delta_x;
+		a_col.delta_y = rate*delta_y;
+
+		b_col.delta_x = (1.-rate)*delta_x;
+		b_col.delta_y = (1.-rate)*delta_y;
+
+		(a_col,b_col)
 	}
 
 	pub fn resolve_collision(&mut self, col: BodyCollision) {
@@ -239,10 +255,42 @@ impl Body {
 		self.y += dt*self.velocity*self.angle.sin();
 	}
 
-//	pub fn render_debug<F: FnOnce(Context,&mut GlGraphics)>(&self) -> F {
-//		| contect, gl | {
-//		}
-//	}
+	pub fn render_debug(&self, args: &RenderArgs, gl: &mut GlGraphics) {
+		use graphics::Transformed;
+		use graphics::line::{ 
+			Line as LineDrawer, 
+			Shape as LineShape,
+		};
+		use graphics::types::Line;
+		use graphics::default_draw_state;
+
+		const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0]; 
+
+		let line_drawer = LineDrawer {
+			color: RED,
+			radius: 1.,
+			shape: LineShape::Round,
+		};
+
+		let mut lines: Vec<Line> = vec![];
+
+		for i in 0..self.shape.edges.len()-1 {
+			lines.push([
+					   self.shape.edges[i].x,
+					   self.shape.edges[i].y,
+					   self.shape.edges[i+1].x,
+					   self.shape.edges[i+1].y]);
+		}
+
+		gl.draw(args.viewport(), |context, gl| {
+			let transform = context.transform.trans(self.x(),self.y())
+				.rot_rad(self.angle());
+
+			for line in lines {
+				line_drawer.draw(line, default_draw_state(), transform, gl);
+			}
+		});
+	}
 }
 
 impl Localisable for Body {
@@ -275,7 +323,7 @@ fn bounds_angle_shape() {
 		]),
 		velocity: 3.,
 		angle: PI/2.,
-		body_type: BodyType::Character(Character {toto:43} ),
+		body_type: BodyType::Nil,
 	});
 
 	assert_eq!(b.bounds.downleft.x, -3.);

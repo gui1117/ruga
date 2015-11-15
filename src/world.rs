@@ -1,3 +1,5 @@
+use opengl_graphics::GlGraphics;
+use piston::input::RenderArgs;
 use std::cmp::Ordering;
 use std::collections::{ HashMap, BinaryHeap };
 use body::{ Body, BodySettings, BodyCollision };
@@ -6,11 +8,7 @@ use geometry::Point;
 
 pub struct Event {
 	date: f64,
-	msg: EventMessage,
-}
-
-pub enum EventMessage {
-	Toto,
+	execute: &'static Fn(&mut World),
 }
 
 pub struct World {
@@ -52,10 +50,23 @@ impl World {
 	}
 
 	pub fn update(&mut self , dt: f64) {
+
+		// execute event
+		while let Some(&Event { date, execute:_ }) = self.events.peek() {
+			if date > self.time {
+				break;
+			}
+			if let Some(Event { date:_, execute }) = self.events.pop() {
+				execute(self);
+			}
+		}
+
+		// update bodies
 		for (_,body) in self.bodies.iter_mut() {
 			body.update(dt);
 		}
 
+		// resolve collision
 		let mut collision_possible: Vec<(usize,Vec<usize>)> = vec![];
 		{
 			let mut quadtree: Quadtree<Body> = Quadtree::new(self.downleft.x,self.downleft.y,self.width,self.height, self.quadtree_max_object, self.quadtree_deepness);
@@ -92,28 +103,33 @@ impl World {
 				x.resolve_collision(col);
 			}
 		}
+
+		// update time
+		self.time += dt;
 	}
 
-	pub fn query<F: Fn(&mut Body)> (body: &Body, callback: F) {
-		//TODO
-	}
+//	pub fn query<F: Fn(&mut Body)> (body: &Body, callback: F) {
+//		//TODO with fix quadtree
+//	}
 
-	pub fn raycast<F: Fn(Body) -> bool> (x: f64, y: f64, length: f64, angle: f64, mask: u32, group: u32, delta_lenght: f64, callback: F) {
-		//TODO
-	}
+//	pub fn raycast<F: Fn(Body) -> bool> (x: f64, y: f64, length: f64, angle: f64, mask: u32, group: u32, delta_lenght: f64, callback: F) {
+//		//TODO with fix quadtree
+//	}
 
 	//TODO pub fn segmentcast(segment: &Segment...
 
-	pub fn add_event(&mut self, delta_time: f64, event_msg: EventMessage) {
+	pub fn add_event(&mut self, delta_time: f64, execute: &'static Fn(&mut World)) {
 		self.events.push(Event {
 			date: self.time+delta_time,
-			msg: event_msg,
+			execute: execute,
 		});
 	}
 
-	//	pub fn render(gl?) {
-	//	TODO
-	//	}
+	pub fn render_debug(&self, args: &RenderArgs, gl: &mut GlGraphics) {
+		for body in self.bodies.values() {
+			body.render_debug(args,gl);
+		}
+	}
 }
 
 impl PartialEq for Event {

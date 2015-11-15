@@ -1,5 +1,4 @@
 use std::fmt;
-use std::collections::HashMap;
 
 /// trait required by objects inserted in the quadtree,
 /// used when returning the possible collision of an object
