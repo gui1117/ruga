@@ -14,7 +14,7 @@ pub struct Event {
 pub struct World {
 	time: f64,
 	next_id: usize,
-	bodies: HashMap<usize,Body>,
+	pub bodies: HashMap<usize,Body>,
 	events: BinaryHeap<Event>,
 	downleft: Point,
 	width: f64,

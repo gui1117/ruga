@@ -16,15 +16,26 @@ use piston::input::{
 use character::Character;
 use world::World;
 
+pub mod input;
 pub mod geometry;
 pub mod body;
 pub mod world;
 pub mod character;
 pub mod quadtree;
 
+enum Direction {
+	Left,
+	Right,
+	Up,
+	Down,
+}
+
 pub struct App {
 	gl: opengl_graphics::GlGraphics,
 	world: world::World,
+	pub quit: bool,
+	character_id: Option<usize>,
+	character_dir: Vec<Direction>,
 }
 
 impl App {
@@ -58,26 +69,33 @@ fn main() {
 	let window: glutin_window::GlutinWindow = piston::window::WindowSettings::new( "ruga", [640,480])
 		.vsync(true)
 		.opengl(opengl)
-		.exit_on_esc(true)
+		.exit_on_esc(false)
 		.build()
 		.unwrap();
 
 	let mut app = App {
 		gl: opengl_graphics::GlGraphics::new(opengl),
 		world: world::World::new(0.,0.,100.,100.),
+		quit: false,
+		character_id: None,
+		character_dir: vec![],
 	};
 
 
-	app.world.add_body(Character::new());
-	app.world.add_event(0.1,CALL);
+	app.character_id = Some(app.world.add_body(Character::new()));
+//	app.world.add_event(0.1,CALL);
 
 	for event in window.events() {
+		if app.quit {
+			return;
+		}
+
 		match event {
 			Event::Render(args) => app.render(&args),
 			Event::Update(args) => app.update(&args),
 			Event::AfterRender(_args) => (),
 			Event::Idle(_args) => (),
-			Event::Input(Input::Press(_button)) => (),
+			Event::Input(Input::Press(button)) => app.press(&button),
 			Event::Input(Input::Release(_button)) => (),
 			Event::Input(Input::Move(_motion)) => (),
 			Event::Input(Input::Text(_text)) => (),
