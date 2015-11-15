@@ -3,6 +3,8 @@ extern crate glutin_window;
 extern crate opengl_graphics;
 extern crate graphics;
 
+use std::fmt;
+
 use piston::event_loop::Events;
 use piston::input::{ 
 	RenderArgs, 
@@ -22,12 +24,44 @@ pub mod body;
 pub mod world;
 pub mod character;
 pub mod quadtree;
+pub mod camera;
 
 enum Direction {
 	Left,
 	Right,
 	Up,
 	Down,
+}
+
+impl Direction {
+	pub fn perpendicular(&self, other: &Direction) -> bool {
+		match self {
+			&Direction::Up | &Direction::Down => {
+				match other {
+					&Direction::Right | &Direction::Left => true,
+					_ => false,
+				}
+			},
+
+			&Direction::Right | &Direction::Left => {
+				match other {
+					&Direction::Up | &Direction::Down => true,
+					_ => false,
+				}
+			},
+		}
+	}
+}
+
+impl fmt::Debug for Direction {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			&Direction::Up => write!(f,"Up"),
+			&Direction::Down => write!(f,"Down"),
+			&Direction::Left => write!(f,"Left"),
+			&Direction::Right => write!(f,"Right"),
+		}
+	}
 }
 
 pub struct App {
@@ -41,6 +75,8 @@ pub struct App {
 impl App {
 	fn render(&mut self, args: &RenderArgs) {
 		use graphics::*;
+
+		self.world.update_camera(args,self.character_id);
 
 		const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
@@ -96,7 +132,7 @@ fn main() {
 			Event::AfterRender(_args) => (),
 			Event::Idle(_args) => (),
 			Event::Input(Input::Press(button)) => app.press(&button),
-			Event::Input(Input::Release(_button)) => (),
+			Event::Input(Input::Release(button)) => app.release(&button),
 			Event::Input(Input::Move(_motion)) => (),
 			Event::Input(Input::Text(_text)) => (),
 			Event::Input(Input::Resize(_width, _height)) => (),

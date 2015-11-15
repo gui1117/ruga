@@ -20,10 +20,11 @@ impl Character {
 			velocity: 0.,
 			angle: 0.,
 			shape: Shape::new(vec![
-							  Point {x:-1.,y:-1.},
-							  Point {x:1.,y:-1.},
-							  Point {x:1.,y:1.},
-							  Point {x:-1.,y:1.}
+							  Point {x:-10.,y:-10.},
+							  Point {x:10.,y:-10.},
+							  Point {x:25.,y:0.},
+							  Point {x:10.,y:10.},
+							  Point {x:-10.,y:10.}
 			]),
 			body_type: BodyType::Character(Character {
 				life: 10,

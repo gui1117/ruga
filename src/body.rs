@@ -7,6 +7,7 @@ use character::Character;
 use quadtree::{ Identifiable, Localisable };
 use geometry::{ Shape, Rectangle, Point };
 use std::f64::consts::PI;
+use camera::Camera;
 
 
 pub struct Body {
@@ -255,7 +256,7 @@ impl Body {
 		self.y += dt*self.velocity*self.angle.sin();
 	}
 
-	pub fn render_debug(&self, args: &RenderArgs, gl: &mut GlGraphics) {
+	pub fn render_debug(&self, args: &RenderArgs, camera: &Camera, gl: &mut GlGraphics) {
 		use graphics::Transformed;
 		use graphics::line::{ 
 			Line as LineDrawer, 
@@ -283,7 +284,8 @@ impl Body {
 		}
 
 		gl.draw(args.viewport(), |context, gl| {
-			let transform = context.transform.trans(self.x(),self.y())
+			let transform = camera.trans(context.transform)
+				.trans(self.x(),self.y())
 				.rot_rad(self.angle());
 
 			for line in lines {

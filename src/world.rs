@@ -5,6 +5,7 @@ use std::collections::{ HashMap, BinaryHeap };
 use body::{ Body, BodySettings, BodyCollision };
 use quadtree::{ Quadtree, Identifiable };
 use geometry::Point;
+use camera::Camera;
 
 pub struct Event {
 	date: f64,
@@ -21,6 +22,7 @@ pub struct World {
 	height: f64,
 	quadtree_max_object: usize,
 	quadtree_deepness: usize,
+	camera: Camera,
 }
 
 impl World {
@@ -38,6 +40,13 @@ impl World {
 			height: height,
 			quadtree_max_object: 5,
 			quadtree_deepness: 10,
+			camera: Camera {
+				x: 0.,
+				y: 0.,
+				zoom: 1.,
+				width: 640.,
+				height: 480.,
+			},
 		}
 	}
 
@@ -47,6 +56,18 @@ impl World {
 		self.next_id += 1;
 
 		self.next_id - 1
+	}
+
+	pub fn update_camera(&mut self, args: &RenderArgs, character_id: Option<usize>) {
+		self.camera.width = ( args.width / 2 ) as f64;
+		self.camera.height = ( args.height / 2 ) as f64;
+
+		if let Some(id) = character_id {
+			if let Some(character_body) = self.bodies.get(&id) {
+				self.camera.x = character_body.x();
+				self.camera.y = character_body.y();
+			}
+		}
 	}
 
 	pub fn update(&mut self , dt: f64) {
@@ -125,9 +146,10 @@ impl World {
 		});
 	}
 
-	pub fn render_debug(&self, args: &RenderArgs, gl: &mut GlGraphics) {
+	pub fn render_debug(&mut self, args: &RenderArgs, gl: &mut GlGraphics) {
+		self.camera.x += 1.;
 		for body in self.bodies.values() {
-			body.render_debug(args,gl);
+			body.render_debug(args,&self.camera,gl);
 		}
 	}
 }
