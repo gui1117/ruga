@@ -147,35 +147,48 @@ impl Shape {
 	/// are overlapping or not
 	/// it return a boolean for overlapping or not and the angle of minimal overlap and the length
 	/// of overlapping 
+	/// the vector returned is the vector you to move b so it doesn't overlap anymore
 	pub fn overlap(a_x: f64, a_y: f64, a_angle: f64, a_shape: &Shape, b_x: f64, b_y: f64, b_angle:f64, b_shape: &Shape) -> (bool,f64,f64) {
+		use std::f64::consts::PI;
+
 		let mut min_angle = 0.;
-		let mut min_length = f64::NEG_INFINITY;
+		let mut min_length = f64::INFINITY;
 
 		for n in &a_shape.normals {
-			let (a_min,a_max) = a_shape.min_max(a_x, a_y, a_angle, *n);
+			let (a_min,a_max) = a_shape.min_max(a_x, a_y, a_angle, *n + a_angle);
 			let (b_min,b_max) = b_shape.min_max(b_x, b_y, b_angle, *n + a_angle);
 			
 			let length = (a_max-b_min).min(b_max-a_min);
 
 			if length <= 0. {
 				return (false,0.,0.);
-			} else if min_length < length {
+			} else if min_length > length {
 				min_length = length;
-				min_angle = *n + a_angle;
+				
+				if length == a_max-b_min {
+					min_angle = *n + a_angle;
+				} else {
+					min_angle = *n + a_angle + PI;
+				}
 			}
 		}
 
 		for n in &b_shape.normals {
-			let (b_min,b_max) = b_shape.min_max(b_x, b_y, b_angle, *n);
-			let (a_min,a_max) = a_shape.min_max(a_x, a_y, a_angle, *n + a_angle);
+			let (a_min,a_max) = a_shape.min_max(a_x, a_y, a_angle, *n + b_angle);
+			let (b_min,b_max) = b_shape.min_max(b_x, b_y, b_angle, *n + b_angle);
 
 			let length = (a_max-b_min).min(b_max-a_min);
 
 			if length <= 0. {
 				return (false,0.,0.);
-			} else if min_length < length {
+			} else if min_length > length {
 				min_length = length;
-				min_angle = *n + a_angle;
+
+				if length == a_max-b_min {
+					min_angle = *n + b_angle;
+				} else {
+					min_angle = *n + b_angle + PI;
+				}
 			}
 		}
 
@@ -192,54 +205,38 @@ impl Shape {
 use std;
 
 #[test]
-fn point_angle_0() {
+fn point_angle() {
+	use std::f64::consts::PI;
+
 	let a = Point { x: 0., y: 0.};
 	let b = Point { x: 1., y: 1.};
 	let c = Point { x: 0., y: 1.};
 	let pi = std::f64::consts::PI;
 	assert_eq!(Point::angle(&a,&b,&c), -pi/4.);
-}
 
-#[test]
-fn point_angle_1() {
 	let a = Point { x: -10., y: -10.};
 	let b = Point { x: 1., y: 1.};
 	let c = Point { x: -1., y: 1.};
 	let pi = std::f64::consts::PI;
 	assert_eq!(Point::angle(&a,&b,&c), -pi/4.);
-}
-	
 
-#[test]
-fn point_angle_2() {
 	let a = Point { x: 0., y: 0.};
 	let b = Point { x: -1., y: 0.};
 	let c = Point { x: -2., y: -1.};
 	let pi = std::f64::consts::PI;
 	assert_eq!(Point::angle(&a,&b,&c), -3./4.*pi);
-}
 
-#[test]
-fn point_angle_3() {
 	let a = Point { x: 0., y: 0.};
 	let b = Point { x: -1., y: -1.};
 	let c = Point { x: -1., y: -2.};
 	let pi = std::f64::consts::PI;
 	assert_eq!(Point::angle(&a,&b,&c), -3./4.*pi);
-}
 
-#[test]
-fn point_angle_4() {
 	let a = Point { x: 1., y: 1.};
 	let b = Point { x: 1., y: 5.};
 	let c = Point { x: 11., y: 5.};
 	let pi = std::f64::consts::PI;
 	assert_eq!(Point::angle(&a,&b,&c), pi/2.);
-}
-
-#[test]
-fn point_angle_0x() {
-	use std::f64::consts::PI;
 
 	let a = Point { x: 1., y: 1. };
 	assert_eq!(a.angle_0x(),PI/4.);
@@ -247,21 +244,29 @@ fn point_angle_0x() {
 
 #[test]
 #[should_panic]
-fn new_shape_one_edge() {
+fn new_wrong_shape() {
+	//one edge
 	let p1 = Point{ x: 0.0, y: 0.0 };
 	let _s = Shape::new(vec![p1]);
-}
-
-#[test]
-#[should_panic]
-fn new_shape_two_edge() {
+	
+	//two edge
 	let p1 = Point{ x: 0.0, y: 0.0 };
 	let p2 = Point{ x: 0.0, y: 0.0 };
 	let _s = Shape::new(vec![p1,p2]);
+
+	//all edges aligned
+	let p1 = Point{ x: 0., y: 0. };
+	let p2 = Point{ x: 1., y: 1. };
+	let p3 = Point{ x: 10., y: 10. };
+	let p4 = Point{ x: -10., y: -10. };
+	let p5 = Point{ x: 12., y: 12. };
+	let p6 = Point{ x: 15., y: 15. };
+	let _s = Shape::new(vec![p1,p2,p3,p4,p5,p6]);
 }
 
 #[test]
-fn new_shape_three_edge() {
+fn new_shape() {
+	//standard
 	let p1 = Point{ x: 0., y: 0. };
 	let p2 = Point{ x: 1., y: 1. };
 	let p3 = Point{ x: 0., y: 1. };
@@ -272,10 +277,8 @@ fn new_shape_three_edge() {
 	assert_eq!(s.normals[0],-f64::consts::PI);
 	assert_eq!(s.normals[1],-f64::consts::PI/4.);
 	assert_eq!(s.normals[2],f64::consts::PI/2.);
-}
 
-#[test]
-fn new_shape_with_same_edges() {
+	//with same edges
 	let p0 = Point{ x: 0., y: 0. };
 	let p1 = Point{ x: 0., y: 0. };
 	let p2 = Point{ x: 1., y: 1. };
@@ -285,18 +288,6 @@ fn new_shape_with_same_edges() {
 	let s = Shape::new(vec![p0,p1,p2,p3,p4,p5]);
 
 	assert_eq!(s.edges.len(), 3);
-}
-
-#[test]
-#[should_panic]
-fn new_shape_edges_all_aligned() {
-	let p1 = Point{ x: 0., y: 0. };
-	let p2 = Point{ x: 1., y: 1. };
-	let p3 = Point{ x: 10., y: 10. };
-	let p4 = Point{ x: -10., y: -10. };
-	let p5 = Point{ x: 12., y: 12. };
-	let p6 = Point{ x: 15., y: 15. };
-	let _s = Shape::new(vec![p1,p2,p3,p4,p5,p6]);
 }
 
 #[test]

@@ -1,3 +1,8 @@
+extern crate graphics;
+
+use camera::Camera;
+use opengl_graphics::GlGraphics;
+use piston::input::RenderArgs;
 use std::fmt;
 
 /// trait required by objects inserted in the quadtree,
@@ -60,13 +65,14 @@ macro_rules! quadrant {
 
 /// Quadtree represent a node of the quadtree,
 ///
-/// * max_level is the level where it cannot split anymore,
+/// * level is the level where it cannot split anymore,
 /// * max_object is the number of object necessar to split the node,
 /// * level is the level of the node,
 /// * objects contains all the objects of the node if the node isn't splited
 /// otherwise it contains all the objects that cannot be stored in sons' node.
 /// * is the bounding box of the node
 /// * nodes are its sons if they are.
+/// * x and y are downleft coordinate
 ///
 /// you must be careful with lifetime: for performance purpose the quadtree 
 /// borrow objects and store this borrow. that's why objects must live longer
@@ -74,10 +80,10 @@ macro_rules! quadrant {
 /// gone
 pub struct Quadtree<'l, T: 'l + Localisable + Identifiable> {
 	max_object: usize,
-	max_level: usize,
+	level: usize,
 	objects: Vec<&'l T>,
-	x: f64,
-	y: f64,
+	x: f64, //downleft
+	y: f64, //downleft
 	width: f64,
 	height: f64,
 	nodes: QuadtreeBatch<'l, T>,
@@ -101,8 +107,9 @@ enum QuadtreeBatch<'l, T: 'l + Localisable + Identifiable> {
 impl<'l, T: 'l + Localisable + Identifiable> Quadtree<'l, T> {
 	/// create a new Quadtree 
 	pub fn new(x: f64, y: f64, width: f64, height: f64, max_obj: usize, max_lvl: usize) -> Quadtree<'l, T> {
+
 		Quadtree {
-			max_level: max_lvl,
+			level: max_lvl,
 			max_object: max_obj,
 
 			objects: vec![],
@@ -119,7 +126,7 @@ impl<'l, T: 'l + Localisable + Identifiable> Quadtree<'l, T> {
 
 	// split the Quadtree: creates its 4 sons 
 	fn split(&mut self) {
-		let max_lvl = self.max_level;
+		let max_lvl = self.level;
 		let max_obj = self.max_object;
 
 		let sub_width = self.width/2.;
@@ -130,8 +137,8 @@ impl<'l, T: 'l + Localisable + Identifiable> Quadtree<'l, T> {
 		self.nodes = QuadtreeBatch::Cons {
 			downleft:Box::new(Quadtree::new(x, y, sub_width, sub_height, max_obj, max_lvl-1)),
 			downright:Box::new(Quadtree::new(x+sub_width, y, sub_width, sub_height, max_obj, max_lvl-1)),
-			upright:Box::new(Quadtree::new(x+sub_width, y-sub_height, sub_width, sub_height, max_obj, max_lvl-1)),
-			upleft:Box::new(Quadtree::new(x, y-sub_height, sub_width, sub_height, max_obj, max_lvl-1)),
+			upright:Box::new(Quadtree::new(x+sub_width, y+sub_height, sub_width, sub_height, max_obj, max_lvl-1)),
+			upleft:Box::new(Quadtree::new(x, y+sub_height, sub_width, sub_height, max_obj, max_lvl-1)),
 		};
 	}
 
@@ -179,7 +186,7 @@ impl<'l, T: 'l + Localisable + Identifiable> Quadtree<'l, T> {
 	/// insert an object in the Quadtree and return a Vec of Id of all
 	/// the objects that can collide with it
 	pub fn insert(&mut self, obj: &'l T) -> Vec<usize> {
-		if self.max_level == 0 {
+		if self.level == 0 {
 			let ids = self.objects_ids();
 			self.objects.push(obj);
 			return ids;
@@ -261,32 +268,79 @@ impl<'l, T: 'l + Localisable + Identifiable> Quadtree<'l, T> {
 		ids
 	}
 
-//	/// return a fixed quadtree that have the same structure as self but only store ids 
-//	/// and not point pointer on objects
-//	pub fn fix(&self) -> FixedQuadtree {
-//		let mut fixed = FixedQuadtree::new(self.x,self.y,self.width,self.height);
-//		fixed.ids = self.objects_ids();
-//
-//		if let QuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
-//			fixed.nodes = FixedQuadtreeBatch::Cons {
-//				downleft:Box::new(downleft.fix()),
-//				downright:Box::new(downright.fix()),
-//				upright:Box::new(upright.fix()),
-//				upleft:Box::new(upleft.fix()),
-//
-//			};
-//		} 
-//
-//		fixed
-//	}
+	pub fn render_debug(&self, args: &RenderArgs, camera: &Camera, gl: &mut GlGraphics) {
+		use graphics::Transformed;
+		use graphics::line::{ 
+			Line as LineDrawer, 
+			Shape as LineShape,
+		};
+		use graphics::types::Line;
+		use graphics::default_draw_state;
+
+		if let QuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
+			const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 0.5]; 
+
+			let line_drawer = LineDrawer {
+				color: GREEN,
+				radius: 1.,
+				shape: LineShape::Round,
+			};
+
+			let mut lines: Vec<Line> = vec![];
+
+			lines.push([
+					   self.x,
+					   self.y+self.height/2.,
+					   self.x+self.width,
+					   self.y+self.height/2.]);
+
+			lines.push([
+					   self.x+self.width/2.,
+					   self.y,
+					   self.x+self.width/2.,
+					   self.y+self.height]);
+
+			gl.draw(args.viewport(), |context, gl| {
+				let transform = camera.trans(context.transform);
+
+				for line in lines {
+					line_drawer.draw(line, default_draw_state(), transform, gl);
+				}
+			});
+
+			upleft.render_debug(args,camera,gl);
+			downleft.render_debug(args,camera,gl);
+			upright.render_debug(args,camera,gl);
+			downright.render_debug(args,camera,gl);
+		}
+	}
+
+	//	/// return a fixed quadtree that have the same structure as self but only store ids 
+	//	/// and not point pointer on objects
+	//	pub fn fix(&self) -> FixedQuadtree {
+	//		let mut fixed = FixedQuadtree::new(self.x,self.y,self.width,self.height);
+	//		fixed.ids = self.objects_ids();
+	//
+	//		if let QuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
+	//			fixed.nodes = FixedQuadtreeBatch::Cons {
+	//				downleft:Box::new(downleft.fix()),
+	//				downright:Box::new(downright.fix()),
+	//				upright:Box::new(upright.fix()),
+	//				upleft:Box::new(upleft.fix()),
+	//
+	//			};
+	//		} 
+	//
+	//		fixed
+	//	}
 }
 
 impl<'l, T: 'l + Localisable + Identifiable> fmt::Debug for Quadtree<'l, T> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		for _ in 0..self.max_level {
+		for _ in 0..self.level {
 			write!(f," ").unwrap();
 		}
-		write!(f,">").unwrap();
+		write!(f,">x:{},y:{},width:{},height:{}\n",self.x,self.y,self.width,self.height).unwrap();
 		for o in &self.objects {
 			write!(f,"{:?}",o.id()).unwrap();
 			write!(f,",").unwrap();

@@ -16,6 +16,7 @@ use piston::input::{
 };
 
 use character::Character;
+use wall as Wall;
 use world::World;
 
 pub mod input;
@@ -25,6 +26,8 @@ pub mod world;
 pub mod character;
 pub mod quadtree;
 pub mod camera;
+pub mod collision_manager;
+pub mod wall;
 
 enum Direction {
 	Left,
@@ -92,12 +95,12 @@ impl App {
 	}
 }
 
-fn callback(world: &mut World) {
+fn _callback(world: &mut World) {
 	println!("hello world !");
-	world.add_event(0.1,CALL);
+	world.add_event(0.1,_CALL);
 }
 
-static CALL: &'static (Fn(&mut World)) = &callback;
+static _CALL: &'static (Fn(&mut World)) = &_callback;
 
 fn main() {
 	let opengl = opengl_graphics::OpenGL::V3_3;
@@ -111,14 +114,19 @@ fn main() {
 
 	let mut app = App {
 		gl: opengl_graphics::GlGraphics::new(opengl),
-		world: world::World::new(0.,0.,100.,100.),
+		world: world::World::new(0.,0.,500.,500.),
 		quit: false,
 		character_id: None,
 		character_dir: vec![],
 	};
 
 
+	app.world.add_body(Wall::new());
 	app.character_id = Some(app.world.add_body(Character::new()));
+
+	if let Some(id) = app.character_id {
+		println!("char {}",id);
+	}
 //	app.world.add_event(0.1,CALL);
 
 	for event in window.events() {

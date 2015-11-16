@@ -22,7 +22,7 @@ impl Character {
 			shape: Shape::new(vec![
 							  Point {x:-10.,y:-10.},
 							  Point {x:10.,y:-10.},
-							  Point {x:25.,y:0.},
+							//  Point {x:25.,y:0.},
 							  Point {x:10.,y:10.},
 							  Point {x:-10.,y:10.}
 			]),
@@ -30,6 +30,9 @@ impl Character {
 				life: 10,
 			}),
 		}
+	}
+
+	pub fn update(&mut self, _dt: f64) {
 	}
 
 	pub fn resolve_collision(&mut self, col: Collision) {

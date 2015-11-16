@@ -38,7 +38,7 @@ impl World {
 			},
 			width: width,
 			height: height,
-			quadtree_max_object: 5,
+			quadtree_max_object: 1,
 			quadtree_deepness: 10,
 			camera: Camera {
 				x: 0.,
@@ -59,8 +59,8 @@ impl World {
 	}
 
 	pub fn update_camera(&mut self, args: &RenderArgs, character_id: Option<usize>) {
-		self.camera.width = ( args.width / 2 ) as f64;
-		self.camera.height = ( args.height / 2 ) as f64;
+		self.camera.width = args.width as f64;
+		self.camera.height = args.height as f64;
 
 		if let Some(id) = character_id {
 			if let Some(character_body) = self.bodies.get(&id) {
@@ -146,10 +146,26 @@ impl World {
 		});
 	}
 
-	pub fn render_debug(&mut self, args: &RenderArgs, gl: &mut GlGraphics) {
-		self.camera.x += 1.;
+	pub fn render_debug(&self, args: &RenderArgs, gl: &mut GlGraphics) {
+
 		for body in self.bodies.values() {
 			body.render_debug(args,&self.camera,gl);
+		}
+
+		if true {
+			let mut quadtree: Quadtree<Body> = Quadtree::new(
+				self.downleft.x,
+				self.downleft.y,
+				self.width,
+				self.height, 
+				self.quadtree_max_object, 
+				self.quadtree_deepness);
+
+			for body in self.bodies.values() {
+				quadtree.insert(&body);
+			}
+
+			quadtree.render_debug(args,&self.camera,gl);
 		}
 	}
 }

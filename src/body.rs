@@ -8,6 +8,7 @@ use quadtree::{ Identifiable, Localisable };
 use geometry::{ Shape, Rectangle, Point };
 use std::f64::consts::PI;
 use camera::Camera;
+use collision_manager;
 
 
 pub struct Body {
@@ -26,15 +27,16 @@ pub struct Body {
 
 pub enum BodyType {
 	Character(Character),
+	Wall,
 	Nil,
 }
 
 pub struct BodyCollision {
-	delta_velocity: f64,
-	delta_angle: f64,
-	delta_x: f64,
-	delta_y: f64,
-	body_type_collision: BodyTypeCollision,
+	pub delta_velocity: f64,
+	pub delta_angle: f64,
+	pub delta_x: f64,
+	pub delta_y: f64,
+	pub body_type_collision: BodyTypeCollision,
 }
 
 impl BodyCollision {
@@ -216,21 +218,7 @@ impl Body {
 	}
 
 	pub fn collision(a: &Body, b: &Body, info: OverlapInformation) -> (BodyCollision, BodyCollision) {
-		let mut a_col = BodyCollision::new();
-		let mut b_col = BodyCollision::new();
-
-		let delta_x = info.length*info.angle.cos();
-		let delta_y = info.length*info.angle.sin();
-
-		let rate = a.weight()/(a.weight()+b.weight());
-
-		a_col.delta_x = rate*delta_x;
-		a_col.delta_y = rate*delta_y;
-
-		b_col.delta_x = (1.-rate)*delta_x;
-		b_col.delta_y = (1.-rate)*delta_y;
-
-		(a_col,b_col)
+		collision_manager::collision(a,b,info)
 	}
 
 	pub fn resolve_collision(&mut self, col: BodyCollision) {
@@ -244,16 +232,22 @@ impl Body {
 					character.resolve_collision(character_col);
 				}
 			},
-			BodyType::Nil => (),
+			_ => (),
 		}
 	}
 
 	pub fn update(&mut self, dt: f64) {
-		if self.velocity.abs() == 0. {
-			return;
+		if self.velocity != 0. {
+			self.x += dt*self.velocity*self.angle.cos();
+			self.y += dt*self.velocity*self.angle.sin();
 		}
-		self.x += dt*self.velocity*self.angle.cos();
-		self.y += dt*self.velocity*self.angle.sin();
+
+		match self.body_type {
+			BodyType::Character(ref mut character) => {
+				character.update(dt);
+			},
+			_ => (),
+		}
 	}
 
 	pub fn render_debug(&self, args: &RenderArgs, camera: &Camera, gl: &mut GlGraphics) {
@@ -275,13 +269,22 @@ impl Body {
 
 		let mut lines: Vec<Line> = vec![];
 
-		for i in 0..self.shape.edges.len()-1 {
+		let len = self.shape.edges.len();
+
+		for i in 0..len-1 {
 			lines.push([
 					   self.shape.edges[i].x,
 					   self.shape.edges[i].y,
 					   self.shape.edges[i+1].x,
 					   self.shape.edges[i+1].y]);
 		}
+
+		lines.push([
+				   self.shape.edges[len-1].x,
+				   self.shape.edges[len-1].y,
+				   self.shape.edges[0].x,
+				   self.shape.edges[0].y]);
+
 
 		gl.draw(args.viewport(), |context, gl| {
 			let transform = camera.trans(context.transform)
@@ -311,7 +314,7 @@ impl Localisable for Body {
 }
 
 #[test]
-fn bounds_angle_shape() {
+fn bounds() {
 	let b = Body::new(12,BodySettings {
 		x: 2.,
 		y: 2.,
@@ -333,3 +336,45 @@ fn bounds_angle_shape() {
 	assert_eq!(b.bounds.width, 5.);
 	assert_eq!(b.bounds.height, 1.);
 }
+
+#[test]
+fn localisable() {
+	let body = Body::new(1, BodySettings {
+		mask: 0,
+		weight: 1.,
+		group: 1,
+		x: 0.,
+		y: 0.,
+		velocity: 0.,
+		angle: 0.,
+		shape: Shape::new(vec![
+						  Point {x:-10.,y:-10.},
+						  Point {x:10.,y:-10.},
+						  Point {x:25.,y:0.},
+						  Point {x:10.,y:10.},
+						  Point {x:-10.,y:10.}
+		]),
+		body_type: BodyType::Character(Character {
+			life: 10,
+		}),
+	});
+	//x:-10,25; y:-10,10
+
+
+	assert_eq!(body.left(26.),true);
+	assert_eq!(body.left(23.),false);
+	assert_eq!(body.left(-26.),false);
+
+	assert_eq!(body.right(-11.),true);
+	assert_eq!(body.right(23.),false);
+	assert_eq!(body.right(16.),false);
+
+	assert_eq!(body.up(-11.),true);
+	assert_eq!(body.up(23.),false);
+	assert_eq!(body.up(16.),false);
+
+	assert_eq!(body.down(11.),true);
+	assert_eq!(body.down(-11.),false);
+	assert_eq!(body.down(6.),false);
+}
+

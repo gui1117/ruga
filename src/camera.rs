@@ -1,6 +1,5 @@
 use graphics::Transformed;
 use graphics::math::Matrix2d;
-use piston::input::RenderArgs;
 
 pub struct Camera {
 	pub x: f64, // center of the camera
