@@ -15,19 +15,18 @@ use piston::input::{
 	Input,
 };
 
-use character::Character;
-use wall as Wall;
+use body::character::Character;
+use body::wall as Wall;
 use world::World;
+use geometry::Point;
 
+pub mod weapon;
 pub mod input;
 pub mod geometry;
 pub mod body;
 pub mod world;
-pub mod character;
-pub mod quadtree;
 pub mod camera;
 pub mod collision_manager;
-pub mod wall;
 
 enum Direction {
 	Left,
@@ -95,13 +94,6 @@ impl App {
 	}
 }
 
-fn _callback(world: &mut World) {
-	println!("hello world !");
-	world.add_event(0.1,_CALL);
-}
-
-static _CALL: &'static (Fn(&mut World)) = &_callback;
-
 fn main() {
 	let opengl = opengl_graphics::OpenGL::V3_3;
 
@@ -121,13 +113,20 @@ fn main() {
 	};
 
 
-	app.world.add_body(Wall::new());
+	app.world.add_body(Wall::new(vec![
+						  Point {x:20.,y:20.},
+						  Point {x:80.,y:20.},
+						  Point {x:80.,y:80.},
+						  Point {x:20.,y:80.}]));
+
+	app.world.add_body(Wall::new(vec![
+						  Point {x:20.,y:80.},
+						  Point {x:80.,y:80.},
+						  Point {x:80.,y:160.},
+						  Point {x:20.,y:160.}]));
+
 	app.character_id = Some(app.world.add_body(Character::new()));
 
-	if let Some(id) = app.character_id {
-		println!("char {}",id);
-	}
-//	app.world.add_event(0.1,CALL);
 
 	for event in window.events() {
 		if app.quit {

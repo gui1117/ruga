@@ -3,13 +3,14 @@ use App;
 use Direction;
 use std::f64::consts::PI;
 
+use body::BodyType;
 use piston::input::{
 	Button,
 	Key,
 	MouseButton,
-	JoystickButton,
-	Motion,
-	JoystickAxisArgs,
+	//	JoystickButton,
+	//	Motion,
+	//	JoystickAxisArgs,
 };
 
 impl App {
@@ -18,7 +19,7 @@ impl App {
 			if let Some(character) = self.world.bodies.get_mut(&id) {
 				if let Some(dir) = self.character_dir.last() {
 
-					character.set_velocity(100.);
+					character.set_velocity(300.);
 
 					let mut last_perpendicular: Option<&Direction> = None;
 					for d in &self.character_dir {
@@ -119,7 +120,24 @@ impl App {
 			},
 
 			Button::Mouse(mouse_button) => {
-				println!("m:{:?}",mouse_button);
+				match mouse_button {
+					MouseButton::Left => {
+
+						if let Some(id) = self.character_id {
+							let mut opt_event = None;
+							if let Some(character_body) = self.world.bodies.get(&id) {
+								if let BodyType::Character(ref character) = character_body.body_type {
+									opt_event = character.cannon.shoot(0.,0.,0.);
+								}
+							}
+							if let Some(event) = opt_event {
+								self.world.add_event(0.,event);
+							}
+						}
+
+					},
+					_ => (),
+				}
 			},
 		}
 	}
@@ -177,15 +195,8 @@ impl App {
 				}
 			},
 
-			Button::Joystick(joystick_button) => {
-				match joystick_button.button {
-					a @ _ => println!("j:{:?}",a),
-				}
-			},
-
-			Button::Mouse(mouse_button) => {
-				println!("m:{:?}",mouse_button);
-			},
+			Button::Joystick(_joystick_button) => (),
+			Button::Mouse(_mouse_button) => ()
 		}
 
 	}

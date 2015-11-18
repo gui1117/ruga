@@ -1,10 +1,13 @@
 extern crate graphics;
+
+pub mod character;
+pub mod wall;
+
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
 
-use character;
-use character::Character;
-use quadtree::{ Identifiable, Localisable };
+use self::character::Character;
+use world::{ Identifiable, Localisable };
 use geometry::{ Shape, Rectangle, Point };
 use std::f64::consts::PI;
 use camera::Camera;
@@ -22,7 +25,7 @@ pub struct Body {
 	angle: f64,
 	bounds: Rectangle,
 	shape: Shape,
-	body_type: BodyType,
+	pub body_type: BodyType,
 }
 
 pub enum BodyType {

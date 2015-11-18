@@ -1,12 +1,17 @@
 use geometry::{ Shape, Point };
 use body::{ BodySettings, BodyType };
+use weapon::cannon::Cannon;
 
 pub struct Character {
 	pub life: u32,
+	pub aim: f64,
+	pub cannon: Cannon,
+	//pub grenade_lancher: GrenadeLauncher,
 }
 
 pub struct Collision {
 	pub delta_life: u32,
+	pub delta_aim: f64,
 }
 
 impl Character {
@@ -22,12 +27,14 @@ impl Character {
 			shape: Shape::new(vec![
 							  Point {x:-10.,y:-10.},
 							  Point {x:10.,y:-10.},
-							//  Point {x:25.,y:0.},
+							  Point {x:25.,y:0.},
 							  Point {x:10.,y:10.},
-							  Point {x:-10.,y:10.}
-			]),
+							  Point {x:-10.,y:10.}]),
+
 			body_type: BodyType::Character(Character {
 				life: 10,
+				aim: 0.,
+				cannon: Cannon::new(),
 			}),
 		}
 	}

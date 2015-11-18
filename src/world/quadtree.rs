@@ -315,24 +315,24 @@ impl<'l, T: 'l + Localisable + Identifiable> Quadtree<'l, T> {
 		}
 	}
 
-	//	/// return a fixed quadtree that have the same structure as self but only store ids 
-	//	/// and not point pointer on objects
-	//	pub fn fix(&self) -> FixedQuadtree {
-	//		let mut fixed = FixedQuadtree::new(self.x,self.y,self.width,self.height);
-	//		fixed.ids = self.objects_ids();
-	//
-	//		if let QuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
-	//			fixed.nodes = FixedQuadtreeBatch::Cons {
-	//				downleft:Box::new(downleft.fix()),
-	//				downright:Box::new(downright.fix()),
-	//				upright:Box::new(upright.fix()),
-	//				upleft:Box::new(upleft.fix()),
-	//
-	//			};
-	//		} 
-	//
-	//		fixed
-	//	}
+	/// return a fixed quadtree that have the same structure as self but only store ids 
+	/// and not point pointer on objects
+	pub fn fix(&self) -> FixedQuadtree {
+		let mut fixed = FixedQuadtree::new(self.x,self.y,self.width,self.height);
+		fixed.ids = self.objects_ids();
+	
+		if let QuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
+			fixed.nodes = FixedQuadtreeBatch::Cons {
+				downleft:Box::new(downleft.fix()),
+				downright:Box::new(downright.fix()),
+				upright:Box::new(upright.fix()),
+				upleft:Box::new(upleft.fix()),
+	
+			};
+		} 
+	
+		fixed
+	}
 }
 
 impl<'l, T: 'l + Localisable + Identifiable> fmt::Debug for Quadtree<'l, T> {
@@ -359,173 +359,224 @@ impl<'l, T: 'l + Localisable + Identifiable> fmt::Debug for Quadtree<'l, T> {
 	}
 }
 
-///// like a quadtree but only store id instead of reference to objects
-//pub struct FixedQuadtree {
-//	ids: Vec<usize>,
-//	x: f64,
-//	y: f64,
-//	width: f64,
-//	height: f64,
-//	nodes: FixedQuadtreeBatch,
-//}
-//
-//// like a nodebatch but for FixedQuadtree
-//enum FixedQuadtreeBatch {
-//	Cons {
-//		upleft: Box<FixedQuadtree>,
-//		upright: Box<FixedQuadtree>,
-//		downright: Box<FixedQuadtree>,
-//		downleft: Box<FixedQuadtree>,
-//	},
-//	Nil,
-//}
-//
-//impl FixedQuadtree {
-//	/// create a new Quadtree 
-//	pub fn new(x: f64, y: f64, width: f64, height: f64) -> FixedQuadtree {
-//		FixedQuadtree {
-//			ids: vec![],
-//			x: x,
-//			y: y,
-//			width: width,
-//			height: height,
-//			nodes: FixedQuadtreeBatch::Nil,
-//		}
-//	}
-//
-//	// return a Vec of Id of all the objects in the current Quadtree but
-//	// not in its sons 
-//	fn objects_ids(&self) -> Vec<usize> {
-//		let mut result = vec![];
-//		for id in &self.ids {
-//			result.push(*id);
-//		}
-//		result
-//	}
-//
-//	// return a Vec of Id of all the objects in the current Quadtree and 
-//	// in its sons
-//	fn all_objects_ids(&self) -> Vec<usize> {
-//		let mut result = vec![];
-//		for id in &self.ids {
-//			result.push(*id);
-//		}
-//
-//		if let FixedQuadtreeBatch::Cons{ref upleft,ref upright,ref downleft,ref downright} = self.nodes {
-//			let r = upleft.all_objects_ids();
-//			for id in r {
-//				result.push(id);
-//			}
-//
-//			let r = upright.all_objects_ids();
-//			for id in r {
-//				result.push(id);
-//			}
-//
-//			let r = downright.all_objects_ids();
-//			for id in r {
-//				result.push(id);
-//			}
-//
-//			let r = downleft.all_objects_ids();
-//			for id in r {
-//				result.push(id);
-//			}
-//		}
-//		result
-//	}
-//
-//	/// Return a Vec of Id of all
-//	/// the objects that can collide with it
-//	pub fn query<T:Localisable>(&self, obj: &T) -> Vec<usize> {
-//		if let FixedQuadtreeBatch::Nil = self.nodes {
-//			return self.objects_ids();
-//		}
-//
-//		let mut ids = self.objects_ids();
-//		let mut other_ids: Vec<usize> = vec![];
-//
-//		if let FixedQuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
-//
-//			let x = self.x + self.width/2.;
-//			let y = self.y + self.height/2.;
-//
-//			match quadrant!(x,y,obj) {
-//				Quadrant::Upright => { other_ids = upright.query(obj); },
-//				Quadrant::Upleft => { other_ids = upleft.query(obj); },
-//				Quadrant::Downright => { other_ids = downright.query(obj); },
-//				Quadrant::Downleft => { other_ids = downleft.query(obj); },
-//				Quadrant::Nil => { 
-//					let r = upright.all_objects_ids();
-//					for i in r {
-//						other_ids.push(i);
-//					}
-//
-//					let r = upleft.all_objects_ids();
-//					for i in r {
-//						other_ids.push(i);
-//					}
-//
-//					let r = downright.all_objects_ids();
-//					for i in r {
-//						other_ids.push(i);
-//					}
-//
-//					let r = downleft.all_objects_ids();
-//					for i in r {
-//						other_ids.push(i);
-//					}
-//				},
-//			}
-//
-//		}
-//
-//		for id in other_ids {
-//			ids.push(id);
-//		}
-//		ids
-//	}
-//
-//	/// insert an object in the fixed quadtree,
-//	pub fn insert<T:Localisable+Identifiable>(&mut self, obj: &T) {
-//		if let FixedQuadtreeBatch::Nil = self.nodes {
-//			self.ids.push(obj.id());
-//		}
-//		if let FixedQuadtreeBatch::Cons { ref mut upleft, ref mut upright, ref mut downright, ref mut downleft } = self.nodes {
-//
-//			let x = self.x + self.width/2.;
-//			let y = self.y + self.height/2.;
-//
-//			match quadrant!(x,y,obj) {
-//				Quadrant::Upright => { upright.insert(obj); },
-//				Quadrant::Upleft => { upleft.insert(obj); },
-//				Quadrant::Downright => { downright.insert(obj); },
-//				Quadrant::Downleft => { downleft.insert(obj); },
-//				Quadrant::Nil => { self.ids.push(obj.id()); },
-//			}
-//		}
-//	}
-//}
-//
-//impl fmt::Debug for FixedQuadtree {
-//	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//		write!(f,">").unwrap();
-//		for id in &self.ids {
-//			write!(f,"{:?}",*id).unwrap();
-//			write!(f,",").unwrap();
-//		}
-//
-//		write!(f,"\n").unwrap();
-//
-//		if let FixedQuadtreeBatch::Cons{ref upleft,ref upright,ref downleft,ref downright} = self.nodes {
-//			write!(f,"dl: {:?}",downleft).unwrap();
-//			write!(f,"dr: {:?}",downright).unwrap();
-//			write!(f,"ul: {:?}",upleft).unwrap();
-//			write!(f,"ur: {:?}",upright).unwrap();
-//		} else {
-//			write!(f,"nil").unwrap();
-//		}
-//
-//		write!(f,"\n")
-//	}
-//}
+/// like a quadtree but only store id instead of reference to objects
+pub struct FixedQuadtree {
+	ids: Vec<usize>,
+	x: f64, //downleft
+	y: f64, //downleft
+	width: f64,
+	height: f64,
+	nodes: FixedQuadtreeBatch,
+}
+
+// like a nodebatch but for FixedQuadtree
+enum FixedQuadtreeBatch {
+	Cons {
+		upleft: Box<FixedQuadtree>,
+		upright: Box<FixedQuadtree>,
+		downright: Box<FixedQuadtree>,
+		downleft: Box<FixedQuadtree>,
+	},
+	Nil,
+}
+
+impl FixedQuadtree {
+	/// create a new Quadtree 
+	///
+	/// * x,y: downleft
+	/// * width,height: size 
+	pub fn new(x: f64, y: f64, width: f64, height: f64) -> FixedQuadtree {
+		FixedQuadtree {
+			ids: vec![],
+			x: x,
+			y: y,
+			width: width,
+			height: height,
+			nodes: FixedQuadtreeBatch::Nil,
+		}
+	}
+
+	// return a Vec of Id of all the objects in the current Quadtree but
+	// not in its sons 
+	fn objects_ids(&self) -> Vec<usize> {
+		let mut result = vec![];
+		for id in &self.ids {
+			result.push(*id);
+		}
+		result
+	}
+
+	// return a Vec of Id of all the objects in the current Quadtree and 
+	// in its sons
+	fn all_objects_ids(&self) -> Vec<usize> {
+		let mut result = vec![];
+		for id in &self.ids {
+			result.push(*id);
+		}
+
+		if let FixedQuadtreeBatch::Cons{ref upleft,ref upright,ref downleft,ref downright} = self.nodes {
+			let r = upleft.all_objects_ids();
+			for id in r {
+				result.push(id);
+			}
+
+			let r = upright.all_objects_ids();
+			for id in r {
+				result.push(id);
+			}
+
+			let r = downright.all_objects_ids();
+			for id in r {
+				result.push(id);
+			}
+
+			let r = downleft.all_objects_ids();
+			for id in r {
+				result.push(id);
+			}
+		}
+		result
+	}
+
+	/// Return a Vec of Id of all
+	/// the objects that can collide with it
+	pub fn query<T:Localisable>(&self, obj: &T) -> Vec<usize> {
+		if let FixedQuadtreeBatch::Nil = self.nodes {
+			return self.objects_ids();
+		}
+
+		let mut ids = self.objects_ids();
+		let mut other_ids: Vec<usize> = vec![];
+
+		if let FixedQuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
+
+			let x = self.x + self.width/2.;
+			let y = self.y + self.height/2.;
+
+			match quadrant!(x,y,obj) {
+				Quadrant::Upright => { other_ids = upright.query(obj); },
+				Quadrant::Upleft => { other_ids = upleft.query(obj); },
+				Quadrant::Downright => { other_ids = downright.query(obj); },
+				Quadrant::Downleft => { other_ids = downleft.query(obj); },
+				Quadrant::Nil => { 
+					let r = upright.all_objects_ids();
+					for i in r {
+						other_ids.push(i);
+					}
+
+					let r = upleft.all_objects_ids();
+					for i in r {
+						other_ids.push(i);
+					}
+
+					let r = downright.all_objects_ids();
+					for i in r {
+						other_ids.push(i);
+					}
+
+					let r = downleft.all_objects_ids();
+					for i in r {
+						other_ids.push(i);
+					}
+				},
+			}
+
+		}
+
+		for id in other_ids {
+			ids.push(id);
+		}
+		ids
+	}
+
+	/// insert an object in the fixed quadtree,
+	pub fn insert<T:Localisable+Identifiable>(&mut self, obj: &T) {
+		if let FixedQuadtreeBatch::Nil = self.nodes {
+			self.ids.push(obj.id());
+		}
+		if let FixedQuadtreeBatch::Cons { ref mut upleft, ref mut upright, ref mut downright, ref mut downleft } = self.nodes {
+
+			let x = self.x + self.width/2.;
+			let y = self.y + self.height/2.;
+
+			match quadrant!(x,y,obj) {
+				Quadrant::Upright => { upright.insert(obj); },
+				Quadrant::Upleft => { upleft.insert(obj); },
+				Quadrant::Downright => { downright.insert(obj); },
+				Quadrant::Downleft => { downleft.insert(obj); },
+				Quadrant::Nil => { self.ids.push(obj.id()); },
+			}
+		}
+	}
+
+	pub fn render_debug(&self, args: &RenderArgs, camera: &Camera, gl: &mut GlGraphics) {
+		use graphics::Transformed;
+		use graphics::line::{ 
+			Line as LineDrawer, 
+			Shape as LineShape,
+		};
+		use graphics::types::Line;
+		use graphics::default_draw_state;
+
+		if let FixedQuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
+			const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 0.5]; 
+
+			let line_drawer = LineDrawer {
+				color: GREEN,
+				radius: 1.,
+				shape: LineShape::Round,
+			};
+
+			let mut lines: Vec<Line> = vec![];
+
+			lines.push([
+					   self.x,
+					   self.y+self.height/2.,
+					   self.x+self.width,
+					   self.y+self.height/2.]);
+
+			lines.push([
+					   self.x+self.width/2.,
+					   self.y,
+					   self.x+self.width/2.,
+					   self.y+self.height]);
+
+			gl.draw(args.viewport(), |context, gl| {
+				let transform = camera.trans(context.transform);
+
+				for line in lines {
+					line_drawer.draw(line, default_draw_state(), transform, gl);
+				}
+			});
+
+			upleft.render_debug(args,camera,gl);
+			downleft.render_debug(args,camera,gl);
+			upright.render_debug(args,camera,gl);
+			downright.render_debug(args,camera,gl);
+		}
+	}
+
+}
+
+impl fmt::Debug for FixedQuadtree {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f,">").unwrap();
+		for id in &self.ids {
+			write!(f,"{:?}",*id).unwrap();
+			write!(f,",").unwrap();
+		}
+
+		write!(f,"\n").unwrap();
+
+		if let FixedQuadtreeBatch::Cons{ref upleft,ref upright,ref downleft,ref downright} = self.nodes {
+			write!(f,"dl: {:?}",downleft).unwrap();
+			write!(f,"dr: {:?}",downright).unwrap();
+			write!(f,"ul: {:?}",upleft).unwrap();
+			write!(f,"ur: {:?}",upright).unwrap();
+		} else {
+			write!(f,"nil").unwrap();
+		}
+
+		write!(f,"\n")
+	}
+}

@@ -3,7 +3,6 @@ use body::{
 	BodyCollision,
 	OverlapInformation,
 };
-use quadtree::Identifiable;
 
 pub fn collision(a: &Body, b: &Body, info: OverlapInformation) -> (BodyCollision, BodyCollision) {
 	let mut a_col = BodyCollision::new();

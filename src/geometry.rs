@@ -1,3 +1,4 @@
+use world::Localisable;
 use std::f64;
 use std::f64::consts::PI;
 
@@ -40,6 +41,21 @@ impl Point {
 		}
 
 		false
+	}
+}
+
+impl Localisable for Point {
+	fn up(&self, y: f64) -> bool {
+		self.y > y
+	}
+	fn down(&self, y: f64) -> bool {
+		self.y  < y
+	}
+	fn left(&self, x: f64) -> bool {
+		self.x < x
+	}
+	fn right(&self, x: f64) -> bool {
+		self.x > x
 	}
 }
 
