@@ -15,18 +15,13 @@ use piston::input::{
 	Input,
 };
 
-use body::character::Character;
-use body::wall as Wall;
 use world::World;
-use geometry::Point;
+use world::body::character::Character;
+use world::body::wall as Wall;
+use world::geometry::Point;
 
-pub mod weapon;
 pub mod input;
-pub mod geometry;
-pub mod body;
 pub mod world;
-pub mod camera;
-pub mod collision_manager;
 
 enum Direction {
 	Left,

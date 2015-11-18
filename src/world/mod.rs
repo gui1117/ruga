@@ -1,28 +1,20 @@
-pub use self::quadtree::{ 
-	Quadtree, 
-	Identifiable, 
-	FixedQuadtree,
-	Localisable,
-};
-
 mod quadtree;
 
+pub mod body;
+pub mod weapon;
+pub mod geometry;
+pub mod camera;
+pub mod collision_manager;
+pub mod event;
+
+use self::quadtree::{ FixedQuadtree, Quadtree, Identifiable };
+use std::collections::{ HashMap, BinaryHeap };
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
-use std::cmp::Ordering;
-use std::collections::{ HashMap, BinaryHeap };
-use body::{ Body, BodySettings, BodyCollision };
-use geometry::Point;
-use camera::Camera;
-
-pub struct Event {
-	date: f64,
-	execute: &'static Fn(&mut World),
-}
-
-//enum EventArgs {
-//	fvec4([f64;4]),
-//}
+use self::camera::Camera;
+use self::geometry::Point;
+use self::body::{ Body, BodySettings, BodyCollision };
+use self::event::{ Event, EventSettings };
 
 pub struct World {
 	time: f64,
@@ -87,12 +79,12 @@ impl World {
 	pub fn update(&mut self , dt: f64) {
 
 		// execute event
-		while let Some(&Event { date, execute:_ }) = self.events.peek() {
+		while let Some(&Event { date, execute:_, args:_ }) = self.events.peek() {
 			if date > self.time {
 				break;
 			}
-			if let Some(Event { date:_, execute }) = self.events.pop() {
-				execute(self);
+			if let Some(Event { date:_, execute, args }) = self.events.pop() {
+				execute(self, args);
 			}
 		}
 
@@ -206,10 +198,11 @@ impl World {
 
 	//TODO pub fn segmentcast(segment: &Segment...
 
-	pub fn add_event(&mut self, delta_time: f64, execute: &'static Fn(&mut World)) {
+	pub fn add_event(&mut self, settings: EventSettings) {
 		self.events.push(Event {
-			date: self.time+delta_time,
-			execute: execute,
+			date: self.time+settings.delta_time,
+			execute: settings.execute,
+			args: settings.args,
 		});
 	}
 
@@ -237,49 +230,3 @@ impl World {
 	}
 }
 
-impl PartialEq for Event {
-	fn eq(&self, other: &Self) -> bool {
-		self.date == other.date
-	}
-
-	fn ne(&self, other: &Self) -> bool {
-		self.date != other.date
-	}
-}
-
-impl Eq for Event {
-}
-
-impl PartialOrd for Event {
-	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-		(-self.date).partial_cmp(&-other.date)
-	}
-
-	fn lt(&self, other: &Self) -> bool {
-		self.date.gt(&other.date)
-	}
-
-	fn le(&self, other: &Self) -> bool {
-		self.date.ge(&other.date)
-	}
-
-	fn gt(&self, other: &Self) -> bool {
-		self.date.lt(&other.date)
-	}
-
-	fn ge(&self, other: &Self) -> bool {
-		self.date.le(&other.date)
-	}
-}
-
-impl Ord for Event {
-	fn cmp(&self, other: &Self) -> Ordering {
-		if self.date < other.date {
-			return Ordering::Greater;
-		} else if self.date > other.date {
-			return Ordering::Less;
-		} else {
-			return Ordering::Equal;
-		}
-	}
-}

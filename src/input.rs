@@ -1,9 +1,9 @@
 extern crate piston;
+
 use App;
 use Direction;
 use std::f64::consts::PI;
-
-use body::BodyType;
+use world::body::BodyType;
 use piston::input::{
 	Button,
 	Key,
@@ -131,7 +131,7 @@ impl App {
 								}
 							}
 							if let Some(event) = opt_event {
-								self.world.add_event(0.,event);
+								self.world.add_event(event);
 							}
 						}
 

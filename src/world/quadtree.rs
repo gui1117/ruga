@@ -1,6 +1,6 @@
 extern crate graphics;
 
-use camera::Camera;
+use world::camera::Camera;
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
 use std::fmt;
@@ -268,6 +268,7 @@ impl<'l, T: 'l + Localisable + Identifiable> Quadtree<'l, T> {
 		ids
 	}
 
+	#[allow(dead_code)]
 	pub fn render_debug(&self, args: &RenderArgs, camera: &Camera, gl: &mut GlGraphics) {
 		use graphics::Transformed;
 		use graphics::line::{ 
@@ -278,6 +279,7 @@ impl<'l, T: 'l + Localisable + Identifiable> Quadtree<'l, T> {
 		use graphics::default_draw_state;
 
 		if let QuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
+			#[allow(dead_code)]
 			const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 0.5]; 
 
 			let line_drawer = LineDrawer {
@@ -509,6 +511,7 @@ impl FixedQuadtree {
 		}
 	}
 
+	#[allow(dead_code)]
 	pub fn render_debug(&self, args: &RenderArgs, camera: &Camera, gl: &mut GlGraphics) {
 		use graphics::Transformed;
 		use graphics::line::{ 
@@ -519,6 +522,7 @@ impl FixedQuadtree {
 		use graphics::default_draw_state;
 
 		if let FixedQuadtreeBatch::Cons { ref upleft, ref upright, ref downright, ref downleft } = self.nodes {
+			#[allow(dead_code)]
 			const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 0.5]; 
 
 			let line_drawer = LineDrawer {
