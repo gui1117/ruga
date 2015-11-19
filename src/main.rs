@@ -3,12 +3,8 @@ extern crate glutin_window;
 extern crate opengl_graphics;
 extern crate graphics;
 
-use std::fmt;
-
 use piston::event_loop::Events;
 use piston::input::{ 
-	RenderArgs, 
-	UpdateArgs, 
 	RenderEvent, 
 	UpdateEvent,
 	Event,
@@ -19,75 +15,12 @@ use world::World;
 use world::body::character::Character;
 use world::body::wall as Wall;
 use world::geometry::Point;
+use app::App;
 
 pub mod input;
 pub mod world;
-
-enum Direction {
-	Left,
-	Right,
-	Up,
-	Down,
-}
-
-impl Direction {
-	pub fn perpendicular(&self, other: &Direction) -> bool {
-		match self {
-			&Direction::Up | &Direction::Down => {
-				match other {
-					&Direction::Right | &Direction::Left => true,
-					_ => false,
-				}
-			},
-
-			&Direction::Right | &Direction::Left => {
-				match other {
-					&Direction::Up | &Direction::Down => true,
-					_ => false,
-				}
-			},
-		}
-	}
-}
-
-impl fmt::Debug for Direction {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self {
-			&Direction::Up => write!(f,"Up"),
-			&Direction::Down => write!(f,"Down"),
-			&Direction::Left => write!(f,"Left"),
-			&Direction::Right => write!(f,"Right"),
-		}
-	}
-}
-
-pub struct App {
-	gl: opengl_graphics::GlGraphics,
-	world: world::World,
-	pub quit: bool,
-	character_id: Option<usize>,
-	character_dir: Vec<Direction>,
-}
-
-impl App {
-	fn render(&mut self, args: &RenderArgs) {
-		use graphics::*;
-
-		self.world.update_camera(args,self.character_id);
-
-		const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
-
-		self.gl.draw(args.viewport(), |_, gl| {
-			graphics::clear(BLACK, gl);
-		});
-
-		self.world.render_debug(args,&mut self.gl);
-	}
-
-	fn update(&mut self, args: &UpdateArgs) {
-		self.world.update(args.dt);
-	}
-}
+pub mod direction;
+pub mod app;
 
 fn main() {
 	let opengl = opengl_graphics::OpenGL::V3_3;
@@ -103,8 +36,8 @@ fn main() {
 		gl: opengl_graphics::GlGraphics::new(opengl),
 		world: world::World::new(0.,0.,500.,500.),
 		quit: false,
-		character_id: None,
-		character_dir: vec![],
+		player_id: None,
+		player_dir: vec![],
 	};
 
 
@@ -120,7 +53,7 @@ fn main() {
 						  Point {x:80.,y:160.},
 						  Point {x:20.,y:160.}]));
 
-	app.character_id = Some(app.world.add_body(Character::new()));
+	app.player_id = Some(app.world.add_body(Character::new()));
 
 
 	for event in window.events() {

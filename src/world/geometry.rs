@@ -30,17 +30,17 @@ impl Point {
 
 	/// return whether the point is in the shape or not
 	pub fn in_shape(&self, x: f64, y: f64, angle: f64, shape: &Shape,) -> bool {
-		let (h_min,h_max) = shape.min_max(x, y, angle, 0.);
-		if self.x < h_min || self.x > h_max {
-			return false;
+		for n in &shape.normals {
+			let (min,max) = shape.min_max(x, y, angle, *n + angle);
+			
+			let dir = Point { x: (*n+angle).cos(), y: (*n+angle).sin() };
+			let p = self.x*dir.x + self.y*dir.y;
+			
+			if p < min || p > max {
+				return false;
+			}
 		}
-
-		let (v_min,v_max) = shape.min_max(x, y, angle, PI/2.);
-		if self.y < v_min || self.y > v_max {
-			return false;
-		}
-
-		false
+		true
 	}
 }
 
@@ -59,29 +59,29 @@ impl Localisable for Point {
 	}
 }
 
-pub struct Segment {
-	origin: Point,
-	length: f64,
-	angle: f64,
-}
-
-impl Segment {
-	/// return (whether the segment is intersecting the shape, the first intersection, the second
-	/// intersection)
-	pub fn intersect(&self, x: f64, y: f64, angle: f64, shape: &Shape) -> bool {
-		let (dir_min,dir_max) = shape.min_max(x, y, angle, self.angle);
-		let (nor_min,nor_max) = shape.min_max(x, y, angle, self.angle + PI/2.);
-
-		if self.origin.x > dir_max || self.origin.x + self.length < dir_min {
-			return false;
-		}
-		if self.origin.y < nor_min || self.origin.y > nor_max {
-			return false;
-		}
-
-		true
-	}
-}
+//pub struct Segment {
+//	origin: Point,
+//	length: f64,
+//	angle: f64,
+//}
+//
+//impl Segment {
+//	/// return (whether the segment is intersecting the shape, the first intersection, the second
+//	/// intersection)
+//	pub fn intersect(&self, x: f64, y: f64, angle: f64, shape: &Shape) -> bool {
+//		let (dir_min,dir_max) = shape.min_max(x, y, angle, self.angle);
+//		let (nor_min,nor_max) = shape.min_max(x, y, angle, self.angle + PI/2.);
+//
+//		if self.origin.x > dir_max || self.origin.x + self.length < dir_min {
+//			return false;
+//		}
+//		if self.origin.y < nor_min || self.origin.y > nor_max {
+//			return false;
+//		}
+//
+//		true
+//	}
+//}
 
 /// simple structure, it represents a box.
 /// the downleft point is the point at the maximum y 
@@ -326,4 +326,27 @@ fn shape_overlap() {
 
 	let (o,_,_) = Shape::overlap(0.,0.,0.,&s1,0.9,1.,PI,&s1);
 	assert!(o);
+}
+
+#[test]
+fn point_in_shape() {
+	let p1 = Point{ x: 0., y: 0. };
+	let p2 = Point{ x: 1., y: 1. };
+	let p3 = Point{ x: 0., y: 1. };
+	let s1 = Shape::new(vec![p1,p2,p3]);
+
+	let p1 = Point { x: 0.1, y: 0.5 };
+	assert_eq!(p1.in_shape(0.,0.,0.,&s1),true);
+
+	let p1 = Point { x: 0.5, y: 0.6 };
+	assert_eq!(p1.in_shape(0.,0.,0.,&s1),true);
+
+	let p1 = Point { x: 0.6, y: 0.7 };
+	assert_eq!(p1.in_shape(0.,0.,0.,&s1),true);
+
+	let p1 = Point { x: 0.5, y: 0.1 };
+	assert_eq!(p1.in_shape(0.,0.,0.,&s1),false);
+
+	let p1 = Point { x: 0.9, y: 0.1 };
+	assert_eq!(p1.in_shape(0.,0.,0.,&s1),false);
 }

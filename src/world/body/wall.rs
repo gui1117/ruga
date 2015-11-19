@@ -5,6 +5,7 @@ use std::f64::INFINITY;
 pub fn new(points: Vec<Point>) -> BodySettings {
 	BodySettings {
 		mask: 0,
+		life: INFINITY,
 		weight: INFINITY,
 		group: 2,
 		x: 0.,

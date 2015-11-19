@@ -1,9 +1,6 @@
-extern crate piston;
-
-use App;
-use Direction;
+use direction::Direction;
+use app::App;
 use std::f64::consts::PI;
-use world::body::BodyType;
 use piston::input::{
 	Button,
 	Key,
@@ -14,58 +11,53 @@ use piston::input::{
 };
 
 impl App {
-	fn update_character_direction(&mut self) {
-		if let Some(id) = self.character_id {
-			if let Some(character) = self.world.bodies.get_mut(&id) {
-				if let Some(dir) = self.character_dir.last() {
-
-					character.set_velocity(300.);
-
-					let mut last_perpendicular: Option<&Direction> = None;
-					for d in &self.character_dir {
-						if d.perpendicular(dir) {
-							last_perpendicular = Some(d);
-						}
-					}
-
-					match dir {
-						&Direction::Up => {
-							match last_perpendicular {
-								Some(&Direction::Left) => character.set_angle(-3.*PI/4.),
-								Some(&Direction::Right) => character.set_angle(-PI/4.),
-								_ => character.set_angle(-PI/2.),
-							}
-						},
-						&Direction::Down => {
-							match last_perpendicular {
-								Some(&Direction::Left) => character.set_angle(3.*PI/4.),
-								Some(&Direction::Right) => character.set_angle(PI/4.),
-								_ => character.set_angle(PI/2.),
-							}
-						},
-						&Direction::Right => {
-							match last_perpendicular {
-								Some(&Direction::Up) => character.set_angle(-PI/4.),
-								Some(&Direction::Down) => character.set_angle(PI/4.),
-								_ => character.set_angle(0.),
-							}
-						},
-						&Direction::Left => {
-							match last_perpendicular {
-								Some(&Direction::Up) => character.set_angle(-3.*PI/4.),
-								Some(&Direction::Down) => character.set_angle(3.*PI/4.),
-								_ => character.set_angle(PI),
-							}
-						},
-					}
-
-				} else {
-
-					character.set_velocity(0.);
-
+	fn update_player_direction(&mut self) {
+		let mut velocity = 0.;
+		let mut angle = 0.;
+		if let Some(dir) = self.player_dir.last() {
+			
+			velocity = 300.;
+			let mut last_perpendicular: Option<&Direction> = None;
+			for d in &self.player_dir {
+				if d.perpendicular(dir) {
+					last_perpendicular = Some(d);
 				}
 			}
+
+			match dir {
+				&Direction::Up => {
+					match last_perpendicular {
+						Some(&Direction::Left) => angle = -3.*PI/4.,
+						Some(&Direction::Right) => angle = -PI/4.,
+						_ => angle = -PI/2.,
+					}
+				},
+				&Direction::Down => {
+					match last_perpendicular {
+						Some(&Direction::Left) => angle = 3.*PI/4.,						
+						Some(&Direction::Right) => angle = PI/4.,
+						_ => angle = PI/2.,
+					}
+				},
+				&Direction::Right => {
+					match last_perpendicular {
+						Some(&Direction::Up) => angle = -PI/4.,
+						Some(&Direction::Down) => angle = PI/4.,
+						_ => angle = 0.,
+					}
+				},
+				&Direction::Left => {
+					match last_perpendicular {
+						Some(&Direction::Up) => angle = -3.*PI/4.,
+						Some(&Direction::Down) => angle = 3.*PI/4.,
+						_ => angle = PI,
+					}
+				},
+			}
 		}
+		self.set_player_velocity(velocity);
+		self.set_player_angle(angle);
+
 	}
 
 	pub fn press(&mut self, button: &Button) {
@@ -75,30 +67,30 @@ impl App {
 				let mut update_direction = false;
 				match key {
 					Key::Z => {
-						if let Some(&Direction::Up) = self.character_dir.last() {
+						if let Some(&Direction::Up) = self.player_dir.last() {
 						} else {
-							self.character_dir.push(Direction::Up);
+							self.player_dir.push(Direction::Up);
 							update_direction = true;
 						}
 					},
 					Key::S => {
-						if let Some(&Direction::Down) = self.character_dir.last() {
+						if let Some(&Direction::Down) = self.player_dir.last() {
 						} else {
-							self.character_dir.push(Direction::Down);
+							self.player_dir.push(Direction::Down);
 							update_direction = true;
 						}
 					},
 					Key::Q => {
-						if let Some(&Direction::Left) = self.character_dir.last() {
+						if let Some(&Direction::Left) = self.player_dir.last() {
 						} else {
-							self.character_dir.push(Direction::Left);
+							self.player_dir.push(Direction::Left);
 							update_direction = true;
 						}
 					},
 					Key::D => {
-						if let Some(&Direction::Right) = self.character_dir.last() {
+						if let Some(&Direction::Right) = self.player_dir.last() {
 						} else {
-							self.character_dir.push(Direction::Right);
+							self.player_dir.push(Direction::Right);
 							update_direction = true;
 						}
 					},
@@ -109,7 +101,7 @@ impl App {
 				}
 
 				if update_direction {
-					self.update_character_direction();
+					self.update_player_direction();
 				}
 			},
 
@@ -121,21 +113,7 @@ impl App {
 
 			Button::Mouse(mouse_button) => {
 				match mouse_button {
-					MouseButton::Left => {
-
-						if let Some(id) = self.character_id {
-							let mut opt_event = None;
-							if let Some(character_body) = self.world.bodies.get(&id) {
-								if let BodyType::Character(ref character) = character_body.body_type {
-									opt_event = character.cannon.shoot(0.,0.,0.);
-								}
-							}
-							if let Some(event) = opt_event {
-								self.world.add_event(event);
-							}
-						}
-
-					},
+					MouseButton::Left => self.set_player_shoot(),
 					_ => (),
 				}
 			},
@@ -149,7 +127,7 @@ impl App {
 				let mut update_direction = false;
 				match key {
 					Key::Z => {
-						self.character_dir.retain(|dir|{
+						self.player_dir.retain(|dir|{
 							if let &Direction::Up = dir {
 								return false;
 							}
@@ -158,7 +136,7 @@ impl App {
 						update_direction = true;
 					},
 					Key::S => {
-						self.character_dir.retain(|dir|{
+						self.player_dir.retain(|dir|{
 							if let &Direction::Down = dir {
 								return false;
 							}
@@ -167,7 +145,7 @@ impl App {
 						update_direction = true;
 					},
 					Key::Q => {
-						self.character_dir.retain(|dir|{
+						self.player_dir.retain(|dir|{
 							if let &Direction::Left = dir {
 								return false;
 							}
@@ -176,7 +154,7 @@ impl App {
 						update_direction = true;
 					},
 					Key::D => {
-						self.character_dir.retain(|dir|{
+						self.player_dir.retain(|dir|{
 							if let &Direction::Right = dir{
 								return false;
 							}
@@ -191,7 +169,7 @@ impl App {
 				}
 
 				if update_direction {
-					self.update_character_direction();
+					self.update_player_direction();
 				}
 			},
 

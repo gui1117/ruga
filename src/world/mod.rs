@@ -28,6 +28,15 @@ pub struct World {
 	quadtree_deepness: usize,
 	camera: Camera,
 	fixed_quadtree: FixedQuadtree,
+	debug_lines: Vec<DebugLine>,
+}
+
+struct DebugLine {
+	x1:f64,
+	y1:f64,
+	x2:f64,
+	y2:f64,
+	time: f64,
 }
 
 impl World {
@@ -53,6 +62,7 @@ impl World {
 				height: 480.,
 			},
 			fixed_quadtree: FixedQuadtree::new(0.,0.,500.,500.),
+			debug_lines: vec![],
 		}
 	}
 
@@ -77,6 +87,16 @@ impl World {
 	}
 
 	pub fn update(&mut self , dt: f64) {
+		{
+			let mut i = 0;
+			while i < self.debug_lines.len() {
+				self.debug_lines[i].time -= dt;
+				if self.debug_lines[i].time <= 0. {
+					self.debug_lines.remove(i);
+				}
+				i += 1;
+			}
+		}
 
 		// execute event
 		while let Some(&Event { date, execute:_, args:_ }) = self.events.peek() {
@@ -136,6 +156,7 @@ impl World {
 		self.time += dt;
 	}
 
+	/// not tested !
 	pub fn query<F: Fn(&mut Body, &mut Body)> (&mut self, a: &mut Body, callback: F) {
 		let collision_possible = self.fixed_quadtree.query(a);
 		for id in &collision_possible {
@@ -159,9 +180,10 @@ impl World {
 		}
 	}
 
+	/// the callback return true when stoping
 	pub fn raycast<F: Fn(f64, &mut Body) -> bool> (&mut self, x: f64, y: f64, length: f64, angle: f64, mask: u32, group: u32, delta_length: f64, callback: F) {
 
-		let mut a = Point { x: x, y: y};
+		let mut a = Point { x: x, y: y };
 
 		let delta_x = delta_length*angle.cos();
 		let delta_y = delta_length*angle.sin();
@@ -206,7 +228,43 @@ impl World {
 		});
 	}
 
+	pub fn add_line_to_render_debug(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, time: f64) {
+		self.debug_lines.push( DebugLine {
+			x1:x1,
+			y1:y1,
+			x2:x2,
+			y2:y2,
+			time:time,
+		});
+	}
+
 	pub fn render_debug(&self, args: &RenderArgs, gl: &mut GlGraphics) {
+
+		{
+			use graphics::Transformed;
+			use graphics::line::{ 
+				Line as LineDrawer, 
+				Shape as LineShape,
+			};
+			use graphics::default_draw_state;
+
+			const BLUE: [f32; 4] = [0.0, 0.0, 1.0, 1.0]; 
+
+			let line_drawer = LineDrawer {
+				color: BLUE,
+				radius: 1.,
+				shape: LineShape::Round,
+			};
+
+			gl.draw(args.viewport(), |context, gl| {
+				let transform = self.camera.trans(context.transform);
+
+				for line in &self.debug_lines {
+					line_drawer.draw([line.x1,line.y1,line.x2,line.y2], default_draw_state(), transform, gl);
+				}
+			});
+
+		}
 
 		for body in self.bodies.values() {
 			body.render_debug(args,&self.camera,gl);
@@ -229,4 +287,3 @@ impl World {
 		}
 	}
 }
-

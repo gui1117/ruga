@@ -18,6 +18,7 @@ impl Character {
 	pub fn new() -> BodySettings {
 		BodySettings {
 			mask: 0,
+			life: 100.,
 			weight: 1.,
 			group: 1,
 			x: 0.,

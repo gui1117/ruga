@@ -16,6 +16,7 @@ use world::collision_manager;
 
 pub struct Body {
 	id: usize,
+	life: f64,
 	mask: u32,
 	weight: f64,
 	group: u32,
@@ -38,6 +39,7 @@ pub struct BodyCollision {
 	pub delta_velocity: f64,
 	pub delta_angle: f64,
 	pub delta_x: f64,
+	pub delta_life: f64,
 	pub delta_y: f64,
 	pub body_type_collision: BodyTypeCollision,
 }
@@ -49,6 +51,7 @@ impl BodyCollision {
 			delta_angle: 0.,
 			delta_x: 0.,
 			delta_y: 0.,
+			delta_life: 0.,
 			body_type_collision: BodyTypeCollision::Nil,
 		}
 	}
@@ -61,6 +64,7 @@ pub enum BodyTypeCollision {
 
 pub struct BodySettings {
 	pub weight: f64,
+	pub life: f64,
 	pub mask: u32, 
 	pub group: u32, 
 	pub x: f64, 
@@ -87,6 +91,7 @@ impl Body {
 	pub fn new(id: usize, b: BodySettings) -> Body {
 		let mut body = Body {
 			id: id,
+			life: b.life,
 			mask: b.mask,
 			weight: b.weight,
 			group: b.group,
@@ -109,6 +114,18 @@ impl Body {
 		body.set_shape(b.shape);
 
 		body
+	}
+
+	pub fn life(&self) -> f64 {
+		self.life
+	}
+
+	pub fn set_life(&mut self, life: f64) {
+		self.life = life;
+	}
+
+	pub fn add_life(&mut self, life: f64) {
+		self.life += life;
 	}
 
 	pub fn weight(&self) -> f64 {
@@ -323,6 +340,7 @@ fn bounds() {
 		y: 2.,
 		weight: 2.,
 		mask: 1,
+		life: 10.,
 		group: 2,
 		shape: Shape::new(vec![
 						  Point {x:0.,y:5.},
@@ -345,6 +363,7 @@ fn localisable() {
 	let body = Body::new(1, BodySettings {
 		mask: 0,
 		weight: 1.,
+		life: 10.,
 		group: 1,
 		x: 0.,
 		y: 0.,
@@ -357,9 +376,7 @@ fn localisable() {
 						  Point {x:10.,y:10.},
 						  Point {x:-10.,y:10.}
 		]),
-		body_type: BodyType::Character(Character {
-			life: 10,
-		}),
+		body_type: BodyType::Nil,
 	});
 	//x:-10,25; y:-10,10
 

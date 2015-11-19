@@ -14,7 +14,8 @@ pub struct EventSettings {
 }
 
 pub enum EventArgs {
-	Fvec4([f64;4]),
+	Float3([f64;3]),
+	Usize1(usize),
 	Nil,
 }
 
