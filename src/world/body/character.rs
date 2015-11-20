@@ -1,12 +1,14 @@
 use world::geometry::{ Shape, Point };
-use world::body::{ BodySettings, BodyType };
+use world::body::{ BodySettings, BodyType, CollisionType };
 use world::weapon::cannon::Cannon;
+use world::weapon::grenade_launcher::GrenadeLauncher;
 
 pub struct Character {
 	pub life: u32,
 	pub aim: f64,
+	pub distance: f64,
 	pub cannon: Cannon,
-	//pub grenade_lancher: GrenadeLauncher,
+	pub grenade_launcher: GrenadeLauncher,
 }
 
 pub struct Collision {
@@ -33,10 +35,13 @@ impl Character {
 							  Point {x:-10.,y:10.}]),
 
 			body_type: BodyType::Character(Character {
+				distance: 100.,
 				life: 10,
 				aim: 0.,
 				cannon: Cannon::new(),
+				grenade_launcher: GrenadeLauncher::new(),
 			}),
+			collision_type: CollisionType::Persist,
 		}
 	}
 

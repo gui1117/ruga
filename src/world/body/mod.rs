@@ -27,12 +27,20 @@ pub struct Body {
 	bounds: Rectangle,
 	shape: Shape,
 	pub body_type: BodyType,
+	pub collision_type: CollisionType,
 }
 
 pub enum BodyType {
 	Character(Character),
 	Wall,
+	Grenade,
 	Nil,
+}
+
+pub enum CollisionType {
+	Bounce,
+	Stop,
+	Persist,
 }
 
 pub struct BodyCollision {
@@ -73,6 +81,7 @@ pub struct BodySettings {
 	pub angle: f64, 
 	pub shape: Shape, 
 	pub body_type: BodyType,
+	pub collision_type: CollisionType,
 }
 
 pub struct OverlapInformation {
@@ -110,6 +119,7 @@ impl Body {
 				height:0.
 			},
 			body_type: b.body_type,
+			collision_type: b.collision_type,
 		};
 		body.set_shape(b.shape);
 

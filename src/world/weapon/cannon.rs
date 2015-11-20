@@ -11,7 +11,6 @@ const SPLIT: u32 = 4;
 const MASK: u32 = 0;
 const GROUP: u32 = 0;
 const DELTA_LENGTH: f64 = 0.1;
-const ORIGIN_DISTANCE: f64 = 0.5; //every ray are in one point at this distance (origin of shoots)
 const DAMAGE: f64 = 1.;
 const RELOAD_TIME: f64 = 0.5;
 
@@ -50,15 +49,17 @@ impl Cannon {
 	pub fn shoot(world: &mut World, id: usize) {
 
 		let mut shoot = false;;
-		let mut x = 0.;
-		let mut y = 0.;
-		let mut angle = 0.;
+		let mut body_x = 0.;
+		let mut body_y = 0.;
+		let mut body_angle = 0.;
+		let mut body_distance = 0.;
 		if let Some(body) = world.bodies.get_mut(&id) {
-			x = body.x();
-			y = body.y();
+			body_x = body.x();
+			body_y = body.y();
 
 			if let BodyType::Character(ref mut character) = body.body_type {
-				angle = character.aim;
+				body_angle = character.aim;
+				body_distance = character.distance;
 
 				if let CannonState::CHARGED = character.cannon.state {
 					shoot = true;
@@ -73,8 +74,12 @@ impl Cannon {
 
 			for _ in 1..SPLIT {
 				let delta_angle = rng.gen_range(-SPREAD_ANGLE/2., SPREAD_ANGLE/2.);
-				world.add_line_to_render_debug(x,y,x+LENGTH*(angle+delta_angle).cos(),y+LENGTH*(angle+delta_angle).sin(),1.);
-				world.raycast(x,y,LENGTH,angle+delta_angle,MASK,GROUP,DELTA_LENGTH,|_length,body| -> bool {
+				
+				let x = body_x+body_distance*(body_angle+delta_angle).cos();
+				let y = body_y+body_distance*(body_angle+delta_angle).sin();
+
+				world.add_line_to_render_debug(x,y,x+LENGTH*(body_angle+delta_angle).cos(),y+LENGTH*(body_angle+delta_angle).sin(),1.);
+				world.raycast(x,y,LENGTH,body_angle+delta_angle,MASK,GROUP,DELTA_LENGTH,|_length,body| -> bool {
 					body.add_life(-DAMAGE);
 					true
 				});

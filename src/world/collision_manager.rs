@@ -1,6 +1,8 @@
+use std::f64::consts::PI;
 use world::body::{ 
 	Body, 
 	BodyCollision,
+	CollisionType,
 	OverlapInformation,
 };
 
@@ -21,6 +23,26 @@ pub fn collision(a: &Body, b: &Body, info: OverlapInformation) -> (BodyCollision
 
 	b_col.delta_x = rate*delta_x;
 	b_col.delta_y = rate*delta_y;
+
+	match a.collision_type {
+		CollisionType::Bounce => {
+			a_col.delta_angle = 2.*info.angle - 2.*a.angle() + PI;
+		},
+		CollisionType::Stop => {
+			a_col.delta_velocity = -a.velocity();
+		},
+		CollisionType::Persist => (),
+	}
+
+	match b.collision_type {
+		CollisionType::Bounce => {
+			b_col.delta_angle = 2.*info.angle - 2.*b.angle() + PI 
+		},
+		CollisionType::Stop => {
+			b_col.delta_velocity = -b.velocity();
+		},
+		CollisionType::Persist => (),
+	}
 
 	(a_col,b_col)
 }

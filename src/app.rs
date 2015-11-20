@@ -5,6 +5,7 @@ extern crate graphics;
 
 use world::body::BodyType;
 use world::weapon::cannon::Cannon;
+use world::weapon::grenade_launcher::GrenadeLauncher;
 use direction::Direction;
 use world::World;
 use std::f64;
@@ -20,6 +21,7 @@ pub struct App {
 	pub quit: bool,
 	pub player_id: Option<usize>,
 	pub player_dir: Vec<Direction>,
+	pub window_size: [f64;2],
 }
 
 impl App {
@@ -100,9 +102,15 @@ impl App {
 		}
 	}
 
-	pub fn set_player_shoot(&mut self) {
+	pub fn set_player_cannon_shoot(&mut self) {
 		if let Some(id) = self.player_id {
 			Cannon::shoot(&mut self.world, id);
+		}
+	}
+
+	pub fn set_player_launch_grenade(&mut self) {
+		if let Some(id) = self.player_id {
+			GrenadeLauncher::shoot(&mut self.world, id);
 		}
 	}
 }

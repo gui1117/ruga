@@ -1,12 +1,13 @@
 use direction::Direction;
+use world::geometry::Point;
 use app::App;
 use std::f64::consts::PI;
 use piston::input::{
 	Button,
 	Key,
 	MouseButton,
+	Motion,
 	//	JoystickButton,
-	//	Motion,
 	//	JoystickAxisArgs,
 };
 
@@ -56,7 +57,9 @@ impl App {
 			}
 		}
 		self.set_player_velocity(velocity);
-		self.set_player_angle(angle);
+		if velocity != 0. {
+			self.set_player_angle(angle);
+		}
 
 	}
 
@@ -113,7 +116,8 @@ impl App {
 
 			Button::Mouse(mouse_button) => {
 				match mouse_button {
-					MouseButton::Left => self.set_player_shoot(),
+					MouseButton::Left => self.set_player_cannon_shoot(),
+					MouseButton::Right => self.set_player_launch_grenade(),
 					_ => (),
 				}
 			},
@@ -177,6 +181,19 @@ impl App {
 			Button::Mouse(_mouse_button) => ()
 		}
 
+	}
+
+	pub fn motion(&mut self, motion: &Motion) {
+		match *motion {
+			Motion::MouseCursor(x,y) => {
+				let cursor = Point {
+					x: x-self.window_size[0]/2.,
+					y: y-self.window_size[1]/2.,
+				};
+				self.set_player_aim(cursor.angle_0x());
+			},
+			_ => (),
+		}
 	}
 }
 

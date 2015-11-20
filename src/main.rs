@@ -36,6 +36,7 @@ fn main() {
 		gl: opengl_graphics::GlGraphics::new(opengl),
 		world: world::World::new(0.,0.,500.,500.),
 		quit: false,
+		window_size: [640.,480.],
 		player_id: None,
 		player_dir: vec![],
 	};
@@ -68,7 +69,7 @@ fn main() {
 			Event::Idle(_args) => (),
 			Event::Input(Input::Press(button)) => app.press(&button),
 			Event::Input(Input::Release(button)) => app.release(&button),
-			Event::Input(Input::Move(_motion)) => (),
+			Event::Input(Input::Move(motion)) => app.motion(&motion),
 			Event::Input(Input::Text(_text)) => (),
 			Event::Input(Input::Resize(_width, _height)) => (),
 			Event::Input(Input::Focus(_focus)) => (),

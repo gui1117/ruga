@@ -1,5 +1,5 @@
 use world::geometry::{ Shape, Point };
-use world::body::{ BodySettings, BodyType };
+use world::body::{ BodySettings, BodyType, CollisionType };
 use std::f64::INFINITY;
 
 pub fn new(points: Vec<Point>) -> BodySettings {
@@ -14,5 +14,6 @@ pub fn new(points: Vec<Point>) -> BodySettings {
 		angle: 0.,
 		shape: Shape::new(points),
 		body_type: BodyType::Wall,
+		collision_type: CollisionType::Persist
 	}
 }
