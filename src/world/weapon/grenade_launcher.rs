@@ -10,10 +10,10 @@ const EXPLODE_TIME: f64 = 1.; //since it stopped
 const SPLIT: u32 = 10;
 const MASK: u32 = 0;
 const GROUP: u32 = 0;
-const DELTA_LENGTH: f64 = 0.1;
+const DELTA_LENGTH: f64 = 10.;
 const DAMAGE: f64 = 1.;
 const RELOAD_TIME: f64 = 0.5;
-const VELOCITY: f64 = 500.;
+const VELOCITY: f64 = 2000.;
 
 pub static RELOAD: &'static (Fn(&mut World, EventArgs)) = &reload;
 pub static STOP: &'static (Fn(&mut World, EventArgs)) = &stop;
@@ -68,9 +68,10 @@ fn explode (world: &mut World, args: EventArgs) {
 		if explode {
 			for i in 0..SPLIT {
 				let angle = (i as f64)*2.*PI/(SPLIT as f64);
+				let immune: Vec<usize> = vec![];
 
 				world.add_line_to_render_debug(x,y,x+LENGTH*(angle).cos(),y+LENGTH*(angle).sin(),1.);
-				world.raycast(x,y,LENGTH,angle,MASK,GROUP,DELTA_LENGTH,|_length,body| -> bool {
+				world.raycast(x,y,LENGTH,angle,immune,MASK,GROUP,DELTA_LENGTH,|_length,body| -> bool {
 					body.add_life(-DAMAGE);
 					true
 				});

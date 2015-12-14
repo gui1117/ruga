@@ -200,8 +200,8 @@ impl Body {
 
 	pub fn set_angle(&mut self, a: f64) {
 		self.angle = a;
-		let (x_min,x_max) = self.shape.min_max(self.x,self.y,self.angle, 0.);
-		let (y_min,y_max) = self.shape.min_max(self.x,self.y,self.angle, PI/2.);
+		let (x_min,x_max) = self.shape.min_max(0.,0.,self.angle, 0.);
+		let (y_min,y_max) = self.shape.min_max(0.,0.,self.angle, PI/2.);
 
 		self.bounds = Rectangle {
 			downleft: Point {
@@ -225,8 +225,8 @@ impl Body {
 	pub fn set_shape(&mut self, s: Shape) {
 		self.shape = s;
 
-		let (x_min,x_max) = self.shape.min_max(self.x,self.y,self.angle, 0.);
-		let (y_min,y_max) = self.shape.min_max(self.x,self.y,self.angle, PI/2.);
+		let (x_min,x_max) = self.shape.min_max(0.,0.,self.angle, 0.);
+		let (y_min,y_max) = self.shape.min_max(0.,0.,self.angle, PI/2.);
 
 		self.bounds = Rectangle {
 			downleft: Point {
@@ -245,6 +245,25 @@ impl Body {
 			length: length, 
 			angle: angle,
 		}
+	}
+
+	pub fn bounding_box_overlap(a: &Body, b: &Body) -> bool {
+		let a_x_min = a.bounds.downleft.x;
+		let a_x_max = a.bounds.downleft.x+a.bounds.width;
+
+		let b_x_min = b.bounds.downleft.x;
+		let b_x_max = b.bounds.downleft.x+b.bounds.width;
+
+		let a_y_min = a.bounds.downleft.y;
+		let a_y_max = a.bounds.downleft.y+a.bounds.height;
+
+		let b_y_min = b.bounds.downleft.y;
+		let b_y_max = b.bounds.downleft.y+b.bounds.height;
+
+		if a_x_max > b_x_min || a_x_min < b_x_max || a_y_max > b_y_min || a_y_min < b_y_max {
+			return true;
+		}
+		false
 	}
 
 	pub fn collision(a: &Body, b: &Body, info: OverlapInformation) -> (BodyCollision, BodyCollision) {
@@ -330,16 +349,16 @@ impl Body {
 
 impl Localisable for Body {
 	fn up(&self, y: f64) -> bool {
-		self.bounds.downleft.y > y
+		self.bounds.downleft.y+self.y > y
 	}
 	fn down(&self, y: f64) -> bool {
-		self.bounds.downleft.y + self.bounds.height < y
+		self.bounds.downleft.y+self.y + self.bounds.height < y
 	}
 	fn left(&self, x: f64) -> bool {
-		self.bounds.downleft.x + self.bounds.width < x
+		self.bounds.downleft.x+self.x + self.bounds.width < x
 	}
 	fn right(&self, x: f64) -> bool {
-		self.bounds.downleft.x > x
+		self.bounds.downleft.x+self.x > x
 	}
 }
 

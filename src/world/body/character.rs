@@ -17,14 +17,14 @@ pub struct Collision {
 }
 
 impl Character {
-	pub fn new() -> BodySettings {
+	pub fn new(x: f64, y: f64) -> BodySettings {
 		BodySettings {
 			mask: 0,
 			life: 100.,
 			weight: 1.,
 			group: 1,
-			x: 0.,
-			y: 0.,
+			x: x,
+			y: y,
 			velocity: 0.,
 			angle: 0.,
 			shape: Shape::new(vec![

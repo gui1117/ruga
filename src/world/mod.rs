@@ -1,3 +1,5 @@
+extern crate xml;
+
 mod quadtree;
 
 pub mod body;
@@ -61,9 +63,118 @@ impl World {
 				width: 640.,
 				height: 480.,
 			},
-			fixed_quadtree: FixedQuadtree::new(0.,0.,500.,500.),
+			fixed_quadtree: FixedQuadtree::new(0.,0.,height,width),
 			debug_lines: vec![],
 		}
+	}
+
+	pub fn load(file_name: &str) -> Result<World,&str> {
+		use std::fs::File;
+		use std::io::BufReader;
+		use self::xml::reader::{EventReader, XmlEvent};
+		use std::f64;
+		use std::str::FromStr;
+		use self::body::wall as Wall;
+		use self::body::character::Character;
+
+		// get size of the world
+		let file = File::open(file_name).unwrap();
+		let file_reader= BufReader::new(file);
+		let parser = EventReader::new(file_reader);
+		let mut height = -1.;
+		let mut width = -1.;
+		let mut tile_height = -1.;
+		let mut tile_width = -1.;
+		for e in parser {
+			match e {
+				Ok(XmlEvent::StartElement { name, attributes, ..}) => {
+					if name.local_name != "map" {
+						continue;
+					}
+					for att in attributes {
+						if att.name.local_name == "height" {
+							height = f64::from_str(&*att.value).unwrap();
+						} else if att.name.local_name == "width" {
+							width = f64::from_str(&*att.value).unwrap();
+						} else if att.name.local_name == "tilewidth" {
+							tile_width = f64::from_str(&*att.value).unwrap();
+						} else if att.name.local_name == "tileheight" {
+							tile_height = f64::from_str(&*att.value).unwrap();
+						}
+					}
+					break;
+				}
+				Err(e) => {
+					return Err("parsing error");
+				}
+				_ => ()
+			}
+		}
+		if width < 0. || height < 0. || tile_height < 0. || tile_width < 0. {
+			return Err("tile or map width or height < 0.");
+		}
+		
+		let mut world = World::new(0.,0.,width*tile_width, height*tile_height);
+
+		// add object into the world
+		let file = File::open(file_name).unwrap();
+		let file_reader= BufReader::new(file);
+		let parser = EventReader::new(file_reader);
+
+		let mut layer = false;
+		let mut layer_data = false;
+		let mut tile_number = 0.;
+		for e in parser {
+			match e {
+				Ok(XmlEvent::StartElement { name, attributes, ..}) => {
+					if name.local_name == "layer" {
+						layer = true;
+					}
+					if name.local_name == "data" && layer {
+						tile_number = 0.;
+						layer_data = true;
+					}
+					if name.local_name == "tile" && layer_data {
+						for att in attributes {
+							if att.name.local_name == "gid" {
+								match &*att.value {
+									"1" => {
+										let x = tile_number%width;
+										let y = tile_number/width;
+										let p0 = Point {x: x*tile_width, y: y*tile_height};
+										let p1 = Point {x: (x+1.)*tile_width, y: y*tile_height};
+										let p2 = Point {x: (x+1.)*tile_width, y: (y+1.)*tile_height};
+										let p3 = Point {x: x*tile_width, y: (y+1.)*tile_height};
+										world.add_body(Wall::new(vec![p0,p1,p2,p3]));
+									}
+									"9" => {
+//										let x = tile_number%width;
+//										let y = tile_number/width;
+//										world.add_body(Character::new(x,y));
+									}
+									_ => ()
+								}
+							}
+						}
+						tile_number += 1.;
+					}
+				}
+				Ok(XmlEvent::EndElement { name }) => {
+					if name.local_name == "layer" {
+						layer = false;
+					}
+					if name.local_name == "data" {
+						layer_data = false;
+					}
+				}
+				Err(e) => {
+					return Err("parsing error");
+				}
+				_ => ()
+			}
+		}
+
+		Ok(world)
 	}
 
 	pub fn add_body(&mut self, settings: BodySettings) -> usize {
@@ -87,6 +198,7 @@ impl World {
 	}
 
 	pub fn update(&mut self , dt: f64) {
+		// process debug lines
 		{
 			let mut i = 0;
 			while i < self.debug_lines.len() {
@@ -133,8 +245,9 @@ impl World {
 							continue;
 						}
 
-						// we could test bounding box first
-						// for better performance
+						if !Body::bounding_box_overlap(&a,&b) {
+							continue;
+						}
 
 						let overlap = Body::overlap(&a,&b);
 						if overlap.overlap {
@@ -181,9 +294,11 @@ impl World {
 	}
 
 	/// the callback return true when stoping
-	pub fn raycast<F: Fn(f64, &mut Body) -> bool> (&mut self, x: f64, y: f64, length: f64, angle: f64, mask: u32, group: u32, delta_length: f64, callback: F) {
+	pub fn raycast<F: Fn(f64, &mut Body) -> bool> (&mut self, x: f64, y: f64, length: f64, angle: f64, immune: Vec<usize>, mask: u32, group: u32, delta_length: f64, callback: F) {
 
 		let mut a = Point { x: x, y: y };
+
+		let mut collisionned: Vec<usize> = vec![];
 
 		let delta_x = delta_length*angle.cos();
 		let delta_y = delta_length*angle.sin();
@@ -201,6 +316,17 @@ impl World {
 						continue;
 					}
 
+					for id in &immune {
+						if *id == b.id() {
+							continue;
+						}
+					}
+					for id in &collisionned{
+						if *id == b.id() {
+							continue;
+						}
+					}
+
 					// we could test bounding box first
 					// for better performance
 
@@ -208,6 +334,7 @@ impl World {
 						if callback(delta_length*(i as f64),b) == false {
 							return;
 						}
+						collisionned.push(b.id());
 					}
 
 				}

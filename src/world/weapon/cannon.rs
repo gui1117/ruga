@@ -10,7 +10,7 @@ const SPREAD_ANGLE: f64 = 0.3;
 const SPLIT: u32 = 4;
 const MASK: u32 = 0;
 const GROUP: u32 = 0;
-const DELTA_LENGTH: f64 = 0.1;
+const DELTA_LENGTH: f64 = 10.;
 const DAMAGE: f64 = 1.;
 const RELOAD_TIME: f64 = 0.5;
 
@@ -79,7 +79,10 @@ impl Cannon {
 				let y = body_y+body_distance*(body_angle+delta_angle).sin();
 
 				world.add_line_to_render_debug(x,y,x+LENGTH*(body_angle+delta_angle).cos(),y+LENGTH*(body_angle+delta_angle).sin(),1.);
-				world.raycast(x,y,LENGTH,body_angle+delta_angle,MASK,GROUP,DELTA_LENGTH,|_length,body| -> bool {
+
+				let immune: Vec<usize> = vec![];
+
+				world.raycast(x,y,LENGTH,body_angle+delta_angle,immune,MASK,GROUP,DELTA_LENGTH,|_length,body| -> bool {
 					body.add_life(-DAMAGE);
 					true
 				});

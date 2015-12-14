@@ -2,6 +2,9 @@ use world::quadtree::Localisable;
 use std::f64;
 use std::f64::consts::PI;
 
+/// the minimanl difference of two angle when computing shape normal
+const DIFF_NORMAL: f64 = 0.1;
+
 /// simple structure, it represents a coordinate
 pub struct Point {
 	pub x: f64,
@@ -132,6 +135,22 @@ impl Shape {
 			let j = i+1;
 			let v = Point { x: edges[j].x-edges[i].x, y: edges[j].y-edges[i].y };
 			normals.push(v.angle_0x()-f64::consts::PI/2.);
+		}
+
+		// delete normal that are equal
+		{
+			let mut i = 0;
+			while i < normals.len()-1 {
+				let mut j = i+1;
+				while j < normals.len() {
+					if ((normals[i] - normals[j]) % PI).abs() < DIFF_NORMAL {
+						normals.remove(j);
+					} else {
+						j += 1;
+					}
+				}
+				i += 1;
+			}
 		}
 
 		Shape { 

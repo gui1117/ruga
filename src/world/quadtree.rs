@@ -573,14 +573,12 @@ impl fmt::Debug for FixedQuadtree {
 		write!(f,"\n").unwrap();
 
 		if let FixedQuadtreeBatch::Cons{ref upleft,ref upright,ref downleft,ref downright} = self.nodes {
-			write!(f,"dl: {:?}",downleft).unwrap();
-			write!(f,"dr: {:?}",downright).unwrap();
-			write!(f,"ul: {:?}",upleft).unwrap();
-			write!(f,"ur: {:?}",upright).unwrap();
-		} else {
-			write!(f,"nil").unwrap();
+			write!(f,">dl: {:?}",downleft).unwrap();
+			write!(f,">dr: {:?}",downright).unwrap();
+			write!(f,">ul: {:?}",upleft).unwrap();
+			write!(f,">ur: {:?}",upright).unwrap();
 		}
 
-		write!(f,"\n")
+		write!(f,"------\n")
 	}
 }

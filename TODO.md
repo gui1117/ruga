@@ -1,7 +1,5 @@
 #short
 
-* grenade\_launcher
-
 #plan
 
 * complex wall triangled
@@ -15,10 +13,6 @@
 * weapon, damage..
 
 * graphism
-
-* when creating a shape we must not put redundant normal
-
-* when collision check -> bounding box first
 
 * Cannon more generic ->  shotgun, impact..
 
