@@ -82,3 +82,22 @@ resolve collision in parrallel:
 	resolve(world_1,collide_with:Vec<entity>) modify world_2
 wait for thread.
 swap world
+
+#how to split into mod or even crates
+
+##collision detection
+
+entities are static or dynamic, identifiable, localizablen have a shape, position and angle(or angle manage by shape)
+you add an entity and it returns collision by a channel
+
+##physic engine 
+entites are immutable, passive(only collision resolution),active(+update)
+structure:
+hashmap for the world
+and maybe some character that contain all the ids ?
+or arc on entity and world can have a clone and world can have a clone etc... but when the entity is null ? never null just dead ?
+
+maybe an entity always exist and can pass from immutable to passive to active (change the name immutable by something else) by event ?
+
+
+
