@@ -21,7 +21,7 @@ use self::event::{ Event, EventSettings };
 pub struct World {
 	time: f64,
 	next_id: usize,
-	pub bodies: HashMap<usize,Body>,
+	pub bodies: HashMap<usize,Body>, //maybe an array is better if nothing is created
 	events: BinaryHeap<Event>,
 	downleft: Point,
 	width: f64,
@@ -198,7 +198,7 @@ impl World {
 	}
 
 	pub fn update(&mut self , dt: f64) {
-		// process debug lines
+		// debug lines
 		{
 			let mut i = 0;
 			while i < self.debug_lines.len() {

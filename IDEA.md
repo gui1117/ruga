@@ -85,10 +85,20 @@ swap world
 
 #how to split into mod or even crates
 
+##geometry
+define shape...
+
 ##collision detection
 
 entities are static or dynamic, identifiable, localizablen have a shape, position and angle(or angle manage by shape)
 you add an entity and it returns collision by a channel
+
+	set static(...)
+	reset to static()
+	add(..) -> collision
+	fix()
+
+
 
 ##physic engine 
 entites are immutable, passive(only collision resolution),active(+update)
