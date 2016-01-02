@@ -21,6 +21,7 @@ pub mod input;
 pub mod world;
 pub mod direction;
 pub mod app;
+pub mod physic;
 
 fn main() {
 	let opengl = opengl_graphics::OpenGL::V3_3;

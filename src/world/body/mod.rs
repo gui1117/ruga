@@ -362,68 +362,68 @@ impl Localisable for Body {
 	}
 }
 
-#[test]
-fn bounds() {
-	let b = Body::new(12,BodySettings {
-		x: 2.,
-		y: 2.,
-		weight: 2.,
-		mask: 1,
-		life: 10.,
-		group: 2,
-		shape: Shape::new(vec![
-						  Point {x:0.,y:5.},
-						  Point {x:1.,y:5.},
-						  Point {x:1.,y:0.}
-		]),
-		velocity: 3.,
-		angle: PI/2.,
-		body_type: BodyType::Nil,
-	});
+//#[test]
+//fn bounds() {
+//	let b = Body::new(12,BodySettings {
+//		x: 2.,
+//		y: 2.,
+//		weight: 2.,
+//		mask: 1,
+//		life: 10.,
+//		group: 2,
+//		shape: Shape::new(vec![
+//						  Point {x:0.,y:5.},
+//						  Point {x:1.,y:5.},
+//						  Point {x:1.,y:0.}
+//		]),
+//		velocity: 3.,
+//		angle: PI/2.,
+//		body_type: BodyType::Nil,
+//	});
+//
+//	assert_eq!(b.bounds.downleft.x, -3.);
+//	assert_eq!(b.bounds.downleft.y, 2.);
+//	assert_eq!(b.bounds.width, 5.);
+//	assert_eq!(b.bounds.height, 1.);
+//}
 
-	assert_eq!(b.bounds.downleft.x, -3.);
-	assert_eq!(b.bounds.downleft.y, 2.);
-	assert_eq!(b.bounds.width, 5.);
-	assert_eq!(b.bounds.height, 1.);
-}
-
-#[test]
-fn localisable() {
-	let body = Body::new(1, BodySettings {
-		mask: 0,
-		weight: 1.,
-		life: 10.,
-		group: 1,
-		x: 0.,
-		y: 0.,
-		velocity: 0.,
-		angle: 0.,
-		shape: Shape::new(vec![
-						  Point {x:-10.,y:-10.},
-						  Point {x:10.,y:-10.},
-						  Point {x:25.,y:0.},
-						  Point {x:10.,y:10.},
-						  Point {x:-10.,y:10.}
-		]),
-		body_type: BodyType::Nil,
-	});
-	//x:-10,25; y:-10,10
-
-
-	assert_eq!(body.left(26.),true);
-	assert_eq!(body.left(23.),false);
-	assert_eq!(body.left(-26.),false);
-
-	assert_eq!(body.right(-11.),true);
-	assert_eq!(body.right(23.),false);
-	assert_eq!(body.right(16.),false);
-
-	assert_eq!(body.up(-11.),true);
-	assert_eq!(body.up(23.),false);
-	assert_eq!(body.up(16.),false);
-
-	assert_eq!(body.down(11.),true);
-	assert_eq!(body.down(-11.),false);
-	assert_eq!(body.down(6.),false);
-}
+//#[test]
+//fn localisable() {
+//	let body = Body::new(1, BodySettings {
+//		mask: 0,
+//		weight: 1.,
+//		life: 10.,
+//		group: 1,
+//		x: 0.,
+//		y: 0.,
+//		velocity: 0.,
+//		angle: 0.,
+//		shape: Shape::new(vec![
+//						  Point {x:-10.,y:-10.},
+//						  Point {x:10.,y:-10.},
+//						  Point {x:25.,y:0.},
+//						  Point {x:10.,y:10.},
+//						  Point {x:-10.,y:10.}
+//		]),
+//		body_type: BodyType::Nil,
+//	});
+//	//x:-10,25; y:-10,10
+//
+//
+//	assert_eq!(body.left(26.),true);
+//	assert_eq!(body.left(23.),false);
+//	assert_eq!(body.left(-26.),false);
+//
+//	assert_eq!(body.right(-11.),true);
+//	assert_eq!(body.right(23.),false);
+//	assert_eq!(body.right(16.),false);
+//
+//	assert_eq!(body.up(-11.),true);
+//	assert_eq!(body.up(23.),false);
+//	assert_eq!(body.up(16.),false);
+//
+//	assert_eq!(body.down(11.),true);
+//	assert_eq!(body.down(-11.),false);
+//	assert_eq!(body.down(6.),false);
+//}
 
