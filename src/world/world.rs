@@ -14,7 +14,6 @@ use super::event_heap::EventHeap;
 
 use util::{
     grid_raycast,
-    bounding_box_raycast,
 };
 
 use std::rc::Rc;
@@ -139,11 +138,11 @@ impl World {
         let a = (y1 - y0)/(x1 - x0);
         let b = y0 -a*x0;
 
-        let mut segment_start = 0.;
-        let mut segment_end = 0.;
         let mut bodies: Vec<(Rc<RefCell<BodyTrait>>,f64,f64)>;
         let mut visited = HashSet::new();
         for i in &index_vec {
+            let segment_start = (i[0] as f64)*unit;
+            let segment_end = ((i[0]+1) as f64)*unit;
             bodies = Vec::new();
 
             let mut res = self.static_hashmap.get_on_index(i);
@@ -151,8 +150,10 @@ impl World {
             while let Some(body) = res.pop() {
                 if !visited.contains(&body.borrow().id()) {
                     let op = body.borrow().raycast(a,b);
-                    if let Some((min,max)) = op {
-                        if segment_start < min && min < segment_end {
+                    if let Some((x_min,y_min,x_max,y_max)) = op {
+                        if segment_start < x_min && x_min < segment_end {
+                            let min = ((x0-x_min).exp2() + (y0-y_min).exp2()).sqrt();
+                            let max = ((x0-x_max).exp2() + (y0-y_max).exp2()).sqrt();
                             bodies.push((body,min,max));
                         }
                     }
