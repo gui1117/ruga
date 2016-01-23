@@ -84,3 +84,35 @@ Coup multijoueur : tirer en direction de son amis : coup bcp plus fort.
 
 Coup multijoueur : quand qqun aggriper par monstre lui tirer dessus le libere.
 
+#new start: !!!
+
+##raygun
+
+gun customizable in many ways:
+* number of rays (integer choice)
+* length of rays (integer choice: lenght is n*unit)
+* angle of shoot? (maybe some angle possible)
+* damage per touch (
+
+result in: 
+* damage function of number of ray and their length
+* damage is uniform on rays?
+
+tothink:
+* does it can be used as a sniper: one bullet?
+* time to swap between guns 
+  (an idea is the less the gun is 'expensive' 
+  the more it is rapid to swap to it)
+
+##grenade
+
+grenade customizable in many ways:
+* the velocity
+* the time to stop
+* the radius of explosion
+
+##phantom
+
+your invisible and can go through wall during a time,
+it consume stamina, the more your rapid the more it consume,
+you cannot reappear in a wall
