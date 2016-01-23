@@ -1,12 +1,9 @@
-use graphics::math::Matrix2d;
 use graphics::Transformed;
+use graphics::math::Matrix2d;
 
-/// structure that correspond to a point of view on the world
 pub struct Camera {
-    /// the center of the point of view
-	pub x: f64, 
-    /// the center of the point of view
-	pub y: f64, 
+	pub x: f64, // center of the camera
+	pub y: f64, // conter of the camera
 	pub zoom: f64,
 	pub width: f64,
 	pub height: f64,
@@ -29,4 +26,3 @@ impl Camera {
 			.zoom(self.zoom)
 	}
 }
-

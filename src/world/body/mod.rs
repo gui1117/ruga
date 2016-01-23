@@ -18,4 +18,3 @@ pub enum CollisionBehavior {
 }
 
 //pub struct BodySnapshot;
-

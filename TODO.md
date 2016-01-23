@@ -21,17 +21,41 @@ last thought : I want to access on bodies by the trait interface and locally
 I also need direct access to I/O bodies: player and deep learning bodies.
 
 
-============================================
-
-macro pour iterator
-
-	macro_rule! chain
-
-macro pour object
-
-	macro_rule! impl_body_trait {
-	}
-
-	~heritate!(Character,Body,BodyTrait)
-
-
+>> 
+>> macro pour iterator
+>> 
+>> 	macro_rule! chain
+>> 
+>> macro pour object
+>> 
+>> 	macro_rule! impl_body_trait {
+>> 	}
+>> 
+>> 	~heritate!(Character,Body,BodyTrait)
+>> 
+>> 
+>> =======
+>> #short
+>> nothing
+>> 
+>> #plan
+>> 
+>> * complex wall triangled
+>> 
+>> * map from svg
+>> 
+>> * creation of a map
+>> 
+>> * boids
+>> 
+>> * weapon, damage..
+>> 
+>> * graphism
+>> 
+>> * Cannon more generic ->  shotgun, impact..
+>> 
+>> * !circle body
+>> 
+>> #map
+>> 
+>> * a map affect a texture to wall, rectangle, and circle
