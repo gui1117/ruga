@@ -5,9 +5,8 @@ use super::{
     CollisionBehavior,
     //BodySnapshot
 };
+use util::bounding_box_raycast;
 use world::spatial_hashing::Location;
-//use std::rc::Rc;
-//use std::cell::RefCell;
 
 pub trait BodyTrait {
     fn id(&self) -> usize;
@@ -152,8 +151,8 @@ pub trait BodyTrait {
         }
     }
 
-    fn raycast(&self, a: f64, b: f64) -> Option<(f64,f64)> {
-        None
+    fn raycast(&self, a: f64, b: f64) -> Option<(f64,f64,f64,f64)> {
+        bounding_box_raycast(self.x(),self.y(),self.width2()*2.,self.height2()*2.,a,b)
     }
 
     //fn delta_snapshot(&mut self) -> Option<BodySnapshot>;
