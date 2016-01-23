@@ -59,3 +59,28 @@ like in valdmor
 use the technic of Gille for shadow
 
 particles for shoot and hit
+
+#divers
+
+pour les combats:
+	touchpad droit -> coup + si on deplace le coup suit le mouvement 
+		mais si on deplace pas c'est aussi bon
+		du coup on peut déplacer de 1/5 de touchpad si on veut pour avoir
+		une plus grande porté
+
+armes :
+	épée
+	grenade (genre alchimie) se détruit quand touche qqun ou qques seconde apres arret 
+!	sort eclair (equivalent sniper ...)
+!	sort nova (equivalent shoot em up reset screen)
+
+pas de sort individuel :: imaginer des interraction entre joueur !
+
+exemple: on se met en mode gain et quand un amis nous tir un eclair (inofenssif dessus) ça crée une explosion
+
+ou alors des monstres qui demande de la cooperation pour etre tué
+
+Coup multijoueur : tirer en direction de son amis : coup bcp plus fort.
+
+Coup multijoueur : quand qqun aggriper par monstre lui tirer dessus le libere.
+
