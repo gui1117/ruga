@@ -20,6 +20,12 @@ pub struct Character {
     event_heap: Rc<RefCell<EventHeap<WorldEvent>>>,
 }
 
+const WIDTH: f64 = 10.;
+const HEIGHT: f64 = 10.;
+const WEIGHT: f64 = 1.;
+const MASK: u32 = !0;
+const GROUP: u32 = 2;
+
 
 impl Character {
     pub fn new(x: f64, y: f64, angle: f64, event_heap: Rc<RefCell<EventHeap<WorldEvent>>>) -> Character {
@@ -28,13 +34,13 @@ impl Character {
                 id: 0,
                 x: x,
                 y: y,
-                width2: 5.,
-                height2: 5.,
-                weight: 1.,
+                width2: WIDTH/2.,
+                height2: HEIGHT/2.,
+                weight: WEIGHT,
                 velocity: 0.,
                 angle: angle,
-                mask: !0,
-                group: 2,
+                mask: MASK,
+                group: GROUP,
                 collision_behavior: CollisionBehavior::Persist,
             },
             aim: angle,
