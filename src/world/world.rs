@@ -22,14 +22,6 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::HashSet;
 
-pub struct WorldEvent {
-    pub callback: &'static Fn(&mut World, WorldEventArgs),
-    pub args: WorldEventArgs,
-}
-pub enum WorldEventArgs {
-    Nil,
-}
-
 pub struct World {
     pub time: f64,
     next_id: usize,
