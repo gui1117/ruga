@@ -58,11 +58,7 @@ impl<T: Clone> SpatialHashing<T> {
     pub fn apply_locally<F: FnMut(&T)>(&self, loc: &Location, callback: &mut F) {
         let index = self.index(loc);
         for i in &index {
-            if let Some(vec) = self.hashmap.get(i) {
-                for t in vec {
-                    callback(t);
-                }
-            }
+            self.apply_on_index(i,callback);
         }
     }
 
@@ -80,6 +76,15 @@ impl<T: Clone> SpatialHashing<T> {
         } else {
             Vec::new()
         }
+    }
+
+    pub fn get_locally(&self, loc: &Location) -> Vec<T> {
+        let index = self.index(loc);
+        let mut vec = Vec::new();
+        for i in &index {
+            vec.append(&mut self.get_on_index(i));
+        }
+        vec
     }
 
     pub fn clear(&mut self) {
