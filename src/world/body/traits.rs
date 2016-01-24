@@ -43,7 +43,7 @@ pub trait BodyTrait {
 
     fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics);
 
-    fn on_collision(&mut self, other: &BodyTrait);
+    fn on_collision(&mut self, other: &mut BodyTrait);
 
     fn up (&self) -> f64 {
         self.y() + self.height2()
@@ -138,8 +138,6 @@ pub trait BodyTrait {
             let y = a.y();
             a.set_y(y + (1.-rate)*delta);
         }
-
-        a.on_collision(b);
     }
 
     fn location(&self) -> Location {

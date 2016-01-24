@@ -40,7 +40,7 @@ pub struct Body {
 ///        mut update(dt: f64) -> (),
 ///        collision_behavior() -> CollisionBehavior,
 ///        render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
-///        mut on_collision(other: &BodyTrait) -> (),
+///        mut on_collision(other: &mut BodyTrait) -> (),
 /// }
 
 impl BodyTrait for Body {
@@ -155,7 +155,7 @@ impl BodyTrait for Body {
         });
     }
 
-    fn on_collision(&mut self, _other: &BodyTrait) {
+    fn on_collision(&mut self, _other: &mut BodyTrait) {
     }
 }
 

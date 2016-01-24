@@ -20,11 +20,11 @@ pub struct Character {
     event_heap: Rc<RefCell<EventHeap<WorldEvent>>>,
 }
 
-const WIDTH: f64 = 10.;
-const HEIGHT: f64 = 10.;
-const WEIGHT: f64 = 1.;
-const MASK: u32 = !0;
-const GROUP: u32 = 2;
+pub const WIDTH: f64 = 10.;
+pub const HEIGHT: f64 = 10.;
+pub const WEIGHT: f64 = 1.;
+pub const MASK: u32 = !0;
+pub const GROUP: u32 = 2;
 
 
 impl Character {
@@ -80,6 +80,6 @@ impl BodyTrait for Character {
            mut update(dt: f64) -> (),
            collision_behavior() -> CollisionBehavior,
            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
-           mut on_collision(other: &BodyTrait) -> (),
+           mut on_collision(other: &mut BodyTrait) -> (),
     }
 }

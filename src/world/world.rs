@@ -116,6 +116,8 @@ impl World {
                     if body.collide(other) {
                         body.resolve_collision(other);
                         other.resolve_collision(&*body);
+                        body.on_collision(other);
+                        other.on_collision(&mut *body);
                     }
                 };
                 self.static_hashmap.apply_locally(&location,&mut callback);
