@@ -11,6 +11,8 @@ use world::spatial_hashing::Location;
 pub trait BodyTrait {
     fn id(&self) -> usize;
 
+    fn damage(&mut self, d: f64);
+
     fn width2(&self) -> f64;
 
     fn height2(&self) -> f64;

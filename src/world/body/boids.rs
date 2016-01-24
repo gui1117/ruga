@@ -49,6 +49,7 @@ impl BodyTrait for Boids {
     delegate!{
         body:
            id() -> usize,
+           mut damage(d: f64) -> (),
            width2() -> f64,
            height2() -> f64,
            x() -> f64,

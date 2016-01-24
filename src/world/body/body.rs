@@ -48,6 +48,9 @@ impl BodyTrait for Body {
         self.id
     }
 
+    fn damage(&mut self, d: f64) {
+    }
+
     fn width2(&self) -> f64 {
         self.width2
     }
