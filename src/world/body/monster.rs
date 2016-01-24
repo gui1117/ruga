@@ -3,9 +3,9 @@ pub struct Monster;
 use super::{ Body, CollisionBehavior };
 
 impl Monster {
-    pub fn new(x: f64, y: f64, angle: f64) -> Body {
+    pub fn new(id: usize, x: f64, y: f64, angle: f64) -> Body {
         Body {
-            id: 0,
+            id: id,
             x: x,
             y: y,
             width2: 5.,

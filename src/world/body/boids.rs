@@ -26,10 +26,10 @@ pub const GROUP: u32 = 4;
 
 
 impl Boids {
-    pub fn new(x: f64, y: f64, angle: f64, event_heap: Rc<RefCell<EventHeap<WorldEvent>>>) -> Boids {
+    pub fn new(id: usize, x: f64, y: f64, angle: f64, event_heap: Rc<RefCell<EventHeap<WorldEvent>>>) -> Boids {
         Boids {
             body: Body {
-                id: 0,
+                id: id,
                 x: x,
                 y: y,
                 width2: WIDTH/2.,

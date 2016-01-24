@@ -4,9 +4,9 @@ use super::{ Body, CollisionBehavior };
 use std::f64;
 
 impl Wall {
-    pub fn new(x: f64, y: f64, width: f64, height: f64) -> Body {
+    pub fn new(id: usize, x: f64, y: f64, width: f64, height: f64) -> Body {
         Body {
-            id: 0,
+            id: id,
             x: x,
             y: y,
             width2: width/2.,

@@ -31,6 +31,7 @@ pub enum WorldEventArgs {
 
 pub struct World {
     pub time: f64,
+    next_id: usize,
     pub walls: Vec<Rc<RefCell<Body>>>,
     pub monsters: Vec<Rc<RefCell<Body>>>,
     pub characters: Vec<Rc<RefCell<Character>>>,
@@ -45,6 +46,7 @@ impl World {
     pub fn new(unit: f64) -> World {
         World {
             time: 0.,
+            next_id: 1,
             characters: Vec::new(),
             monsters: Vec::new(),
             walls: Vec::new(),
@@ -56,8 +58,14 @@ impl World {
         }
     }
 
+    pub fn next_id(&mut self) -> usize {
+        let id = self.next_id;
+        self.next_id += 1;
+        id
+    }
+
     pub fn insert_wall(&mut self, x: f64, y: f64, width: f64, height: f64) {
-        let wall = Rc::new(RefCell::new(Wall::new(x,y,width,height)));
+        let wall = Rc::new(RefCell::new(Wall::new(self.next_id(),x,y,width,height)));
         let a_wall = wall.clone() as Rc<RefCell<BodyTrait>>;
         self.static_hashmap.insert(&wall.borrow().location(),&a_wall);
         self.static_vec.push(a_wall);
@@ -65,14 +73,14 @@ impl World {
     }
 
     pub fn insert_character(&mut self, x: f64, y: f64, angle: f64) {
-        let character = Rc::new(RefCell::new(Character::new(x,y,angle,self.events.clone())));
+        let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle,self.events.clone())));
         let a_character = character.clone() as Rc<RefCell<BodyTrait>>;
         self.dynamic_vec.push(a_character);
         self.characters.push(character);
     }
 
     pub fn insert_monster(&mut self, x: f64, y: f64, angle: f64) {
-        let monster: Rc<RefCell<Body>> = Rc::new(RefCell::new(Monster::new(x,y,angle)));
+        let monster: Rc<RefCell<Body>> = Rc::new(RefCell::new(Monster::new(self.next_id(),x,y,angle)));
         let a_monster = monster.clone() as Rc<RefCell<BodyTrait>>;
         self.dynamic_vec.push(a_monster);
         self.monsters.push(monster);
