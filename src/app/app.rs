@@ -1,6 +1,7 @@
 use super::direction::Direction;
 use opengl_graphics::GlGraphics;
 use world::{ World, Camera, BodyTrait };
+use world::body::character::CharacterTrait;
 use piston::input::{ 
     RenderArgs, 
     UpdateArgs, 
@@ -39,7 +40,7 @@ impl App {
         use graphics::*;
 
         {
-            let player = self.world.characters[0].borrow();
+            let player = self.world.characters[0].clone();
             self.camera.x = player.x();
             self.camera.y = player.y();
         }
@@ -68,31 +69,31 @@ impl App {
     }
 
     pub fn player_aim(&self) -> f64 {
-        self.world.characters[0].borrow().aim()
+        self.world.characters[0].aim()
     }
 
     pub fn set_player_aim(&mut self, aim: f64) {
-        self.world.characters[0].borrow_mut().set_aim(aim);
+        self.world.characters[0].set_aim(aim);
     }
 
     pub fn player_velocity(&self) -> f64 {
-        self.world.characters[0].borrow().velocity()
+        self.world.characters[0].velocity()
     }
 
     pub fn set_player_velocity(&mut self, v: f64) {
-        self.world.characters[0].borrow_mut().set_velocity(v);
+        self.world.characters[0].set_velocity(v);
     }
 
     pub fn player_angle(&self) -> f64 {
-        self.world.characters[0].borrow().angle()
+        self.world.characters[0].angle()
     }
 
     pub fn set_player_angle(&mut self, a: f64) {
-        self.world.characters[0].borrow_mut().set_angle(a);
+        self.world.characters[0].set_angle(a);
     }
 
     pub fn set_player_shoot(&mut self) {
-        self.world.characters[0].borrow_mut().shoot();
+        self.world.characters[0].shoot();
     }
 
     //pub fn set_player_launch_grenade(&mut self) {

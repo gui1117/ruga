@@ -1,8 +1,8 @@
-mod character;
-mod wall;
-mod body;
-mod monster;
-mod boids;
+pub mod character;
+pub mod wall;
+pub mod body;
+pub mod monster;
+pub mod boids;
 pub mod traits;
 
 pub use self::character::Character;

@@ -37,10 +37,10 @@ pub struct World {
     pub monsters: Vec<Rc<RefCell<Body>>>,
     pub boids: Vec<Rc<RefCell<Boid>>>,
     pub characters: Vec<Rc<RefCell<Character>>>,
-    pub static_vec: Vec<Rc<RefCell<BodyTrait>>>,
-    pub dynamic_vec: Vec<Rc<RefCell<BodyTrait>>>,
-    pub static_hashmap: SpatialHashing<Rc<RefCell<BodyTrait>>>,
-    pub dynamic_hashmap: SpatialHashing<Rc<RefCell<BodyTrait>>>,
+    pub static_vec: Vec<Rc<BodyTrait>>,
+    pub dynamic_vec: Vec<Rc<BodyTrait>>,
+    pub static_hashmap: SpatialHashing<Rc<BodyTrait>>,
+    pub dynamic_hashmap: SpatialHashing<Rc<BodyTrait>>,
 }
 
 impl World {
@@ -67,48 +67,48 @@ impl World {
 
     pub fn insert_wall(&mut self, x: f64, y: f64, width: f64, height: f64) {
         let wall = Rc::new(RefCell::new(Wall::new(self.next_id(),x,y,width,height)));
-        let a_wall = wall.clone() as Rc<RefCell<BodyTrait>>;
-        self.static_hashmap.insert(&wall.borrow().location(),&a_wall);
+        let a_wall = wall.clone() as Rc<BodyTrait>;
+        self.static_hashmap.insert(&wall.location(),&a_wall);
         self.static_vec.push(a_wall);
         self.walls.push(wall);
     }
 
     pub fn insert_character(&mut self, x: f64, y: f64, angle: f64) {
         let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle)));
-        let a_character = character.clone() as Rc<RefCell<BodyTrait>>;
+        let a_character = character.clone() as Rc<BodyTrait>;
         self.dynamic_vec.push(a_character);
         self.characters.push(character);
     }
 
     pub fn insert_monster(&mut self, x: f64, y: f64, angle: f64) {
         let monster: Rc<RefCell<Body>> = Rc::new(RefCell::new(Monster::new(self.next_id(),x,y,angle)));
-        let a_monster = monster.clone() as Rc<RefCell<BodyTrait>>;
+        let a_monster = monster.clone() as Rc<BodyTrait>;
         self.dynamic_vec.push(a_monster);
         self.monsters.push(monster);
     }
 
     pub fn insert_boid(&mut self, x: f64, y: f64, angle: f64) {
         let boid = Rc::new(RefCell::new(Boid::new(self.next_id(),x,y,angle)));
-        let a_boid = boid.clone() as Rc<RefCell<BodyTrait>>;
+        let a_boid = boid.clone() as Rc<BodyTrait>;
         self.dynamic_vec.push(a_boid);
         self.boids.push(boid);
     }
 
     pub fn render(&mut self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
         for b in self.static_vec.iter() {
-            b.borrow().render(viewport,camera,gl);
+            b.render(viewport,camera,gl);
         }
         for b in self.dynamic_vec.iter() {
-            b.borrow().render(viewport,camera,gl);
+            b.render(viewport,camera,gl);
         }
     }
 
     pub fn update(&mut self, dt: f64) {
         // update bodies
         {
-            let batch = Batch::<Rc<RefCell<BodyTrait>>>::new(&self.static_hashmap,&self.dynamic_hashmap);
+            let batch = Batch::<Rc<BodyTrait>>::new(&self.static_hashmap,&self.dynamic_hashmap);
             for body in self.dynamic_vec.iter() {
-                body.borrow_mut().update(dt,&batch);
+                body.update(dt,&batch);
             }
         }
 
@@ -116,26 +116,25 @@ impl World {
         self.dynamic_hashmap.clear();
         for body in self.dynamic_vec.iter() {
             {
-                let mut body = body.borrow_mut();
                 let location = body.location();
-                let mut callback = |other: &Rc<RefCell<BodyTrait>>| {
-                    let other = &mut *other.borrow_mut();
+                let mut callback = |other: &Rc<BodyTrait>| {
+                    let other = &**other;
                     if body.collide(other) {
                         body.resolve_collision(other);
-                        other.resolve_collision(&*body);
+                        other.resolve_collision(&**body);
                         body.on_collision(other);
-                        other.on_collision(&mut *body);
+                        other.on_collision(&**body);
                     }
                 };
                 self.static_hashmap.apply_locally(&location,&mut callback);
                 self.dynamic_hashmap.apply_locally(&location,&mut callback);
             }
-            self.dynamic_hashmap.insert(&body.borrow().location(),&(body.clone() as Rc<RefCell<BodyTrait>>));
+            self.dynamic_hashmap.insert(&body.location(),&(body.clone() as Rc<BodyTrait>));
         }
     }
 
     /// callback return true when stop
-    pub fn raycast<F: FnMut(&mut BodyTrait, f64, f64) -> bool>(&mut self, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
+    pub fn raycast<F: FnMut(&BodyTrait, f64, f64) -> bool>(&mut self, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
         let unit = self.static_hashmap.unit();
         let x0 = x;
         let y0 = y;
@@ -147,7 +146,7 @@ impl World {
         let a = (y1 - y0)/(x1 - x0);
         let b = y0 -a*x0;
 
-        let mut bodies: Vec<(Rc<RefCell<BodyTrait>>,f64,f64)>;
+        let mut bodies: Vec<(Rc<BodyTrait>,f64,f64)>;
         let mut visited = HashSet::new();
         for i in &index_vec {
             let segment_start = (i[0] as f64)*unit;
@@ -157,8 +156,8 @@ impl World {
             let mut res = self.static_hashmap.get_on_index(i);
             res.append(&mut self.dynamic_hashmap.get_on_index(i));
             while let Some(body) = res.pop() {
-                if !visited.contains(&body.borrow().id()) {
-                    let op = body.borrow().raycast(a,b);
+                if !visited.contains(&body.id()) {
+                    let op = body.raycast(a,b);
                     if let Some((x_min,y_min,x_max,y_max)) = op {
                         if segment_start < x_min && x_min < segment_end {
                             let min = ((x0-x_min).exp2() + (y0-y_min).exp2()).sqrt();
@@ -180,7 +179,7 @@ impl World {
             });
 
             for (body,min,max) in bodies {
-                let body = &mut *body.borrow_mut();
+                let body = &*body;
                 visited.insert(body.id());
                 if callback(body,min,max) {
                     return;

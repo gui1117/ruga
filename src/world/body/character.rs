@@ -46,41 +46,49 @@ impl Character {
             aim: angle,
         }
     }
+}
 
-    pub fn aim(&self) -> f64 {
-        self.aim
+pub trait CharacterTrait {
+    fn aim(&self) -> f64;
+    fn set_aim(&self, a: f64);
+    fn shoot(&self);
+}
+
+impl CharacterTrait for RefCell<Character> {
+    fn aim(&self) -> f64 {
+        self.borrow().aim
     }
 
-    pub fn set_aim(&mut self, a: f64) {
-        self.aim = a;
+    fn set_aim(&self, a: f64) {
+        self.borrow_mut().aim = a;
     }
 
-    pub fn shoot(&mut self) {
+    fn shoot(&self) {
     }
 }
 
-impl BodyTrait for Character {
+impl BodyTrait for RefCell<Character> {
     delegate!{
         body:
-           id() -> usize,
-           body_type() -> BodyType,
-           mut damage(d: f64) -> (),
-           width2() -> f64,
-           height2() -> f64,
-           x() -> f64,
-           mut set_x(x: f64) -> (),
-           y() -> f64,
-           mut set_y(y: f64) -> (),
-           weight() -> f64,
-           velocity() -> f64,
-           mut set_velocity(v: f64) -> (),
-           angle() -> f64,
-           mut set_angle(a: f64) -> (),
-           mask() -> u32,
-           group() -> u32,
-           mut update(dt: f64, batch: &Batch<Rc<RefCell<BodyTrait>>>) -> (),
-           collision_behavior() -> CollisionBehavior,
-           render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
-           mut on_collision(other: &mut BodyTrait) -> (),
+            id() -> usize,
+            body_type() -> BodyType,
+            damage(d: f64) -> (),
+            width2() -> f64,
+            height2() -> f64,
+            x() -> f64,
+            mut set_x(x: f64) -> (),
+            y() -> f64,
+            mut set_y(y: f64) -> (),
+            weight() -> f64,
+            velocity() -> f64,
+            mut set_velocity(v: f64) -> (),
+            angle() -> f64,
+            mut set_angle(a: f64) -> (),
+            mask() -> u32,
+            group() -> u32,
+            mut update(dt: f64, batch: &Batch<Rc<BodyTrait>>) -> (),
+            collision_behavior() -> CollisionBehavior,
+            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
+            on_collision(other: &BodyTrait) -> (),
     }
 }

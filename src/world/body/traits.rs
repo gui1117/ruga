@@ -10,12 +10,11 @@ use util::bounding_box_raycast;
 use world::spatial_hashing::Location;
 use world::batch::Batch;
 use std::rc::Rc;
-use std::cell::RefCell;
 
 pub trait BodyTrait {
     fn id(&self) -> usize;
 
-    fn damage(&mut self, d: f64);
+    fn damage(&self, d: f64);
 
     fn body_type(&self) -> BodyType;
 
@@ -25,21 +24,21 @@ pub trait BodyTrait {
 
     fn x(&self) -> f64;
 
-    fn set_x(&mut self, x: f64);
+    fn set_x(&self, x: f64);
 
     fn y(&self) -> f64;
 
-    fn set_y(&mut self, y: f64);
+    fn set_y(&self, y: f64);
 
     fn weight(&self) -> f64;
 
     fn velocity(&self) -> f64;
 
-    fn set_velocity(&mut self, v: f64);
+    fn set_velocity(&self, v: f64);
 
     fn angle(&self) -> f64;
 
-    fn set_angle(&mut self, a: f64);
+    fn set_angle(&self, a: f64);
 
     fn mask(&self) -> u32;
 
@@ -47,11 +46,11 @@ pub trait BodyTrait {
 
     fn collision_behavior(&self) -> CollisionBehavior;
 
-    fn update(&mut self, dt: f64, batch: &Batch<Rc<RefCell<BodyTrait>>>);
+    fn update(&self, dt: f64, batch: &Batch<Rc<BodyTrait>>);
 
     fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics);
 
-    fn on_collision(&mut self, other: &mut BodyTrait);
+    fn on_collision(&self, other: &BodyTrait);
 
     fn up (&self) -> f64 {
         self.y() + self.height2()
@@ -66,7 +65,7 @@ pub trait BodyTrait {
         self.x() + self.width2()
     }
 
-    fn collide(&mut self, other: &BodyTrait) -> bool {
+    fn collide(&self, other: &BodyTrait) -> bool {
         let a = self;
         let b = other;
         if (a.group() & b.mask() != 0) && (b.group() & a.mask() != 0) {
@@ -89,7 +88,7 @@ pub trait BodyTrait {
         }
     }
 
-    fn resolve_collision(&mut self, other: &BodyTrait) {
+    fn resolve_collision(&self, other: &BodyTrait) {
         let a = self;
         let b = other;
 

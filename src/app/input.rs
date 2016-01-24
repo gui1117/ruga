@@ -196,7 +196,7 @@ impl App {
 
                 let cam_rel_player;
                 {
-                    let player = self.world.characters[0].borrow();
+                    let player = self.world.characters[0].clone();
                     cam_rel_player = Point {
                         x: self.camera.x - player.x(),
                         y: self.camera.y - player.y(),

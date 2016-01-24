@@ -7,7 +7,6 @@ use world::batch::Batch;
 use world::spatial_hashing::Location;
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::cell::BorrowState;
 use std::f64::consts::PI;
 use std::ops::Rem;
 
@@ -57,7 +56,7 @@ impl Boid {
     }
 }
 
-impl BodyTrait for Boid {
+impl BodyTrait for RefCell<Boid> {
     delegate!{
         body:
            id() -> usize,
@@ -79,25 +78,26 @@ impl BodyTrait for Boid {
            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
     }
 
-    fn update(&mut self, dt: f64, batch: &Batch<Rc<RefCell<BodyTrait>>>) {
+    fn update(&self, dt: f64, batch: &Batch<Rc<BodyTrait>>) {
         let mut counter = 0.;
         let mut sum = 0.;
         {
-            let location = Location {
-                up: self.body.y() + COHESION_RADIUS,
-                down: self.body.y() - COHESION_RADIUS,
-                right: self.body.x() + COHESION_RADIUS,
-                left: self.body.x() - COHESION_RADIUS,
-            };
-            let mut callback = |body: &Rc<RefCell<BodyTrait>>| {
-                if body.borrow_state() != BorrowState::Writing {
-                    let body = body.borrow();
-                    if body.body_type() == BodyType::Boid {
-                        let delta_angle = (body.angle() - self.angle()).rem(PI);
-                        if delta_angle.abs() < COHESION_MAX_DELTA_ANGLE {
-                            counter += 1.;
-                            sum += body.angle();
-                        }
+            let location;
+            {
+                location = Location {
+                    up: self.borrow().body.y() + COHESION_RADIUS,
+                    down: self.borrow().body.y() - COHESION_RADIUS,
+                    right: self.borrow().body.x() + COHESION_RADIUS,
+                    left: self.borrow().body.x() - COHESION_RADIUS,
+                };
+            }
+            let mut callback = |body: &Rc<BodyTrait>| {
+                let body = &*body;
+                if body.body_type() == BodyType::Boid {
+                    let delta_angle = (body.angle() - self.angle()).rem(PI);
+                    if delta_angle.abs() < COHESION_MAX_DELTA_ANGLE {
+                        counter += 1.;
+                        sum += body.angle();
                     }
                 }
             };
@@ -105,14 +105,14 @@ impl BodyTrait for Boid {
         }
         let a = self.angle() + COHESION_FACTOR*sum/counter;
         self.set_angle(a);
-        self.body.update(dt,batch);
+        self.borrow_mut().body.update(dt,batch);
     }
 
-    fn on_collision(&mut self, other: &mut BodyTrait) {
+    fn on_collision(&self, other: &BodyTrait) {
         other.damage(DAMAGE);
     }
 
-    fn damage(&mut self, _: f64) {
-        self.alive = false;
+    fn damage(&self, _: f64) {
+        self.borrow_mut().alive = false;
     }
 }

@@ -32,98 +32,98 @@ pub struct Body {
 ///        width2() -> f64,
 ///        height2() -> f64,
 ///        x() -> f64,
-///        mut set_x(x: f64) -> (),
+///        set_x(x: f64) -> (),
 ///        y() -> f64,
-///        mut set_y(y: f64) -> (),
+///        set_y(y: f64) -> (),
 ///        weight() -> f64,
 ///        velocity() -> f64,
-///        mut set_velocity(v: f64) -> (),
+///        set_velocity(v: f64) -> (),
 ///        angle() -> f64,
-///        mut set_angle(a: f64) -> (),
+///        set_angle(a: f64) -> (),
 ///        mask() -> u32,
 ///        group() -> u32,
-///        mut update(dt: f64) -> (),
+///        update(dt: f64) -> (),
 ///        collision_behavior() -> CollisionBehavior,
 ///        render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
-///        mut on_collision(other: &mut BodyTrait) -> (),
+///        on_collision(other: &BodyTrait) -> (),
 /// }
 
-impl BodyTrait for Body {
-    fn id(&self) -> usize {
+impl Body {
+    pub fn id(&self) -> usize {
         self.id
     }
     
-    fn body_type(&self) -> BodyType {
+    pub fn body_type(&self) -> BodyType {
         self.body_type.clone()
     }
 
-    fn damage(&mut self, _: f64) {
+    pub fn damage(&self, _: f64) {
     }
 
-    fn width2(&self) -> f64 {
+    pub fn width2(&self) -> f64 {
         self.width2
     }
 
-    fn height2(&self) -> f64 {
+    pub fn height2(&self) -> f64 {
         self.height2
     }
 
-    fn x(&self) -> f64 {
+    pub fn x(&self) -> f64 {
         self.x
     }
 
-    fn set_x(&mut self, x: f64) {
+    pub fn set_x(&mut self, x: f64) {
         self.x = x;
     }
 
-    fn y(&self) -> f64 {
+    pub fn y(&self) -> f64 {
         self.y
     }
 
-    fn set_y(&mut self, y: f64) {
+    pub fn set_y(&mut self, y: f64) {
         self.y = y;
     }
 
-    fn weight(&self) -> f64 {
+    pub fn weight(&self) -> f64 {
         self.weight
     }
 
-    fn velocity(&self) -> f64 {
+    pub fn velocity(&self) -> f64 {
         self.velocity
     }
 
-    fn set_velocity(&mut self, v: f64) {
+    pub fn set_velocity(&mut self, v: f64) {
         self.velocity = v;
     }
 
-    fn angle(&self) -> f64 {
+    pub fn angle(&self) -> f64 {
         self.angle
     }
 
-    fn set_angle(&mut self, a: f64) {
+    pub fn set_angle(&mut self, a: f64) {
         self.angle = a;
     }
 
-    fn mask(&self) -> u32 {
+    pub fn mask(&self) -> u32 {
         self.mask
     }
 
-    fn group(&self) -> u32 {
+    pub fn group(&self) -> u32 {
         self.group
     }
 
-    fn update(&mut self, dt: f64, _: &Batch<Rc<RefCell<BodyTrait>>>) {
+    pub fn update(&mut self, dt: f64, _: &Batch<Rc<BodyTrait>>) {
         if self.velocity != 0. {
             self.x += dt*self.velocity()*self.angle().cos();
             self.y += dt*self.velocity()*self.angle().sin();
         }
     }
 
-    fn collision_behavior(&self) -> CollisionBehavior {
+    pub fn collision_behavior(&self) -> CollisionBehavior {
         self.collision_behavior.clone()
     }
 
-    fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
+    pub fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
         use graphics::Transformed;
         use graphics::line::{ 
             Line as LineDrawer, 
@@ -167,7 +167,88 @@ impl BodyTrait for Body {
         });
     }
 
-    fn on_collision(&mut self, _other: &mut BodyTrait) {
+    pub fn on_collision(&self, _other: &BodyTrait) {
+    }
+}
+
+impl BodyTrait for RefCell<Body> {
+    fn id(&self) -> usize {
+        self.borrow().id
+    }
+    
+    fn body_type(&self) -> BodyType {
+        self.borrow().body_type.clone()
+    }
+
+    fn damage(&self, _: f64) {
+    }
+
+    fn width2(&self) -> f64 {
+        self.borrow().width2
+    }
+
+    fn height2(&self) -> f64 {
+        self.borrow().height2
+    }
+
+    fn x(&self) -> f64 {
+        self.borrow().x
+    }
+
+    fn set_x(&self, x: f64) {
+        self.borrow_mut().x = x;
+    }
+
+    fn y(&self) -> f64 {
+        self.borrow().y
+    }
+
+    fn set_y(&self, y: f64) {
+        self.borrow_mut().y = y;
+    }
+
+    fn weight(&self) -> f64 {
+        self.borrow().weight
+    }
+
+    fn velocity(&self) -> f64 {
+        self.borrow().velocity
+    }
+
+    fn set_velocity(&self, v: f64) {
+        self.borrow_mut().velocity = v;
+    }
+
+    fn angle(&self) -> f64 {
+        self.borrow().angle
+    }
+
+    fn set_angle(&self, a: f64) {
+        self.borrow_mut().angle = a;
+    }
+
+    fn mask(&self) -> u32 {
+        self.borrow().mask
+    }
+
+    fn group(&self) -> u32 {
+        self.borrow().group
+    }
+
+    fn update(&self, dt: f64, batch: &Batch<Rc<BodyTrait>>) {
+        self.borrow_mut().update(dt,batch);
+    }
+
+    fn collision_behavior(&self) -> CollisionBehavior {
+        self.borrow().collision_behavior.clone()
+    }
+
+    fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
+        self.borrow().render(viewport,camera,gl);
+    }
+
+    fn on_collision(&self, other: &BodyTrait) {
+        self.borrow().on_collision(other);
     }
 }
 

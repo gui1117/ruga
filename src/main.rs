@@ -1,4 +1,3 @@
-#![feature(borrow_state)]
 extern crate piston;
 extern crate glutin_window;
 extern crate graphics;
