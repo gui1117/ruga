@@ -6,6 +6,7 @@ use super::body::{
     Wall, 
     Character, 
     Monster, 
+        Boid,
         Body,
         BodyTrait, 
 };
@@ -34,6 +35,7 @@ pub struct World {
     next_id: usize,
     pub walls: Vec<Rc<RefCell<Body>>>,
     pub monsters: Vec<Rc<RefCell<Body>>>,
+    pub boids: Vec<Rc<RefCell<Boid>>>,
     pub characters: Vec<Rc<RefCell<Character>>>,
     pub static_vec: Vec<Rc<RefCell<BodyTrait>>>,
     pub dynamic_vec: Vec<Rc<RefCell<BodyTrait>>>,
@@ -49,6 +51,7 @@ impl World {
             next_id: 1,
             characters: Vec::new(),
             monsters: Vec::new(),
+            boids: Vec::new(),
             walls: Vec::new(),
             static_vec: Vec::new(),
             dynamic_vec: Vec::new(),
@@ -84,6 +87,13 @@ impl World {
         let a_monster = monster.clone() as Rc<RefCell<BodyTrait>>;
         self.dynamic_vec.push(a_monster);
         self.monsters.push(monster);
+    }
+
+    pub fn insert_boid(&mut self, x: f64, y: f64, angle: f64) {
+        let boid = Rc::new(RefCell::new(Boid::new(self.next_id(),x,y,angle)));
+        let a_boid = boid.clone() as Rc<RefCell<BodyTrait>>;
+        self.dynamic_vec.push(a_boid);
+        self.boids.push(boid);
     }
 
     pub fn render(&mut self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {

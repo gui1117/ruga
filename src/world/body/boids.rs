@@ -2,7 +2,6 @@ use viewport::Viewport;
 use opengl_graphics::GlGraphics;
 use world::{ 
     Camera, 
-    WorldEvent, 
 };
 
 use super::{ 
@@ -10,12 +9,10 @@ use super::{
     BodyTrait, 
     CollisionBehavior,
 };
-use world::event_heap::EventHeap;
-use std::rc::Rc;
-use std::cell::RefCell;
 
-pub struct Boids {
+pub struct Boid {
     body: Body,
+    alive: bool
 }
 
 pub const WIDTH: f64 = 10.;
@@ -23,11 +20,12 @@ pub const HEIGHT: f64 = 10.;
 pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
 pub const GROUP: u32 = 4;
+pub const DAMAGE: f64 = 10.;
 
 
-impl Boids {
-    pub fn new(id: usize, x: f64, y: f64, angle: f64, event_heap: Rc<RefCell<EventHeap<WorldEvent>>>) -> Boids {
-        Boids {
+impl Boid {
+    pub fn new(id: usize, x: f64, y: f64, angle: f64) -> Boid {
+        Boid {
             body: Body {
                 id: id,
                 x: x,
@@ -41,15 +39,15 @@ impl Boids {
                 group: GROUP,
                 collision_behavior: CollisionBehavior::Bounce,
             },
+            alive: true,
         }
     }
 }
 
-impl BodyTrait for Boids {
+impl BodyTrait for Boid {
     delegate!{
         body:
            id() -> usize,
-           mut damage(d: f64) -> (),
            width2() -> f64,
            height2() -> f64,
            x() -> f64,
@@ -69,5 +67,10 @@ impl BodyTrait for Boids {
     }
 
     fn on_collision(&mut self, other: &mut BodyTrait) {
+        other.damage(DAMAGE);
+    }
+
+    fn damage(&mut self, _: f64) {
+        self.alive = false;
     }
 }
