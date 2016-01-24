@@ -11,7 +11,6 @@ use super::body::{
         BodyTrait, 
 };
 use super::spatial_hashing::SpatialHashing;
-use super::event_heap::EventHeap;
 use super::batch::Batch;
 
 use util::{
@@ -42,7 +41,6 @@ pub struct World {
     pub dynamic_vec: Vec<Rc<RefCell<BodyTrait>>>,
     pub static_hashmap: SpatialHashing<Rc<RefCell<BodyTrait>>>,
     pub dynamic_hashmap: SpatialHashing<Rc<RefCell<BodyTrait>>>,
-    pub events: Rc<RefCell<EventHeap<WorldEvent>>>,
 }
 
 impl World {
@@ -58,7 +56,6 @@ impl World {
             dynamic_vec: Vec::new(),
             static_hashmap: SpatialHashing::new(unit),
             dynamic_hashmap: SpatialHashing::new(unit),
-            events: Rc::new(RefCell::new(EventHeap::new())),
         }
     }
 
@@ -77,7 +74,7 @@ impl World {
     }
 
     pub fn insert_character(&mut self, x: f64, y: f64, angle: f64) {
-        let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle,self.events.clone())));
+        let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle)));
         let a_character = character.clone() as Rc<RefCell<BodyTrait>>;
         self.dynamic_vec.push(a_character);
         self.characters.push(character);
@@ -107,18 +104,6 @@ impl World {
     }
 
     pub fn update(&mut self, dt: f64) {
-        // parse event
-        let mut vec = Vec::new();
-        {
-            let mut events = self.events.borrow_mut();
-            while let Some(event) = events.pop() {
-                vec.push(event);
-            }
-        }
-        for WorldEvent{callback, args} in vec {
-            callback(self,args);
-        }
-
         // update bodies
         {
             let batch = Batch::<Rc<RefCell<BodyTrait>>>::new(&self.static_hashmap,&self.dynamic_hashmap);

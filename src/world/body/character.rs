@@ -2,7 +2,6 @@ use viewport::Viewport;
 use opengl_graphics::GlGraphics;
 use world::{ 
     Camera, 
-    WorldEvent, 
 };
 
 use super::{ 
@@ -11,7 +10,6 @@ use super::{
     BodyType,
     CollisionBehavior,
 };
-use world::event_heap::EventHeap;
 use world::batch::Batch;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -19,7 +17,6 @@ use std::cell::RefCell;
 pub struct Character {
     body: Body,
     aim: f64,
-    event_heap: Rc<RefCell<EventHeap<WorldEvent>>>,
 }
 
 pub const WIDTH: f64 = 10.;
@@ -30,7 +27,7 @@ pub const GROUP: u32 = 2;
 
 
 impl Character {
-    pub fn new(id: usize, x: f64, y: f64, angle: f64, event_heap: Rc<RefCell<EventHeap<WorldEvent>>>) -> Character {
+    pub fn new(id: usize, x: f64, y: f64, angle: f64) -> Character {
         Character {
             body: Body {
                 id: id,
@@ -47,7 +44,6 @@ impl Character {
                 body_type: BodyType::Character,
             },
             aim: angle,
-            event_heap: event_heap,
         }
     }
 
