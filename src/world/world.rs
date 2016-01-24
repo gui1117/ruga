@@ -12,6 +12,7 @@ use super::body::{
 };
 use super::spatial_hashing::SpatialHashing;
 use super::event_heap::EventHeap;
+use super::batch::Batch;
 
 use util::{
     grid_raycast,
@@ -119,8 +120,11 @@ impl World {
         }
 
         // update bodies
-        for body in self.dynamic_vec.iter() {
-            body.borrow_mut().update(dt);
+        {
+            let batch = Batch::<Rc<RefCell<BodyTrait>>>::new(&self.static_hashmap,&self.dynamic_hashmap);
+            for body in self.dynamic_vec.iter() {
+                body.borrow_mut().update(dt,&batch);
+            }
         }
 
         // resolve collisions

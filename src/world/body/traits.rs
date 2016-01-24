@@ -3,15 +3,21 @@ use opengl_graphics::GlGraphics;
 use world::Camera;
 use super::{
     CollisionBehavior,
+    BodyType,
     //BodySnapshot
 };
 use util::bounding_box_raycast;
 use world::spatial_hashing::Location;
+use world::batch::Batch;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub trait BodyTrait {
     fn id(&self) -> usize;
 
     fn damage(&mut self, d: f64);
+
+    fn body_type(&self) -> BodyType;
 
     fn width2(&self) -> f64;
 
@@ -41,7 +47,7 @@ pub trait BodyTrait {
 
     fn collision_behavior(&self) -> CollisionBehavior;
 
-    fn update(&mut self, dt: f64);
+    fn update(&mut self, dt: f64, batch: &Batch<Rc<RefCell<BodyTrait>>>);
 
     fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics);
 

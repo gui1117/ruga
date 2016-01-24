@@ -1,6 +1,10 @@
 pub struct Monster;
 
-use super::{ Body, CollisionBehavior };
+use super::{ 
+    Body, 
+    CollisionBehavior,
+    BodyType,
+};
 
 impl Monster {
     pub fn new(id: usize, x: f64, y: f64, angle: f64) -> Body {
@@ -16,6 +20,7 @@ impl Monster {
             mask: !0,
             group: 2,
             collision_behavior: CollisionBehavior::Persist,
+            body_type: BodyType::Monster,
         }
     }
 }

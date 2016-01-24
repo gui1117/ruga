@@ -8,9 +8,11 @@ use world::{
 use super::{ 
     Body, 
     BodyTrait, 
+    BodyType,
     CollisionBehavior,
 };
 use world::event_heap::EventHeap;
+use world::batch::Batch;
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -42,6 +44,7 @@ impl Character {
                 mask: MASK,
                 group: GROUP,
                 collision_behavior: CollisionBehavior::Persist,
+                body_type: BodyType::Character,
             },
             aim: angle,
             event_heap: event_heap,
@@ -64,6 +67,7 @@ impl BodyTrait for Character {
     delegate!{
         body:
            id() -> usize,
+           body_type() -> BodyType,
            mut damage(d: f64) -> (),
            width2() -> f64,
            height2() -> f64,
@@ -78,7 +82,7 @@ impl BodyTrait for Character {
            mut set_angle(a: f64) -> (),
            mask() -> u32,
            group() -> u32,
-           mut update(dt: f64) -> (),
+           mut update(dt: f64, batch: &Batch<Rc<RefCell<BodyTrait>>>) -> (),
            collision_behavior() -> CollisionBehavior,
            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
            mut on_collision(other: &mut BodyTrait) -> (),

@@ -1,6 +1,10 @@
 pub struct Wall;
 
-use super::{ Body, CollisionBehavior };
+use super::{ 
+    Body, 
+    CollisionBehavior,
+    BodyType,
+};
 use std::f64;
 
 impl Wall {
@@ -17,6 +21,7 @@ impl Wall {
             mask: !0,
             group: 1,
             collision_behavior: CollisionBehavior::Stop,
+            body_type: BodyType::Wall,
         }
     }
 }

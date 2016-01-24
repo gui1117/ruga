@@ -3,11 +3,19 @@ use opengl_graphics::GlGraphics;
 use world::{ 
     Camera, 
 };
+use world::batch::Batch;
+use world::spatial_hashing::Location;
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::cell::BorrowState;
+use std::f64::consts::PI;
+use std::ops::Rem;
 
 use super::{ 
     Body, 
     BodyTrait, 
     CollisionBehavior,
+    BodyType,
 };
 
 pub struct Boid {
@@ -21,7 +29,11 @@ pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
 pub const GROUP: u32 = 4;
 pub const DAMAGE: f64 = 10.;
+pub const VELOCITY: f64 = 0.;
 
+pub const COHESION_RADIUS: f64 = 10.;
+pub const COHESION_MAX_DELTA_ANGLE: f64 = 2.*PI;
+pub const COHESION_FACTOR: f64 = 5.;
 
 impl Boid {
     pub fn new(id: usize, x: f64, y: f64, angle: f64) -> Boid {
@@ -33,11 +45,12 @@ impl Boid {
                 width2: WIDTH/2.,
                 height2: HEIGHT/2.,
                 weight: WEIGHT,
-                velocity: 0.,
+                velocity: VELOCITY,
                 angle: angle,
                 mask: MASK,
                 group: GROUP,
                 collision_behavior: CollisionBehavior::Bounce,
+                body_type: BodyType::Boid,
             },
             alive: true,
         }
@@ -48,6 +61,7 @@ impl BodyTrait for Boid {
     delegate!{
         body:
            id() -> usize,
+           body_type() -> BodyType,
            width2() -> f64,
            height2() -> f64,
            x() -> f64,
@@ -61,9 +75,37 @@ impl BodyTrait for Boid {
            mut set_angle(a: f64) -> (),
            mask() -> u32,
            group() -> u32,
-           mut update(dt: f64) -> (),
            collision_behavior() -> CollisionBehavior,
            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
+    }
+
+    fn update(&mut self, dt: f64, batch: &Batch<Rc<RefCell<BodyTrait>>>) {
+        let mut counter = 0.;
+        let mut sum = 0.;
+        {
+            let location = Location {
+                up: self.body.y() + COHESION_RADIUS,
+                down: self.body.y() - COHESION_RADIUS,
+                right: self.body.x() + COHESION_RADIUS,
+                left: self.body.x() - COHESION_RADIUS,
+            };
+            let mut callback = |body: &Rc<RefCell<BodyTrait>>| {
+                if body.borrow_state() != BorrowState::Writing {
+                    let body = body.borrow();
+                    if body.body_type() == BodyType::Boid {
+                        let delta_angle = (body.angle() - self.angle()).rem(PI);
+                        if delta_angle.abs() < COHESION_MAX_DELTA_ANGLE {
+                            counter += 1.;
+                            sum += body.angle();
+                        }
+                    }
+                }
+            };
+            batch.apply_locally(&location,&mut callback);
+        }
+        let a = self.angle() + COHESION_FACTOR*sum/counter;
+        self.set_angle(a);
+        self.body.update(dt,batch);
     }
 
     fn on_collision(&mut self, other: &mut BodyTrait) {

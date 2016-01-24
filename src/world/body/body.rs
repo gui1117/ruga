@@ -4,7 +4,11 @@ use world::Camera;
 use super::{ 
     BodyTrait,
     CollisionBehavior,
+    BodyType,
 };
+use world::batch::Batch;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub struct Body {
     pub x: f64,
@@ -18,6 +22,7 @@ pub struct Body {
     pub mask: u32,
     pub group: u32,
     pub collision_behavior: CollisionBehavior,
+    pub body_type: BodyType,
 }
 
 /// model for delegate
@@ -46,6 +51,10 @@ pub struct Body {
 impl BodyTrait for Body {
     fn id(&self) -> usize {
         self.id
+    }
+    
+    fn body_type(&self) -> BodyType {
+        self.body_type.clone()
     }
 
     fn damage(&mut self, _: f64) {
@@ -103,7 +112,7 @@ impl BodyTrait for Body {
         self.group
     }
 
-    fn update(&mut self, dt: f64) {
+    fn update(&mut self, dt: f64, _: &Batch<Rc<RefCell<BodyTrait>>>) {
         if self.velocity != 0. {
             self.x += dt*self.velocity()*self.angle().cos();
             self.y += dt*self.velocity()*self.angle().sin();

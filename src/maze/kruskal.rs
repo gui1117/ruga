@@ -99,12 +99,12 @@ pub fn generate() -> World {
         }
     }
 
-    world.insert_monster(unit*1.5,unit*1.5,0.);
-    world.insert_monster(unit*1.5,unit*1.5,0.);
-    world.insert_monster(unit*1.5,unit*1.5,0.);
-    world.insert_monster(unit*1.5,unit*1.5,0.);
-    world.insert_monster(unit*1.5,unit*1.5,0.);
-    world.insert_monster(unit*1.5,unit*1.5,0.);
+    world.insert_boid(unit*1.5,unit*1.5,0.);
+    world.insert_boid(unit*1.5,unit*1.5,0.);
+    world.insert_boid(unit*1.5,unit*1.5,0.);
+    world.insert_boid(unit*1.5,unit*1.5,0.);
+    world.insert_boid(unit*1.5,unit*1.5,0.);
+    world.insert_boid(unit*1.5,unit*1.5,0.);
     world.insert_character(unit*1.5,unit*1.5,0.);
 
     world

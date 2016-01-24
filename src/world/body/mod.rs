@@ -19,4 +19,12 @@ pub enum CollisionBehavior {
     Bounce
 }
 
+#[derive(Clone,PartialEq)]
+pub enum BodyType {
+    Wall,
+    Character,
+    Monster,
+    Boid,
+}
+
 //pub struct BodySnapshot;
