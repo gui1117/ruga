@@ -1,5 +1,6 @@
 mod world;
 mod camera;
+pub mod batch;
 pub mod body;
 pub mod spatial_hashing;
 pub mod event_heap;
