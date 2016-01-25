@@ -16,8 +16,8 @@ pub struct App {
     pub camera: Camera,
     pub player_dir: Vec<Direction>,
     pub window_size: [f64;2],
-    pub debug: usize,
-    pub debug2: f64,
+//    pub debug: usize,
+//    pub debug2: f64,
 }
 
 impl App {
@@ -29,8 +29,8 @@ impl App {
             window_size: [width,height],
             player_dir: vec![],
             camera: Camera::new(0.,0., width, height, 1.),
-            debug: 0,
-            debug2: 0.,
+//            debug: 0,
+//            debug2: 0.,
         };
 
         app
@@ -53,15 +53,15 @@ impl App {
 
         self.world.render(&args.viewport(),&self.camera,&mut self.gl);
 
-        if !false {
-            self.debug += 1;
-            self.debug2 += args.ext_dt / 10.;
-            if self.debug >= 10 {
-                println!("{}",1./self.debug2);
-                self.debug2 = 0.;
-                self.debug = 0;
-            }
-        }
+//        if !false {
+//            self.debug += 1;
+//            self.debug2 += args.ext_dt / 10.;
+//            if self.debug >= 10 {
+//                println!("{}",1./self.debug2);
+//                self.debug2 = 0.;
+//                self.debug = 0;
+//            }
+//        }
     }
 
     pub fn update(&mut self, args: &UpdateArgs) {
