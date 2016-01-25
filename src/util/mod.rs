@@ -1,6 +1,9 @@
 #[macro_use]
 mod delegate;
 
+#[macro_use]
+mod drawer;
+
 pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
     if x0 == x1 {
         let x0_i32 = x0 as i32;
