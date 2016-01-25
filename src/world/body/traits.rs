@@ -10,6 +10,7 @@ use util::bounding_box_raycast;
 use world::spatial_hashing::Location;
 use world::batch::Batch;
 use std::rc::Rc;
+use std::f64::consts::PI;
 
 pub trait BodyTrait {
     fn id(&self) -> usize;
@@ -144,6 +145,18 @@ pub trait BodyTrait {
         } else {
             let y = a.y();
             a.set_y(y + (1.-rate)*delta);
+        }
+        match a.collision_behavior() {
+            CollisionBehavior::Bounce => {
+                let an = if hori_dir {
+                    PI - a.angle()
+                } else {
+                    - a.angle()
+                };
+                a.set_angle(an);
+            },
+            CollisionBehavior::Stop => a.set_velocity(0.),
+            CollisionBehavior::Persist => (),
         }
     }
 

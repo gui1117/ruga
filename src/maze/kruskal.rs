@@ -100,11 +100,17 @@ pub fn generate() -> World {
     }
 
     world.insert_boid(unit*1.5,unit*1.5,0.);
-    world.insert_boid(unit*1.5,unit*1.5,0.);
-    world.insert_boid(unit*1.5,unit*1.5,0.);
-    world.insert_boid(unit*1.5,unit*1.5,0.);
-    world.insert_boid(unit*1.5,unit*1.5,0.);
-    world.insert_boid(unit*1.5,unit*1.5,0.);
+    world.insert_boid(unit*1.5,unit*1.5,-0.1);
+    world.insert_boid(unit*1.5,unit*1.5,0.2);
+    world.insert_boid(unit*1.5,unit*1.5,-0.3);
+    world.insert_boid(unit*1.5,unit*1.5,0.4);
+    world.insert_boid(unit*1.5,unit*1.5,-0.5);
+    world.insert_boid(unit*1.5,unit*1.5,1.);
+    world.insert_boid(unit*1.5,unit*1.5,-1.1);
+    world.insert_boid(unit*1.5,unit*1.5,1.2);
+    world.insert_boid(unit*1.5,unit*1.5,-1.3);
+    world.insert_boid(unit*1.5,unit*1.5,1.4);
+    world.insert_boid(unit*1.5,unit*1.5,-1.5);
     world.insert_character(unit*1.5,unit*1.5,0.);
 
     world
