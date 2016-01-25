@@ -93,7 +93,7 @@ impl App {
     }
 
     pub fn set_player_shoot(&mut self) {
-        self.world.characters[0].shoot();
+        self.world.characters[0].gun_shoot();
     }
 
     //pub fn set_player_launch_grenade(&mut self) {

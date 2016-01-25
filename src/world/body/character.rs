@@ -17,6 +17,7 @@ use std::cell::RefCell;
 pub struct Character {
     body: Body,
     aim: f64,
+    gun: ModularGun,
 }
 
 pub const WIDTH: f64 = 10.;
@@ -44,14 +45,107 @@ impl Character {
                 body_type: BodyType::Character,
             },
             aim: angle,
+            gun: ModularGun::new(),
         }
+    }
+}
+
+const MODULAR_GUN_RANGE_UNIT: f64 = 10.;
+const MODULAR_GUN_WIDTH_UNIT: f64 = 10.;
+const MODULAR_GUN_DAMAGE_UNIT: f64 = 1.;
+const MODULAR_GUN_DISTANCE_FACTOR: f64 = 1.;
+const MODULAR_GUN_REALODING_FACTOR: f64 = 1.;
+const MODULAR_GUN_MAX_BULLET: u32 = 12;
+
+#[derive(Clone)]
+pub struct ModularGunSettings {
+    pub nbr_of_cannon: u32,
+    pub range: u32,
+    pub width: u32,
+    pub damage: u32,
+}
+
+impl ModularGunSettings {
+    pub fn Distance(&self, other: &ModularGunSettings) -> f64 {
+        (((self.nbr_of_cannon - other.nbr_of_cannon) as f64).abs()
+        + ((self.range - other.range) as f64).abs()
+        + ((self.width - other.width) as f64).abs()
+        + ((self.damage - other.damage) as f64).abs())
+            * MODULAR_GUN_DISTANCE_FACTOR
+    }
+}
+
+struct ModularGun {
+    settings: ModularGunSettings,
+    nbr_of_bullet: u32,
+    reloading: f64,
+}
+
+impl ModularGun {
+    pub fn new() -> ModularGun {
+        ModularGun {
+            settings: ModularGunSettings {
+                nbr_of_cannon: 0,
+                range: 0,
+                width: 0,
+                damage: 0,
+            },
+            nbr_of_bullet: 0,
+            reloading: 0.,
+        }
+    }
+
+    pub fn settings(&self) -> ModularGunSettings {
+        self.settings.clone()
+    }
+
+    pub fn set(&mut self, settings: &ModularGunSettings) {
+        self.settings = settings.clone();
+    }
+
+    pub fn update(&mut self, dt: f64) {
+        if self.nbr_of_bullet != MODULAR_GUN_MAX_BULLET {
+            self.reloading += dt * MODULAR_GUN_REALODING_FACTOR;
+
+            while self.reloading > 1. {
+                self.reloading -= 1.;
+                self.nbr_of_bullet += 1;
+            }
+
+            if self.nbr_of_bullet >= MODULAR_GUN_MAX_BULLET {
+                self.reloading = 0.;
+                self.nbr_of_bullet = MODULAR_GUN_MAX_BULLET;
+            }
+        }
+    }
+
+    pub fn range(&self) -> f64 {
+        (self.settings.range as f64) * MODULAR_GUN_RANGE_UNIT
+    }
+
+    pub fn width(&self) -> f64 {
+        (self.settings.width as f64) * MODULAR_GUN_WIDTH_UNIT
+    }
+
+    pub fn damage(&self) -> f64 {
+        (self.settings.damage as f64) * MODULAR_GUN_DAMAGE_UNIT
+    }
+
+    pub fn shoot(&mut self) {
+    }
+
+    pub fn ready(&self) -> bool {
+        self.nbr_of_bullet > 0
     }
 }
 
 pub trait CharacterTrait {
     fn aim(&self) -> f64;
     fn set_aim(&self, a: f64);
-    fn shoot(&self);
+    fn gun_shoot(&self);
+    fn set_gun(&self,&ModularGunSettings);
+    fn gun_settings(&self) -> ModularGunSettings;
+    fn gun_ready(&self) -> bool;
 }
 
 impl CharacterTrait for RefCell<Character> {
@@ -63,7 +157,20 @@ impl CharacterTrait for RefCell<Character> {
         self.borrow_mut().aim = a;
     }
 
-    fn shoot(&self) {
+    fn gun_shoot(&self) {
+        self.borrow_mut().gun.shoot();
+    }
+
+    fn set_gun(&self,settings: &ModularGunSettings) {
+        self.borrow_mut().gun.set(settings);
+    }
+
+    fn gun_settings(&self) -> ModularGunSettings {
+        self.borrow().gun.settings()
+    }
+
+    fn gun_ready(&self) -> bool {
+        self.borrow().gun.ready()
     }
 }
 
@@ -86,9 +193,13 @@ impl BodyTrait for RefCell<Character> {
             mut set_angle(a: f64) -> (),
             mask() -> u32,
             group() -> u32,
-            mut update(dt: f64, batch: &Batch<Rc<BodyTrait>>) -> (),
             collision_behavior() -> CollisionBehavior,
             render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
             on_collision(other: &BodyTrait) -> (),
+    }
+    fn update(&self, dt: f64, batch: &Batch<Rc<BodyTrait>>) {
+        let mut this = self.borrow_mut();
+        this.body.update(dt,batch);
+        this.gun.update(dt);
     }
 }
