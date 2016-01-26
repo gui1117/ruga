@@ -1,5 +1,3 @@
-use graphics::*;
-
 macro_rules! draw_line {
     ( $viewport:expr, $camera:expr, $gl:expr,
       $r:expr, $g:expr, $b:expr, $a:expr,

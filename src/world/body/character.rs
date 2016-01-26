@@ -160,9 +160,9 @@ impl ModularGun {
 
         let mut c_x = o_x;
         let mut c_y = o_y;
-        for i in 0..self.settings.nbr_of_cannon {
+        for _ in 0..self.settings.nbr_of_cannon {
             let mut ray_length = -1.;
-            batch.borrow().raycast(c_x,c_y,angle,f64::MAX,&mut |_,min,max| {
+            batch.borrow().raycast(c_x,c_y,angle,f64::MAX,&mut |_,min,_| {
                 ray_length = min;
                 true
             });

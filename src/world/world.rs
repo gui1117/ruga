@@ -10,17 +10,10 @@ use super::body::{
         Body,
         BodyTrait, 
 };
-use super::spatial_hashing::SpatialHashing;
 use super::batch::Batch;
-
-use util::{
-    grid_raycast,
-};
 
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::cmp::Ordering;
-use std::collections::HashSet;
 
 pub struct World {
     pub time: f64,

@@ -6,8 +6,6 @@ use super::{
     CollisionBehavior,
     BodyType,
 };
-use world::batch::Batch;
-use std::rc::Rc;
 use std::cell::RefCell;
 
 pub struct Body {
