@@ -4,7 +4,10 @@ use super::spatial_hashing::{
     Identifiable,
 };
 use super::BodyTrait;
+use util::grid_raycast;
 use std::rc::Rc;
+use std::collections::HashSet;
+use std::cmp::Ordering;
 
 pub struct Batch {
     unit: f64,
@@ -47,57 +50,58 @@ impl Batch {
 
     /// callback return true when stop
     pub fn raycast<F: FnMut(&BodyTrait, f64, f64) -> bool>(&self, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
-        //let unit = self.static_hashmap.unit();
-        //let x0 = x;
-        //let y0 = y;
-        //let x1 = x+length*angle.cos();
-        //let y1 = y+length*angle.sin();
-        //let index_vec = grid_raycast(x0/unit, y0/unit, x1/unit, y1/unit);
+        let unit = self.static_hashmap.unit();
+        let x0 = x;
+        let y0 = y;
+        let x1 = x+length*angle.cos();
+        let y1 = y+length*angle.sin();
+        let index_vec = grid_raycast(x0/unit, y0/unit, x1/unit, y1/unit);
 
-        //// equation y = ax + b (we consider x0 and x1 never alined)
-        //let a = (y1 - y0)/(x1 - x0);
-        //let b = y0 -a*x0;
+        // equation y = ax + b (we consider x0 and x1 never alined)
+        let a = (y1 - y0)/(x1 - x0);
+        let b = y0 -a*x0;
 
-        //let mut bodies: Vec<(Rc<BodyTrait>,f64,f64)>;
-        //let mut visited = HashSet::new();
-        //for i in &index_vec {
-        //    let segment_start = (i[0] as f64)*unit;
-        //    let segment_end = ((i[0]+1) as f64)*unit;
-        //    bodies = Vec::new();
+        let mut bodies: Vec<(Rc<BodyTrait>,f64,f64)>;
+        let mut visited = HashSet::new();
+        for i in &index_vec {
+            let segment_start = (i[0] as f64)*unit;
+            let segment_end = ((i[0]+1) as f64)*unit;
+            bodies = Vec::new();
 
-        //    let mut res = self.static_hashmap.get_on_index(i);
-        //    res.append(&mut self.dynamic_hashmap.get_on_index(i));
-        //    while let Some(body) = res.pop() {
-        //        if !visited.contains(&body.id()) {
-        //            let op = body.raycast(a,b);
-        //            if let Some((x_min,y_min,x_max,y_max)) = op {
-        //                if segment_start < x_min && x_min < segment_end {
-        //                    let min = ((x0-x_min).exp2() + (y0-y_min).exp2()).sqrt();
-        //                    let max = ((x0-x_max).exp2() + (y0-y_max).exp2()).sqrt();
-        //                    bodies.push((body,min,max));
-        //                }
-        //            }
-        //        }
-        //    }
+            let mut res = self.static_hashmap.get_on_index(i);
+            res.append(&mut self.dynamic_hashmap.get_on_index(i));
+            while let Some(body) = res.pop() {
+                if !visited.contains(&body.id()) {
+                    visited.insert(body.id());
+                    let op = body.raycast(a,b);
+                    if let Some((x_min,y_min,x_max,y_max)) = op {
+                        if segment_start < x_min && x_min < segment_end {
+                            let min = ((x0-x_min).exp2() + (y0-y_min).exp2()).sqrt();
+                            let max = ((x0-x_max).exp2() + (y0-y_max).exp2()).sqrt();
+                            bodies.push((body,min,max));
+                        }
+                    }
+                }
+            }
 
-        //    bodies.sort_by(|&(_,min_a,_),&(_,min_b,_)| {
-        //        if min_a > min_b {
-        //            Ordering::Less
-        //        } else if min_a == min_b {
-        //            Ordering::Equal
-        //        } else {
-        //            Ordering::Greater
-        //        }
-        //    });
+            bodies.sort_by(|&(_,min_a,_),&(_,min_b,_)| {
+                if min_a > min_b {
+                    Ordering::Less
+                } else if min_a == min_b {
+                    Ordering::Equal
+                } else {
+                    Ordering::Greater
+                }
+            });
 
-        //    for (body,min,max) in bodies {
-        //        let body = &*body;
-        //        visited.insert(body.id());
-        //        if callback(body,min,max) {
-        //            return;
-        //        }
-        //    }
-        //}
+            for (body,min,max) in bodies {
+                let body = &*body;
+                visited.insert(body.id());
+                if callback(body,min,max) {
+                    return;
+                }
+            }
+        }
     }
 
     pub fn get_on_segment(&self) {
