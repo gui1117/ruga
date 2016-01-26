@@ -55,6 +55,7 @@ const MODULAR_GUN_WIDTH_UNIT: f64 = 10.;
 const MODULAR_GUN_DAMAGE_UNIT: f64 = 1.;
 const MODULAR_GUN_DISTANCE_FACTOR: f64 = 1.;
 const MODULAR_GUN_REALODING_FACTOR: f64 = 1.;
+const MODULAR_GUN_MODULING_FACTOR: f64 = 1.;
 const MODULAR_GUN_MAX_BULLET: u32 = 12;
 
 #[derive(Clone)]
@@ -66,7 +67,7 @@ pub struct ModularGunSettings {
 }
 
 impl ModularGunSettings {
-    pub fn Distance(&self, other: &ModularGunSettings) -> f64 {
+    pub fn distance(&self, other: &ModularGunSettings) -> f64 {
         (((self.nbr_of_cannon - other.nbr_of_cannon) as f64).abs()
         + ((self.range - other.range) as f64).abs()
         + ((self.width - other.width) as f64).abs()
@@ -79,6 +80,7 @@ struct ModularGun {
     settings: ModularGunSettings,
     nbr_of_bullet: u32,
     reloading: f64,
+    moduling: f64,
 }
 
 impl ModularGun {
@@ -92,6 +94,7 @@ impl ModularGun {
             },
             nbr_of_bullet: 0,
             reloading: 0.,
+            moduling: 0.,
         }
     }
 
@@ -100,11 +103,14 @@ impl ModularGun {
     }
 
     pub fn set(&mut self, settings: &ModularGunSettings) {
+        self.moduling = self.settings.distance(settings);
         self.settings = settings.clone();
     }
 
     pub fn update(&mut self, dt: f64) {
-        if self.nbr_of_bullet != MODULAR_GUN_MAX_BULLET {
+        if self.moduling > 0. {
+            self.moduling -= dt * MODULAR_GUN_MODULING_FACTOR;
+        } else if self.nbr_of_bullet != MODULAR_GUN_MAX_BULLET {
             self.reloading += dt * MODULAR_GUN_REALODING_FACTOR;
 
             while self.reloading > 1. {
