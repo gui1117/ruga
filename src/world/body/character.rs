@@ -238,7 +238,7 @@ impl BodyTrait for RefCell<Character> {
 
     fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
         let this = self.borrow();
-        this.gun.render_debug(this.body.x,this.body.y,this.body.angle,&this.world_batch,lines);
+        this.gun.render_debug(this.body.x,this.body.y,this.aim,&this.world_batch,lines);
         this.body.render_debug(lines);
     }
 
