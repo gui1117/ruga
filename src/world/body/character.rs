@@ -18,6 +18,7 @@ pub struct Character {
     body: Body,
     aim: f64,
     gun: ModularGun,
+    world_batch: Rc<RefCell<Batch>>,
 }
 
 pub const WIDTH: f64 = 10.;
@@ -28,7 +29,7 @@ pub const GROUP: u32 = 2;
 
 
 impl Character {
-    pub fn new(id: usize, x: f64, y: f64, angle: f64) -> Character {
+    pub fn new(id: usize, x: f64, y: f64, angle: f64, batch: Rc<RefCell<Batch>>) -> Character {
         Character {
             body: Body {
                 id: id,
@@ -46,6 +47,7 @@ impl Character {
             },
             aim: angle,
             gun: ModularGun::new(),
+            world_batch: batch,
         }
     }
 }
@@ -138,6 +140,35 @@ impl ModularGun {
     }
 
     pub fn shoot(&mut self) {
+    }
+
+    pub fn render(&self, x: f64, y: f64, angle: f64, batch: Rc<RefCell<Batch>>, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
+        use std::f64::consts::PI;
+        use std::f64;
+
+        let orth_angle = angle + PI/2.;
+        let (o_x,o_y,dx,dy) = if self.settings.nbr_of_cannon > 1 {
+            (
+                x - self.width()/2.*orth_angle.cos(),
+                y - self.width()/2.*orth_angle.sin(),
+                self.width()/((self.settings.nbr_of_cannon-1) as f64) * orth_angle.cos(),
+                self.width()/((self.settings.nbr_of_cannon-1) as f64) * orth_angle.sin(),
+            )
+        } else {
+            (x,y,0.,0.)
+        };
+
+        let mut c_x = o_x;
+        let mut c_y = o_y;
+        for i in 0..self.settings.nbr_of_cannon {
+            let mut ray_length = -1.;
+            batch.borrow().raycast(c_x,c_y,angle,f64::MAX,&mut |_,min,max| {
+                ray_length = min;
+                true
+            });
+            c_x += dx;
+            c_y += dy;
+        }
     }
 
     pub fn ready(&self) -> bool {

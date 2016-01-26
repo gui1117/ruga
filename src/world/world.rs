@@ -64,7 +64,7 @@ impl World {
     }
 
     pub fn insert_character(&mut self, x: f64, y: f64, angle: f64) {
-        let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle)));
+        let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle,self.batch.clone())));
         let a_character = character.clone() as Rc<BodyTrait>;
         self.batch.borrow_mut().insert_dynamic(&a_character);
         self.dynamic_vec.push(a_character);

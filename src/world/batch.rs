@@ -39,7 +39,7 @@ impl Batch {
     }
 
     /// callback return true when stop
-    pub fn raycast<F: FnMut(&BodyTrait, f64, f64) -> bool>(&mut self, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
+    pub fn raycast<F: FnMut(&BodyTrait, f64, f64) -> bool>(&self, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
         //let unit = self.static_hashmap.unit();
         //let x0 = x;
         //let y0 = y;
