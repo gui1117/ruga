@@ -89,6 +89,40 @@ impl World {
         }
     }
 
+    pub fn render_debug(&mut self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
+        use graphics::Transformed;
+        use graphics::line::{ 
+            Line as LineDrawer, 
+            Shape as LineShape,
+        };
+        use graphics::types::Line;
+        use graphics::default_draw_state;
+
+        const RED: [f32; 4] = [1.0, 0.0, 0.0, 0.5]; 
+
+        let line_drawer = LineDrawer {
+            color: RED,
+            radius: 1.,
+            shape: LineShape::Round,
+        };
+
+        let mut lines = Vec::<[f64; 4]>::new();
+        for b in self.static_vec.iter() {
+            b.render_debug(&mut lines);
+        }
+        for b in self.dynamic_vec.iter() {
+            b.render_debug(&mut lines);
+        }
+
+        gl.draw(*viewport, |context, gl| {
+            let transform = camera.trans(context.transform);
+
+            for line in lines {
+                line_drawer.draw(line, default_draw_state(), transform, gl);
+            }
+        });
+    }
+
     pub fn update(&mut self, dt: f64) {
         // update bodies
         for body in self.dynamic_vec.iter() {

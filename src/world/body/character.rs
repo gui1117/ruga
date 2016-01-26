@@ -89,10 +89,10 @@ impl ModularGun {
     pub fn new() -> ModularGun {
         ModularGun {
             settings: ModularGunSettings {
-                nbr_of_cannon: 0,
-                range: 0,
-                width: 0,
-                damage: 0,
+                nbr_of_cannon: 4,
+                range: 10,
+                width: 10,
+                damage: 10,
             },
             nbr_of_bullet: 0,
             reloading: 0.,
@@ -142,7 +142,7 @@ impl ModularGun {
     pub fn shoot(&mut self) {
     }
 
-    pub fn render(&self, x: f64, y: f64, angle: f64, batch: Rc<RefCell<Batch>>, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
+    pub fn render_debug(&self, x: f64, y: f64, angle: f64, batch: &Rc<RefCell<Batch>>, lines: &mut Vec<[f64;4]>) {
         use std::f64::consts::PI;
         use std::f64;
 
@@ -166,6 +166,7 @@ impl ModularGun {
                 ray_length = min;
                 true
             });
+            lines.push([ c_x,c_y,c_x+ray_length*angle.cos(),c_y+ray_length*angle.sin()]);
             c_x += dx;
             c_y += dy;
         }
@@ -234,6 +235,13 @@ impl BodyTrait for RefCell<Character> {
             render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
             on_collision(other: &BodyTrait) -> (),
     }
+
+    fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
+        let this = self.borrow();
+        this.gun.render_debug(this.body.x,this.body.y,this.body.angle,&this.world_batch,lines);
+        this.body.render_debug(lines);
+    }
+
     fn update(&self, dt: f64) {
         let mut this = self.borrow_mut();
         this.body.update(dt);

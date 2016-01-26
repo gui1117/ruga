@@ -78,6 +78,7 @@ impl BodyTrait for RefCell<Boid> {
            group() -> u32,
            collision_behavior() -> CollisionBehavior,
            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
+           render_debug(lines: &mut Vec<[f64;4]>) -> (),
     }
 
     fn update(&self, dt: f64) {

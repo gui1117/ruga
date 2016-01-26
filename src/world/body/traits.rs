@@ -49,6 +49,8 @@ pub trait BodyTrait {
 
     fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics);
 
+    fn render_debug(&self, lines: &mut Vec<[f64;4]>);
+
     fn on_collision(&self, other: &BodyTrait);
 
     fn up (&self) -> f64 {

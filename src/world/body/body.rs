@@ -121,6 +121,25 @@ impl Body {
         self.collision_behavior.clone()
     }
 
+    pub fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
+        lines.push([
+                   self.x-self.width2,self.y-self.height2,
+                   self.x-self.width2,self.y+self.height2,
+        ]);
+        lines.push([
+                   self.x-self.width2,self.y+self.height2,
+                   self.x+self.width2,self.y+self.height2,
+        ]);
+        lines.push([
+                   self.x+self.width2,self.y+self.height2,
+                   self.x+self.width2,self.y-self.height2,
+        ]);
+        lines.push([
+                   self.x+self.width2,self.y-self.height2,
+                   self.x-self.width2,self.y-self.height2,
+        ]);
+    }
+
     pub fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
         use graphics::Transformed;
         use graphics::line::{ 
@@ -239,6 +258,10 @@ impl BodyTrait for RefCell<Body> {
 
     fn collision_behavior(&self) -> CollisionBehavior {
         self.borrow().collision_behavior.clone()
+    }
+
+    fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
+        self.borrow().render_debug(lines);
     }
 
     fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {

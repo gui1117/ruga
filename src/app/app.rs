@@ -51,7 +51,7 @@ impl App {
             clear(BLACK, gl);
         });
 
-        self.world.render(&args.viewport(),&self.camera,&mut self.gl);
+        self.world.render_debug(&args.viewport(),&self.camera,&mut self.gl);
 
 //        if !false {
 //            self.debug += 1;
