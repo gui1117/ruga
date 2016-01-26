@@ -8,8 +8,6 @@ use super::{
 };
 use util::bounding_box_raycast;
 use world::spatial_hashing::Location;
-use world::batch::Batch;
-use std::rc::Rc;
 use std::f64::consts::PI;
 
 pub trait BodyTrait {
@@ -47,7 +45,7 @@ pub trait BodyTrait {
 
     fn collision_behavior(&self) -> CollisionBehavior;
 
-    fn update(&self, dt: f64, batch: &Batch<Rc<BodyTrait>>);
+    fn update(&self, dt: f64);
 
     fn render(&self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics);
 

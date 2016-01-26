@@ -112,7 +112,7 @@ impl Body {
         self.group
     }
 
-    pub fn update(&mut self, dt: f64, _: &Batch<Rc<BodyTrait>>) {
+    pub fn update(&mut self, dt: f64) {
         if self.velocity != 0. {
             self.x += dt*self.velocity()*self.angle().cos();
             self.y += dt*self.velocity()*self.angle().sin();
@@ -235,8 +235,8 @@ impl BodyTrait for RefCell<Body> {
         self.borrow().group
     }
 
-    fn update(&self, dt: f64, batch: &Batch<Rc<BodyTrait>>) {
-        self.borrow_mut().update(dt,batch);
+    fn update(&self, dt: f64) {
+        self.borrow_mut().update(dt);
     }
 
     fn collision_behavior(&self) -> CollisionBehavior {

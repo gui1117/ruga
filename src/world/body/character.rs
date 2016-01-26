@@ -203,9 +203,9 @@ impl BodyTrait for RefCell<Character> {
             render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
             on_collision(other: &BodyTrait) -> (),
     }
-    fn update(&self, dt: f64, batch: &Batch<Rc<BodyTrait>>) {
+    fn update(&self, dt: f64) {
         let mut this = self.borrow_mut();
-        this.body.update(dt,batch);
+        this.body.update(dt);
         this.gun.update(dt);
     }
 }

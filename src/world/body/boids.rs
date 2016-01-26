@@ -19,7 +19,8 @@ use super::{
 
 pub struct Boid {
     body: Body,
-    alive: bool
+    alive: bool,
+    world_batch: Rc<RefCell<Batch>>,
 }
 
 pub const WIDTH: f64 = 10.;
@@ -35,7 +36,7 @@ pub const COHESION_MAX_DELTA_ANGLE: f64 = 2.*PI;
 pub const COHESION_FACTOR: f64 = 10.0;
 
 impl Boid {
-    pub fn new(id: usize, x: f64, y: f64, angle: f64) -> Boid {
+    pub fn new(id: usize, x: f64, y: f64, angle: f64, batch: Rc<RefCell<Batch>>) -> Boid {
         Boid {
             body: Body {
                 id: id,
@@ -52,6 +53,7 @@ impl Boid {
                 body_type: BodyType::Boid,
             },
             alive: true,
+            world_batch: batch,
         }
     }
 }
@@ -78,7 +80,7 @@ impl BodyTrait for RefCell<Boid> {
            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
     }
 
-    fn update(&self, dt: f64, batch: &Batch<Rc<BodyTrait>>) {
+    fn update(&self, dt: f64) {
         let mut counter = 0;
         let mut sum = 0.;
         {
@@ -101,13 +103,14 @@ impl BodyTrait for RefCell<Boid> {
                     }
                 }
             };
-            batch.apply_locally(&location,&mut callback);
+            let this = self.borrow();
+            this.world_batch.borrow().apply_locally(&location,&mut callback);
         }
         if counter > 0 {
             let a = self.angle() + dt*COHESION_FACTOR*sum/(counter as f64);
             self.set_angle(a);
         }
-        self.borrow_mut().body.update(dt,batch);
+        self.borrow_mut().body.update(dt);
     }
 
     fn on_collision(&self, other: &BodyTrait) {
