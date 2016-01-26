@@ -17,7 +17,7 @@ pub struct Batch {
 
 impl Identifiable for Rc<BodyTrait> {
     fn id(&self) -> usize {
-        self.id()
+        (**self).id()
     }
 }
 
