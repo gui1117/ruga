@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{
+    HashMap,
+    HashSet,
+};
 
 pub struct Location {
     pub up: f64,
@@ -7,18 +10,16 @@ pub struct Location {
     pub right: f64,
 }
 
-//pub trait Identifiable {
-//    type Id;
-//
-//    fn id(&self) -> Self::Id;
-//}
+pub trait Identifiable {
+    fn id(&self) -> usize;
+}
 
-pub struct SpatialHashing<T: Clone> {
+pub struct SpatialHashing<T: Clone+Identifiable> {
     unit: f64,
     hashmap: HashMap<[i32;2],Vec<T>>,
 }
 
-impl<T: Clone> SpatialHashing<T> {
+impl<T: Clone+Identifiable> SpatialHashing<T> {
     pub fn new(unit: f64) -> SpatialHashing<T> {
         SpatialHashing {
             unit: unit,
@@ -57,8 +58,14 @@ impl<T: Clone> SpatialHashing<T> {
 
     pub fn apply_locally<F: FnMut(&T)>(&self, loc: &Location, callback: &mut F) {
         let index = self.index(loc);
+        let mut visited = HashSet::<usize>::new();
         for i in &index {
-            self.apply_on_index(i,callback);
+            self.apply_on_index(i,&mut |t: &T| {
+                if !visited.contains(&t.id()) {
+                    callback(t);
+                    visited.insert(t.id());
+                }
+            });
         }
     }
 
@@ -81,8 +88,15 @@ impl<T: Clone> SpatialHashing<T> {
     pub fn get_locally(&self, loc: &Location) -> Vec<T> {
         let index = self.index(loc);
         let mut vec = Vec::new();
+        let mut got = HashSet::<usize>::new();
         for i in &index {
-            vec.append(&mut self.get_on_index(i));
+            let mut new_vec = self.get_on_index(i);
+            while let Some(t) = new_vec.pop() {
+                if !got.contains(&t.id()) {
+                    got.insert(t.id());
+                    vec.push(t);
+                }
+            }
         }
         vec
     }

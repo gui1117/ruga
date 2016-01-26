@@ -1,6 +1,7 @@
 use super::spatial_hashing::{
     SpatialHashing,
     Location,
+    Identifiable,
 };
 use super::BodyTrait;
 use std::rc::Rc;
@@ -9,6 +10,12 @@ pub struct Batch {
     unit: f64,
     static_hashmap: SpatialHashing<Rc<BodyTrait>>,
     dynamic_hashmap: SpatialHashing<Rc<BodyTrait>>,
+}
+
+impl Identifiable for Rc<BodyTrait> {
+    fn id(&self) -> usize {
+        self.id()
+    }
 }
 
 impl Batch {
