@@ -17,4 +17,3 @@
 #map
 
 * a map affect a texture to wall, rectangle, and circle
-
