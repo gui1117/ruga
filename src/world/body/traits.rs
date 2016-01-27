@@ -169,8 +169,8 @@ pub trait BodyTrait {
         }
     }
 
-    fn raycast(&self, a: f64, b: f64) -> Option<(f64,f64,f64,f64)> {
-        bounding_box_raycast(self.x(),self.y(),self.width2()*2.,self.height2()*2.,a,b)
+    fn raycast(&self, a: f64, b: f64, c: f64) -> Option<(f64,f64,f64,f64)> {
+        bounding_box_raycast(self.x(),self.y(),self.width2()*2.,self.height2()*2.,a,b,c)
     }
 
     //fn delta_snapshot(&mut self) -> Option<BodySnapshot>;

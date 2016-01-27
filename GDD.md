@@ -116,3 +116,8 @@ grenade customizable in many ways:
 your invisible and can go through wall during a time,
 it consume stamina, the more your rapid the more it consume,
 you cannot reappear in a wall
+
+#graphism
+
+an effect like color are moving differently to follow the hero..?!?
+genre le rouge dépasse du mur tandis que le vert est en retard

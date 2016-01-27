@@ -50,6 +50,8 @@ impl Batch {
 
     /// callback return true when stop
     pub fn raycast<F: FnMut(&BodyTrait, f64, f64) -> bool>(&self, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
+        use std::f64::consts::PI;
+
         let unit = self.static_hashmap.unit();
         let x0 = x;
         let y0 = y;
@@ -57,9 +59,12 @@ impl Batch {
         let y1 = y+length*angle.sin();
         let index_vec = grid_raycast(x0/unit, y0/unit, x1/unit, y1/unit);
 
-        // equation y = ax + b (we consider x0 and x1 never alined)
-        let a = (y1 - y0)/(x1 - x0);
-        let b = y0 -a*x0;
+        // equation ax + by + c = 0
+        let (a,b,c) = if angle == PI || angle == 0. {
+            (0.,1.,-y)
+        } else {
+            (1.,-angle.tan(),-x+angle.tan()*y)
+        };
 
         let mut bodies: Vec<(Rc<BodyTrait>,f64,f64)>;
         let mut visited = HashSet::new();
@@ -73,7 +78,7 @@ impl Batch {
             while let Some(body) = res.pop() {
                 if !visited.contains(&body.id()) {
                     visited.insert(body.id());
-                    let op = body.raycast(a,b);
+                    let op = body.raycast(a,b,c);
                     if let Some((x_min,y_min,x_max,y_max)) = op {
                         if segment_start < x_min && x_min < segment_end {
                             let min = ((x0-x_min).exp2() + (y0-y_min).exp2()).sqrt();
