@@ -89,7 +89,7 @@ impl ModularGun {
     pub fn new() -> ModularGun {
         ModularGun {
             settings: ModularGunSettings {
-                nbr_of_cannon: 4,
+                nbr_of_cannon: 1,
                 range: 10,
                 width: 10,
                 damage: 10,
@@ -142,7 +142,7 @@ impl ModularGun {
     pub fn shoot(&mut self) {
     }
 
-    pub fn render_debug(&self, x: f64, y: f64, angle: f64, batch: &Rc<RefCell<Batch>>, lines: &mut Vec<[f64;4]>) {
+    pub fn render_debug(&self, id: usize, x: f64, y: f64, angle: f64, batch: &Rc<RefCell<Batch>>, lines: &mut Vec<[f64;4]>) {
         use std::f64::consts::PI;
         use std::f64;
 
@@ -162,9 +162,13 @@ impl ModularGun {
         let mut c_y = o_y;
         for _ in 0..self.settings.nbr_of_cannon {
             let mut ray_length = self.range();
-            batch.borrow().raycast(c_x,c_y,angle,self.range(),&mut |_,min,_| {
-                ray_length = min;
-                true
+            batch.borrow().raycast(c_x,c_y,angle,self.range(),&mut |body,min,_| {
+                if body.id() != id {
+                    ray_length = min;
+                    true
+                } else {
+                    false
+                }
             });
             lines.push([ c_x,c_y,c_x+ray_length*angle.cos(),c_y+ray_length*angle.sin()]);
             c_x += dx;
@@ -238,7 +242,7 @@ impl BodyTrait for RefCell<Character> {
 
     fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
         let this = self.borrow();
-        this.gun.render_debug(this.body.x,this.body.y,this.aim,&this.world_batch,lines);
+        this.gun.render_debug(this.body.id,this.body.x,this.body.y,this.aim,&this.world_batch,lines);
         this.body.render_debug(lines);
     }
 
