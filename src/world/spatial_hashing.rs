@@ -29,14 +29,14 @@ impl<T: Clone+Identifiable> SpatialHashing<T> {
 
     fn index(&self, loc: &Location) -> Vec<[i32;2]> {
 
-        let min_x = (loc.left/self.unit) as i32;
-        let max_x = (loc.right/self.unit) as i32;
-        let min_y = (loc.down/self.unit) as i32;
-        let max_y = (loc.up/self.unit) as i32;
+        let min_x = (loc.left/self.unit).floor() as i32;
+        let max_x = (loc.right/self.unit).ceil() as i32;
+        let min_y = (loc.down/self.unit).floor() as i32;
+        let max_y = (loc.up/self.unit).ceil() as i32;
 
         let mut vec = Vec::new();
-        for x in min_x..max_x+1 {
-            for y in min_y..max_y+1 {
+        for x in min_x..max_x {
+            for y in min_y..max_y {
                 vec.push([x,y]);
             }
         }
@@ -108,4 +108,32 @@ impl<T: Clone+Identifiable> SpatialHashing<T> {
     pub fn unit(&self) -> f64 {
         self.unit
     }
+}
+
+#[cfg(test)]
+#[derive(Clone)]
+struct Ident {
+    id: usize,
+}
+
+#[cfg(test)]
+impl Identifiable for Ident {
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+
+#[test]
+fn test_index() {
+    let sh = SpatialHashing::<Ident>::new(40.);
+
+    let loc = Location {
+        up: 10.,
+        down: -10.,
+        left: -10.,
+        right: 10.,
+    };
+
+    let index = sh.index(&loc);
+    assert!(index.len() == 4);
 }
