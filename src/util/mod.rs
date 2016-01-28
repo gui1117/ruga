@@ -28,6 +28,8 @@ pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
         vec.reverse();
         vec
     } else {
+        // x0 < x1
+
         let x0_i32 = x0 as i32;
         let y0_i32 = y0 as i32;
         let x1_i32 = x1 as i32;
@@ -35,7 +37,7 @@ pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
         // equation y = ax + b
         let a = (y1 - y0)/(x1 - x0);
         let b = y0 -a*x0;
-        //println!("a:{} b:{}",a,b);
+        println!("a:{} b:{}",a,b);
 
         let delta_error = a.abs();
 
@@ -47,8 +49,8 @@ pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
         }
         let mut error = -(y0.floor() - (a*x0.floor() + b)).abs();
         let mut error_end = (y1 - (a*x1.ceil() + b)).abs();
-        //println!("debut: error: {}",error);
-        //println!("error end : {}", error_end);
+        println!("debut: error: {}",error);
+        println!("error end : {}", error_end);
 
         let mut vec = Vec::new();
         let mut y = y0_i32;
@@ -56,11 +58,11 @@ pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
         for x in x0_i32..x1_i32+1 {
             vec.push([x,y]);
             error += delta_error;
-            //println!("error: {}",error);
+            println!("error: {}",error);
             while error >= 1.0 {
                 y += signum;
                 error -= 1.0;
-                //println!("error -= 1.0: {}",error);
+                println!("error -= 1.0: {}",error);
                 vec.push([x,y]);
             }
         }
