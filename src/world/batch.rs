@@ -63,14 +63,18 @@ impl Batch {
         let (a,b,c) = if angle == PI || angle == 0. {
             (0.,1.,-y)
         } else {
-            (1.,-angle.tan(),-x+angle.tan()*y)
+            let b = -1./angle.tan();
+            (1.,b,-x-b*y)
         };
 
         let mut bodies: Vec<(Rc<BodyTrait>,f64,f64)>;
         let mut visited = HashSet::new();
         for i in &index_vec {
+            // x coordinate of start and end the segment of
+            // the line that is in the current square
             let segment_start = (i[0] as f64)*unit;
             let segment_end = ((i[0]+1) as f64)*unit;
+
             bodies = Vec::new();
 
             let mut res = self.static_hashmap.get_on_index(i);
@@ -78,11 +82,11 @@ impl Batch {
             while let Some(body) = res.pop() {
                 if !visited.contains(&body.id()) {
                     visited.insert(body.id());
-                    let op = body.raycast(a,b,c);
-                    if let Some((x_min,y_min,x_max,y_max)) = op {
+                    let intersections = body.raycast(a,b,c);
+                    if let Some((x_min,y_min,x_max,y_max)) = intersections {
                         if segment_start < x_min && x_min < segment_end {
-                            let min = ((x0-x_min).exp2() + (y0-y_min).exp2()).sqrt();
-                            let max = ((x0-x_max).exp2() + (y0-y_max).exp2()).sqrt();
+                            let min = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
+                            let max = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
                             bodies.push((body,min,max));
                         }
                     }

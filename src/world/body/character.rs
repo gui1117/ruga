@@ -161,7 +161,7 @@ impl ModularGun {
         let mut c_x = o_x;
         let mut c_y = o_y;
         for _ in 0..self.settings.nbr_of_cannon {
-            let mut ray_length = -1.;
+            let mut ray_length = self.range();
             batch.borrow().raycast(c_x,c_y,angle,self.range(),&mut |_,min,_| {
                 ray_length = min;
                 true

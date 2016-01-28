@@ -37,7 +37,6 @@ pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
         // equation y = ax + b
         let a = (y1 - y0)/(x1 - x0);
         let b = y0 -a*x0;
-        println!("a:{} b:{}",a,b);
 
         let delta_error = a.abs();
 
@@ -49,8 +48,6 @@ pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
         }
         let mut error = -(y0.floor() - (a*x0.floor() + b)).abs();
         let mut error_end = (y1 - (a*x1.ceil() + b)).abs();
-        println!("debut: error: {}",error);
-        println!("error end : {}", error_end);
 
         let mut vec = Vec::new();
         let mut y = y0_i32;
@@ -58,11 +55,9 @@ pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
         for x in x0_i32..x1_i32+1 {
             vec.push([x,y]);
             error += delta_error;
-            println!("error: {}",error);
             while error >= 1.0 {
                 y += signum;
                 error -= 1.0;
-                println!("error -= 1.0: {}",error);
                 vec.push([x,y]);
             }
         }
@@ -107,13 +102,11 @@ pub fn bounding_box_raycast(x: f64, y: f64, width: f64, height: f64, a: f64, b: 
             None
         }
     } else {
-        //println!("x:{}, y:{}, width:{}, height:{}, a:{}, b:{}, c:{}",x,y,width,height,a,b,c);
         // the ordonate of the point that is on the line(a,b) and the horizontal line that cut (x,y)
         let y_proj = -(a*x + c)/b; 
         // the abscisse of the point that is on the line(a,b) and the vertical line that cut (x,y)
         let x_proj = -(b*y+c)/a; 
 
-        //println!("proj: {:?} | {:?}",x_proj,y_proj);
         // i,j,k,l are three point:
         // * i represent the point on the horizontal line on the top of the bounding box
         // and on the line(a,b)
@@ -127,23 +120,16 @@ pub fn bounding_box_raycast(x: f64, y: f64, width: f64, height: f64, a: f64, b: 
         // dy = -a/b * dx
 
         let dx = -height/2. * b/a;
-        //println!("dx: {:?}",dx);
         let x_i = x_proj + dx;
         let y_i = y + height/2.;
         let x_k = x_proj - dx;
         let y_k = y - height/2.;
-        //println!("i: {:?} | {:?}",x_i,y_i);
-        //println!("k: {:?} | {:?}",x_k,y_k);
 
         let dy = -width/2. * a/b;
-        //println!("dy: {:?}",dy);
         let x_j = x + width/2.;
         let y_j = y_proj + dy;
         let x_l = x - width/2.;
         let y_l = y_proj - dy;
-        //println!("j: {:?} | {:?}",x_j,y_j);
-        //println!("l: {:?} | {:?}",x_l,y_l);
-
 
         let cond_i = x-width/2. < x_i && x_i < x+width/2.;
         let cond_k = x-width/2. < x_k && x_k < x+width/2.;
@@ -216,5 +202,7 @@ fn test_bounding_box_raycast() {
     assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., -1., -1., 9.));
     assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., 1., 1., 7.));
     assert_eq!(Some((-4.,-2.,-3.,-3.)),bounding_box_raycast( -1., -2., 6., 2., 1., 1., 6.));
+    
+    assert_eq!(Some((-4.,-1.96,2.,-2.02)),bounding_box_raycast( -1., -2., 6., 2., 0.01, 1., 2.));
 }
 
