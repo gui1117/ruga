@@ -113,8 +113,8 @@ grenade customizable in many ways:
 
 ##phantom
 
-your invisible and can go through wall during a time,
-it consume stamina, the more your rapid the more it consume,
+you're invisible and can go through wall during a time,
+it consume stamina, the more you're rapid the more it consume,
 you cannot reappear in a wall
 
 #graphism
