@@ -89,7 +89,7 @@ impl ModularGun {
     pub fn new() -> ModularGun {
         ModularGun {
             settings: ModularGunSettings {
-                nbr_of_cannon: 1,
+                nbr_of_cannon: 4,
                 range: 10,
                 width: 10,
                 damage: 10,
@@ -164,7 +164,7 @@ impl ModularGun {
             let mut ray_length = self.range();
             batch.borrow().raycast(c_x,c_y,angle,self.range(),&mut |body,min,_| {
                 if body.id() != id {
-                    ray_length = min;
+                    ray_length = min.max(0.);
                     true
                 } else {
                     false
