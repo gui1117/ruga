@@ -136,4 +136,14 @@ fn test_index() {
 
     let index = sh.index(&loc);
     assert!(index.len() == 4);
+
+    let loc = Location {
+        up: 40.,
+        down: 0.,
+        left: 0.,
+        right: 40.,
+    };
+
+    let index = sh.index(&loc);
+    assert!(index.len() == 1);
 }
