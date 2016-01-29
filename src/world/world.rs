@@ -14,10 +14,14 @@ use super::batch::Batch;
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 pub struct World {
     pub time: f64,
+    pub unit: f64,
     next_id: usize,
+    /// whether there is a wall or not
+    pub wall_map: Rc<RefCell<HashMap<[i32;2],bool>>>,
     pub walls: Vec<Rc<RefCell<Body>>>,
     pub monsters: Vec<Rc<RefCell<Body>>>,
     pub boids: Vec<Rc<RefCell<Boid>>>,
@@ -30,6 +34,7 @@ pub struct World {
 impl World {
     pub fn new(unit: f64) -> World {
         World {
+            unit: unit,
             time: 0.,
             next_id: 1,
             characters: Vec::new(),
@@ -39,6 +44,7 @@ impl World {
             static_vec: Vec::new(),
             dynamic_vec: Vec::new(),
             batch: Rc::new(RefCell::new(Batch::new(unit))),
+            wall_map: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
@@ -48,8 +54,10 @@ impl World {
         id
     }
 
-    pub fn insert_wall(&mut self, x: f64, y: f64, width: f64, height: f64) {
-        let wall = Rc::new(RefCell::new(Wall::new(self.next_id(),x,y,width,height)));
+    pub fn insert_wall(&mut self, x: i32, y: i32) {
+        self.wall_map.borrow_mut().insert([x,y],true);
+
+        let wall = Rc::new(RefCell::new(Wall::new(self.next_id(),x,y,self.unit)));
         let a_wall = wall.clone() as Rc<BodyTrait>;
         self.batch.borrow_mut().insert_static(&a_wall);
         self.static_vec.push(a_wall);

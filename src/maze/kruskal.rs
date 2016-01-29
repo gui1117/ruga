@@ -92,10 +92,10 @@ pub fn generate() -> World {
 
     for i in 0..maze.len() {
         if maze[i] {
-            let x = (i.wrapping_rem(width) as f64)*unit + unit/2.;
-            let y = ((i/width) as f64)*unit + unit/2.;
+            let x = (i.wrapping_rem(width)) as i32;
+            let y = (i/width) as i32;
 
-            world.insert_wall(x,y,unit,unit);
+            world.insert_wall(x,y);
         }
     }
 
