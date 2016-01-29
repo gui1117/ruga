@@ -1,4 +1,4 @@
-use super::direction::Direction;
+use util::direction::Direction;
 use super::point::Point;
 use super::app::App;
 use world::BodyTrait;

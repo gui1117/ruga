@@ -1,4 +1,3 @@
-mod direction;
 mod input;
 mod app;
 mod point;

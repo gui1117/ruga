@@ -1,4 +1,4 @@
-use super::direction::Direction;
+use util::direction::Direction;
 use opengl_graphics::GlGraphics;
 use world::{ World, Camera, BodyTrait };
 use world::body::character::CharacterTrait;
