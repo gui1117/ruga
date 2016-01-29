@@ -95,7 +95,6 @@ impl World {
             Line as LineDrawer, 
             Shape as LineShape,
         };
-        use graphics::types::Line;
         use graphics::default_draw_state;
 
         const RED: [f32; 4] = [1.0, 0.0, 0.0, 0.5]; 

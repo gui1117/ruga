@@ -144,7 +144,6 @@ impl ModularGun {
 
     pub fn render_debug(&self, id: usize, x: f64, y: f64, angle: f64, batch: &Rc<RefCell<Batch>>, lines: &mut Vec<[f64;4]>) {
         use std::f64::consts::PI;
-        use std::f64;
 
         let orth_angle = angle + PI/2.;
         let (o_x,o_y,dx,dy) = if self.settings.nbr_of_cannon > 1 {

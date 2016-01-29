@@ -6,8 +6,7 @@ mod drawer;
 
 pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
     if (x1-x0).abs() < (y1-y0).abs() {
-        let mut vec = grid_raycast(y0,x0,y1,x1);
-        vec.iter().map(|s| [s[1],s[0]]).collect::<Vec<[i32;2]>>()
+        grid_raycast(y0,x0,y1,x1).iter().map(|s| [s[1],s[0]]).collect::<Vec<[i32;2]>>()
     } else if x0 == x1 {
         let x0_i32 = x0.floor() as i32;
         let y0_i32 = y0.floor() as i32;

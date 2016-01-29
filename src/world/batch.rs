@@ -11,7 +11,7 @@ use std::collections::HashSet;
 use std::cmp::Ordering;
 
 pub struct Batch {
-    unit: f64,
+    pub unit: f64,
     static_hashmap: SpatialHashing<Rc<BodyTrait>>,
     dynamic_hashmap: SpatialHashing<Rc<BodyTrait>>,
 }
