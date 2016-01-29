@@ -24,27 +24,30 @@ pub struct Body {
 }
 
 /// model for delegate
-/// delegate!{
-///     body:
-///        id() -> usize,
-///        width2() -> f64,
-///        height2() -> f64,
-///        x() -> f64,
-///        set_x(x: f64) -> (),
-///        y() -> f64,
-///        set_y(y: f64) -> (),
-///        weight() -> f64,
-///        velocity() -> f64,
-///        set_velocity(v: f64) -> (),
-///        angle() -> f64,
-///        set_angle(a: f64) -> (),
-///        mask() -> u32,
-///        group() -> u32,
-///        update(dt: f64) -> (),
-///        collision_behavior() -> CollisionBehavior,
-///        render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
-///        on_collision(other: &BodyTrait) -> (),
-/// }
+///    delegate!{
+///        body:
+///            id() -> usize,
+///            body_type() -> BodyType,
+///            damage(d: f64) -> (),
+///            width2() -> f64,
+///            height2() -> f64,
+///            x() -> f64,
+///            mut set_x(x: f64) -> (),
+///            y() -> f64,
+///            mut set_y(y: f64) -> (),
+///            weight() -> f64,
+///            velocity() -> f64,
+///            mut set_velocity(v: f64) -> (),
+///            angle() -> f64,
+///            mut set_angle(a: f64) -> (),
+///            mask() -> u32,
+///            group() -> u32,
+///            collision_behavior() -> CollisionBehavior,
+///            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
+///            render_debug(lines: &mut Vec<[f64;4]>) -> (),
+///            on_collision(other: &BodyTrait) -> (),
+///            mut update(dt: f64) -> (),
+///    }
 
 impl Body {
     pub fn id(&self) -> usize {
