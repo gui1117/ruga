@@ -5,6 +5,7 @@ use super::spatial_hashing::{
 };
 use super::BodyTrait;
 use util::grid_raycast;
+use std::ops::Rem;
 use std::rc::Rc;
 use std::collections::HashSet;
 use std::cmp::Ordering;
@@ -52,6 +53,11 @@ impl Batch {
     pub fn raycast<F: FnMut(&BodyTrait, f64, f64) -> bool>(&self, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
         use std::f64::consts::PI;
 
+        //println!("");
+        //println!("raycast");
+
+        let angle = angle.rem(PI);
+
         let unit = self.static_hashmap.unit();
         let x0 = x;
         let y0 = y;
@@ -60,20 +66,24 @@ impl Batch {
         let index_vec = grid_raycast(x0/unit, y0/unit, x1/unit, y1/unit);
 
         // equation ax + by + c = 0
-        let (a,b,c) = if angle == PI || angle == 0. {
+        let (a,b,c) = if angle.abs() == PI || angle == 0. {
             (0.,1.,-y)
         } else {
             let b = -1./angle.tan();
             (1.,b,-x-b*y)
         };
 
+        let line_start = x0.min(x1);
+        let line_end = x0.max(x1);
+
         let mut bodies: Vec<(Rc<BodyTrait>,f64,f64)>;
         let mut visited = HashSet::new();
         for i in &index_vec {
-            // x coordinate of start and end the segment of
+            //println!("index:{:?}",i);
+            // abscisse of start and end the segment of
             // the line that is in the current square
-            let segment_start = (i[0] as f64)*unit;
-            let segment_end = ((i[0]+1) as f64)*unit;
+            let segment_start = ((i[0] as f64)*unit).max(line_start);
+            let segment_end = (((i[0]+1) as f64)*unit).min(line_end);
 
             bodies = Vec::new();
 
@@ -81,13 +91,27 @@ impl Batch {
             res.append(&mut self.dynamic_hashmap.get_on_index(i));
             while let Some(body) = res.pop() {
                 if !visited.contains(&body.id()) {
-                    visited.insert(body.id());
                     let intersections = body.raycast(a,b,c);
                     if let Some((x_min,y_min,x_max,y_max)) = intersections {
-                        if segment_start < x_min && x_min < segment_end {
-                            let min = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
-                            let max = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
-                            bodies.push((body,min,max));
+                        //println!("intersection");
+                        //println!("start:{},end:{},min:{},max:{}",segment_start,segment_end,x_min,x_max);
+
+                        if angle.abs() > PI/2. {
+                            if segment_start <= x_max && x_max <= segment_end {
+                                visited.insert(body.id());
+                                //println!("intersection in segment");
+                                let max = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
+                                let min = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
+                                bodies.push((body,min,max));
+                            }
+                        } else {
+                            if segment_start <= x_min && x_min <= segment_end {
+                                visited.insert(body.id());
+                                //println!("intersection in segment");
+                                let min = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
+                                let max = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
+                                bodies.push((body,min,max));
+                            }
                         }
                     }
                 }
@@ -95,11 +119,11 @@ impl Batch {
 
             bodies.sort_by(|&(_,min_a,_),&(_,min_b,_)| {
                 if min_a > min_b {
-                    Ordering::Less
+                    Ordering::Greater
                 } else if min_a == min_b {
                     Ordering::Equal
                 } else {
-                    Ordering::Greater
+                    Ordering::Less
                 }
             });
 
