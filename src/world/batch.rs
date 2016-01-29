@@ -97,19 +97,25 @@ impl Batch {
                         //println!("start:{},end:{},min:{},max:{}",segment_start,segment_end,x_min,x_max);
 
                         if angle.abs() > PI/2. {
-                            if segment_start <= x_max && x_max <= segment_end {
+                            if segment_start <= x_max && x_min <= segment_end {
                                 visited.insert(body.id());
                                 //println!("intersection in segment");
                                 let max = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
-                                let min = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
+                                let mut min = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
+                                if x_max > segment_end {
+                                    min = -min;
+                                }
                                 bodies.push((body,min,max));
                             }
                         } else {
-                            if segment_start <= x_min && x_min <= segment_end {
+                            if segment_start <= x_max && x_min <= segment_end {
                                 visited.insert(body.id());
                                 //println!("intersection in segment");
-                                let min = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
+                                let mut min = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
                                 let max = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
+                                if x_min < segment_start {
+                                    min = -min;
+                                }
                                 bodies.push((body,min,max));
                             }
                         }
