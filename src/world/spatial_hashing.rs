@@ -27,7 +27,7 @@ impl<T: Clone+Identifiable> SpatialHashing<T> {
         }
     }
 
-    fn index(&self, loc: &Location) -> Vec<[i32;2]> {
+    pub fn index(&self, loc: &Location) -> Vec<[i32;2]> {
 
         let min_x = (loc.left/self.unit).floor() as i32;
         let max_x = (loc.right/self.unit).ceil() as i32;
@@ -44,16 +44,20 @@ impl<T: Clone+Identifiable> SpatialHashing<T> {
         vec
     }
 
-    pub fn insert(&mut self, loc: &Location, obj: &T) {
+    pub fn insert_locally(&mut self, loc: &Location, obj: &T) {
         let index = self.index(loc);
 
         for i in &index {
-            if let Some(vec) = self.hashmap.get_mut(i) {
-                vec.push(obj.clone());
-                continue;
-            }
-            self.hashmap.insert(*i,vec![obj.clone()]);
+            self.insert_on_index(i,obj);
         }
+    }
+
+    pub fn insert_on_index(&mut self, index: &[i32;2], obj: &T) {
+        if let Some(vec) = self.hashmap.get_mut(index) {
+            vec.push(obj.clone());
+            return;
+        }
+        self.hashmap.insert(*index,vec![obj.clone()]);
     }
 
     pub fn apply_locally<F: FnMut(&T)>(&self, loc: &Location, callback: &mut F) {

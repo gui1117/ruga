@@ -32,11 +32,11 @@ impl Batch {
     }
 
     pub fn insert_static(&mut self, body: &Rc<BodyTrait>) {
-        self.static_hashmap.insert(&body.location(),body);
+        self.static_hashmap.insert_locally(&body.location(),body);
     }
 
     pub fn insert_dynamic(&mut self, body: &Rc<BodyTrait>) {
-        self.dynamic_hashmap.insert(&body.location(),body);
+        self.dynamic_hashmap.insert_locally(&body.location(),body);
     }
 
     pub fn apply_locally<F: FnMut(&Rc<BodyTrait>)>(&self, loc: &Location, callback: &mut F) {
