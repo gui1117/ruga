@@ -21,8 +21,9 @@ impl Camera {
     }
 
 	pub fn trans(&self, transform: Matrix2d) -> Matrix2d {
-		transform.trans(-self.x,-self.y)
-			.trans(self.width/2.,self.height/2.)
+		transform
 			.zoom(self.zoom)
+            .trans(-self.x,-self.y)
+			.trans(self.width/2./self.zoom,self.height/2./self.zoom)
 	}
 }

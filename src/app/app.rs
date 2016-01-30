@@ -28,7 +28,7 @@ impl App {
             quit: false,
             window_size: [width,height],
             player_dir: vec![],
-            camera: Camera::new(0.,0., width, height, 1.),
+            camera: Camera::new(0.,0., width, height, 5.),
 //            debug: 0,
 //            debug2: 0.,
         };
