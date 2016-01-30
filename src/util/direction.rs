@@ -1,6 +1,6 @@
 use std::fmt; 
 
-#[derive(Clone)]
+#[derive(Clone,Copy,PartialEq)]
 pub enum Direction {
 	Left,
 	Right,
@@ -30,8 +30,8 @@ impl Direction {
     pub fn to_f64(&self) -> f64 {
         use std::f64::consts::*;
         match self {
-			&Direction::Up => -FRAC_PI_2,
-			&Direction::Down => FRAC_PI_2,
+			&Direction::Up => FRAC_PI_2,
+			&Direction::Down => -FRAC_PI_2,
 			&Direction::Left => PI,
 			&Direction::Right => 0.,
 		}
