@@ -21,6 +21,8 @@ pub struct App {
 //    pub debug2: f64,
 }
 
+const ZOOM: f64 = 7.;
+
 impl App {
     pub fn new(gl: GlGraphics, width: f64, height: f64) -> App {
         let app = App {
@@ -29,7 +31,7 @@ impl App {
             quit: false,
             window_size: [width,height],
             player_dir: vec![],
-            camera: Camera::new(0.,0., width, height, 7.),
+            camera: Camera::new(0.,0., width, height, 1.),
 //            debug: 0,
 //            debug2: 0.,
         };
