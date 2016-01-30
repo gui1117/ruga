@@ -9,6 +9,8 @@ use super::{
 use util::bounding_box_raycast;
 use world::spatial_hashing::Location;
 use std::f64::consts::PI;
+use rand;
+use rand::distributions::{IndependentSample, Range};
 
 pub trait BodyTrait {
     fn id(&self) -> usize;
@@ -154,6 +156,11 @@ pub trait BodyTrait {
                     - a.angle()
                 };
                 a.set_angle(an);
+            },
+            CollisionBehavior::Random => {
+                let range = Range::new(-PI,PI);
+                let mut rng = rand::thread_rng();
+                a.set_angle(range.ind_sample(&mut rng));
             },
             CollisionBehavior::Stop => a.set_velocity(0.),
             CollisionBehavior::Persist => (),

@@ -18,7 +18,8 @@ pub use self::traits::BodyTrait;
 pub enum CollisionBehavior {
     Persist,
     Stop,
-    Bounce
+    Bounce,
+    Random,
 }
 
 #[derive(Clone,PartialEq)]
