@@ -209,8 +209,10 @@ impl BodyTrait for RefCell<Snake> {
                 let free_dir = this.free_directions();
                 let mut next_dir = if free_dir.contains(&this.direction) {
                     this.direction
-                } else {
+                } else if free_dir.len() > 0 {
                     free_dir[0]
+                } else {
+                    this.direction.opposite()
                 };
                 let mut closest_prey_dist = i32::MAX;
                 for dir in free_dir {
