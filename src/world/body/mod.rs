@@ -4,11 +4,13 @@ pub mod body;
 pub mod monster;
 pub mod boids;
 pub mod traits;
+pub mod snake;
 
 pub use self::character::Character;
 pub use self::wall::Wall;
 pub use self::body::Body;
 pub use self::monster::Monster;
+pub use self::snake::Snake;
 pub use self::boids::Boid;
 pub use self::traits::BodyTrait;
 
@@ -25,6 +27,7 @@ pub enum BodyType {
     Character,
     Monster,
     Boid,
+    Snake,
 }
 
 //pub struct BodySnapshot;

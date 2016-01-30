@@ -5,12 +5,14 @@ use super::Camera;
 use super::body::{ 
     Wall, 
     Character, 
+    Snake,
     Monster, 
         Boid,
         Body,
         BodyTrait, 
 };
 use super::batch::Batch;
+use util::direction::Direction;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -25,6 +27,7 @@ pub struct World {
     pub walls: Vec<Rc<RefCell<Body>>>,
     pub monsters: Vec<Rc<RefCell<Body>>>,
     pub boids: Vec<Rc<RefCell<Boid>>>,
+    pub snakes: Vec<Rc<RefCell<Snake>>>,
     pub characters: Vec<Rc<RefCell<Character>>>,
     pub static_vec: Vec<Rc<BodyTrait>>,
     pub dynamic_vec: Vec<Rc<BodyTrait>>,
@@ -38,6 +41,7 @@ impl World {
             time: 0.,
             next_id: 1,
             characters: Vec::new(),
+            snakes: Vec::new(),
             monsters: Vec::new(),
             boids: Vec::new(),
             walls: Vec::new(),
@@ -86,6 +90,14 @@ impl World {
         self.batch.borrow_mut().insert_dynamic(&a_boid);
         self.dynamic_vec.push(a_boid);
         self.boids.push(boid);
+    }
+
+    pub fn insert_snake(&mut self, x: i32, y: i32, angle: Direction) {
+        let snake = Rc::new(RefCell::new(Snake::new(self.next_id(),x,y,angle,self.unit,self.wall_map.clone(),self.batch.clone())));
+        let a_snake = snake.clone() as Rc<BodyTrait>;
+        self.batch.borrow_mut().insert_dynamic(&a_snake);
+        self.dynamic_vec.push(a_snake);
+        self.snakes.push(snake);
     }
 
     pub fn render(&mut self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {

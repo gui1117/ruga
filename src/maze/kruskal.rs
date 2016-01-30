@@ -2,6 +2,7 @@
 
 extern crate rand;
 
+use util::direction::Direction;
 use self::rand::distributions::{IndependentSample, Range};
 use world::World;
 
@@ -111,6 +112,7 @@ pub fn generate() -> World {
     world.insert_boid(unit*1.5,unit*1.5,-1.3);
     world.insert_boid(unit*1.5,unit*1.5,1.4);
     world.insert_boid(unit*1.5,unit*1.5,-1.5);
+    world.insert_snake(width as i32 - 1,height as i32 - 2,Direction::Left);
     world.insert_character(unit*1.5,unit*1.5,0.);
 
     world
