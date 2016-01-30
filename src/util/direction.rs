@@ -36,6 +36,15 @@ impl Direction {
 			&Direction::Right => 0.,
 		}
     }
+
+    pub fn opposite(&self) -> Direction {
+        match self {
+			&Direction::Up => Direction::Down,
+			&Direction::Down => Direction::Up,
+			&Direction::Left => Direction::Right,
+			&Direction::Right => Direction::Left,
+		}
+    }
 }
 
 impl fmt::Debug for Direction {
