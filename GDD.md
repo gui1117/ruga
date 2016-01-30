@@ -104,6 +104,10 @@ tothink:
   (an idea is the less the gun is 'expensive' 
   the more it is rapid to swap to it)
 
+* maybe damage is set on segment: number of damage per segment
+* and you have a "stamina" of damage per second
+
+
 ##grenade
 
 grenade customizable in many ways:
