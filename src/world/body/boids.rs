@@ -29,11 +29,11 @@ pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
 pub const GROUP: u32 = 4;
 pub const DAMAGE: f64 = 10.;
-pub const VELOCITY: f64 = 100.;
+pub const VELOCITY: f64 = 50.;
 
-pub const COHESION_RADIUS: f64 = 50.;
-pub const COHESION_MAX_DELTA_ANGLE: f64 = 2.*PI;
-pub const COHESION_FACTOR: f64 = 10.0;
+pub const COHESION_RADIUS: f64 = 40.;
+pub const COHESION_MAX_DELTA_ANGLE: f64 = PI;
+pub const COHESION_FACTOR: f64 = 5.;
 
 impl Boid {
     pub fn new(id: usize, x: f64, y: f64, angle: f64, batch: Rc<RefCell<Batch>>) -> Boid {
@@ -49,7 +49,7 @@ impl Boid {
                 angle: angle,
                 mask: MASK,
                 group: GROUP,
-                collision_behavior: CollisionBehavior::Bounce,
+                collision_behavior: CollisionBehavior::Random,
                 body_type: BodyType::Boid,
             },
             alive: true,
@@ -108,7 +108,12 @@ impl BodyTrait for RefCell<Boid> {
             this.world_batch.borrow().apply_locally(&location,&mut callback);
         }
         if counter > 0 {
-            let a = self.angle() + dt*COHESION_FACTOR*sum/(counter as f64);
+            if sum > 0. {
+                println!("sup");
+            } else {
+                println!("inf");
+            }
+            let a = self.angle() - dt*COHESION_FACTOR*sum/(counter as f64);
             self.set_angle(a);
         }
         self.borrow_mut().body.update(dt);
