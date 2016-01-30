@@ -23,8 +23,8 @@ pub struct Boid {
     world_batch: Rc<RefCell<Batch>>,
 }
 
-pub const WIDTH: f64 = 10.;
-pub const HEIGHT: f64 = 10.;
+pub const WIDTH: f64 = 1.;
+pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
 pub const GROUP: u32 = 4;

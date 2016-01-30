@@ -19,7 +19,7 @@ impl App {
 		let mut angle = 0.;
 		if let Some(dir) = self.player_dir.last() {
 			
-			velocity = 300.;
+			velocity = 1.;
 			let mut last_perpendicular: Option<&Direction> = None;
 			for d in &self.player_dir {
 				if d.perpendicular(dir) {

@@ -21,8 +21,9 @@ pub struct Character {
     world_batch: Rc<RefCell<Batch>>,
 }
 
-pub const WIDTH: f64 = 10.;
-pub const HEIGHT: f64 = 10.;
+pub const WIDTH: f64 = 1.;
+pub const VELOCITY: f64 = 75.;
+pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
 pub const GROUP: u32 = 2;
@@ -52,8 +53,8 @@ impl Character {
     }
 }
 
-const MODULAR_GUN_RANGE_UNIT: f64 = 10.;
-const MODULAR_GUN_WIDTH_UNIT: f64 = 10.;
+const MODULAR_GUN_RANGE_UNIT: f64 = 7.;
+const MODULAR_GUN_WIDTH_UNIT: f64 = 4.;
 const MODULAR_GUN_DAMAGE_UNIT: f64 = 1.;
 const MODULAR_GUN_DISTANCE_FACTOR: f64 = 1.;
 const MODULAR_GUN_REALODING_FACTOR: f64 = 1.;
@@ -90,8 +91,8 @@ impl ModularGun {
         ModularGun {
             settings: ModularGunSettings {
                 nbr_of_cannon: 4,
-                range: 10,
-                width: 10,
+                range: 4,
+                width: 1,
                 damage: 10,
             },
             nbr_of_bullet: 0,

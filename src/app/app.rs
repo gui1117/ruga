@@ -2,6 +2,7 @@ use util::direction::Direction;
 use opengl_graphics::GlGraphics;
 use world::{ World, Camera, BodyTrait };
 use world::body::character::CharacterTrait;
+use world::body::character;
 use piston::input::{ 
     RenderArgs, 
     UpdateArgs, 
@@ -28,7 +29,7 @@ impl App {
             quit: false,
             window_size: [width,height],
             player_dir: vec![],
-            camera: Camera::new(0.,0., width, height, 5.),
+            camera: Camera::new(0.,0., width, height, 7.),
 //            debug: 0,
 //            debug2: 0.,
         };
@@ -81,7 +82,8 @@ impl App {
     }
 
     pub fn set_player_velocity(&mut self, v: f64) {
-        self.world.characters[0].set_velocity(v);
+        let v = v.min(1.);
+        self.world.characters[0].set_velocity(v*character::VELOCITY);
     }
 
     pub fn player_angle(&self) -> f64 {
