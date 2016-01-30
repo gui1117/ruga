@@ -108,11 +108,6 @@ impl BodyTrait for RefCell<Boid> {
             this.world_batch.borrow().apply_locally(&location,&mut callback);
         }
         if counter > 0 {
-            if sum > 0. {
-                println!("sup");
-            } else {
-                println!("inf");
-            }
             let a = self.angle() - dt*COHESION_FACTOR*sum/(counter as f64);
             self.set_angle(a);
         }
