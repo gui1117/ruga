@@ -84,12 +84,12 @@ fn generate_partial_reverse_randomized_kruskal(width: usize, height: usize, perc
 pub fn generate() -> World {
     let width = 17;
     let height = 17;
-    let unit = 40.;
+    let unit = 16.;
     let percent = 30.;
 
     let maze = generate_partial_reverse_randomized_kruskal(width,height,percent);
 
-    let mut world = World::new(30.);
+    let mut world = World::new(unit);
 
     for i in 0..maze.len() {
         if maze[i] {

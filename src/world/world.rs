@@ -121,7 +121,7 @@ impl World {
 
         let line_drawer = LineDrawer {
             color: RED,
-            radius: 1.,
+            radius: 0.2,
             shape: LineShape::Round,
         };
 
