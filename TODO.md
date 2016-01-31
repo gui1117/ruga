@@ -1,19 +1,10 @@
-#plan
-
-* map from svg
-
-* creation of a map
-
-* boids
-
-* weapon, damage..
-
-* graphism
-
-* Cannon more generic ->  shotgun, impact..
-
-* !circle body
-
 #map
 
 * a map affect a texture to wall, rectangle, and circle
+
+#short term
+
+* snake are no longer snake because difficult and useless
+  now they are just slow kind of dynamic wall.
+
+* think of mosnters!

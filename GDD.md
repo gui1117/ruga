@@ -125,3 +125,11 @@ you cannot reappear in a wall
 
 an effect like color are moving differently to follow the hero..?!?
 genre le rouge dépasse du mur tandis que le vert est en retard
+
+#vrac
+
+* vie: f64, regenere vite: -> pour les lucioles faut pas s'en prendre trop
+* interface de vie: -> noir et blanc et rouge + son? + quand même clair en trois segment: bien,moyen,critique
+* finalement: armes: shotgun, mitraillettes, grenade et c'est tout
+* réflechir déplacement spécial
+
