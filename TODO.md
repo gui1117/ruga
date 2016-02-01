@@ -8,3 +8,6 @@
   now they are just slow kind of dynamic wall.
 
 * think of mosnters!
+
+* COLLISION: when resolving overlap move in the direction perpendicular
+  of the collision vector the length of the overlap

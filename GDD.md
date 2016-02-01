@@ -133,3 +133,22 @@ genre le rouge dépasse du mur tandis que le vert est en retard
 * finalement: armes: shotgun, mitraillettes, grenade et c'est tout
 * réflechir déplacement spécial
 
+#Weapons
+
+* first weapon: sword
+* second weapon: rifle/shotgun/sniper
+* third weapon: grenade
+
+the third weapon can be used everytime
+the weapons can be changed in weapon armory dispatched in the world
+also ammo are very limited and every weapon armroy give full ammo
+
+very inspired by left4dead
+
+#health
+
+maximum is 100.
+when your done you can be rescued by other at any time
+but you can lost people in maze and no indication are given ?
+or maybe you have the direction of people if the distance is not to high
+
