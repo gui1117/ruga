@@ -5,7 +5,7 @@ use super::spatial_hashing::{
 };
 use super::BodyTrait;
 use util::grid_raycast;
-use std::ops::Rem;
+use util::minus_pi_pi;
 use std::rc::Rc;
 use std::collections::HashSet;
 use std::cmp::Ordering;
@@ -56,7 +56,7 @@ impl Batch {
         //println!("");
         //println!("raycast");
 
-        let angle = angle.rem(PI);
+        let angle = minus_pi_pi(angle);
 
         let unit = self.static_hashmap.unit();
         let x0 = x;

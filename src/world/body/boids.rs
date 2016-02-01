@@ -8,7 +8,7 @@ use world::spatial_hashing::Location;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::f64::consts::PI;
-use std::ops::Rem;
+use util::minus_pi_pi;
 
 use super::{ 
     Body, 
@@ -97,7 +97,8 @@ impl BodyTrait for RefCell<Boid> {
             let mut callback = |body: &Rc<BodyTrait>| {
                 let body = &*body;
                 if body.body_type() == BodyType::Boid {
-                    let delta_angle = (body.angle() - self.angle()).rem(PI);
+                    // WARNING if the delta angle is n*PI then it is counted
+                    let delta_angle = minus_pi_pi(body.angle() - self.angle());
                     if delta_angle.abs() < COHESION_MAX_DELTA_ANGLE {
                         counter += 1;
                         sum += delta_angle;
