@@ -276,6 +276,46 @@ impl BodyTrait for RefCell<Body> {
     }
 }
 
+#[test]
+fn test_trait_in_circle() {
+    let a = RefCell::new(Body {
+        x: 1.,
+        y: 2.,
+        width2: 1.,
+        height2: 1.,
+        id: 1,
+        weight: 0.,
+        velocity: 0.,
+        angle: 0.,
+        mask: 0,
+        group: 0,
+        collision_behavior: CollisionBehavior::Stop,
+        body_type: BodyType::Wall,
+    });
+    assert_eq!(true,a.in_circle([3.,3.],1.));
+    assert_eq!(false,a.in_circle([3.,3.],0.9));
+    assert_eq!(true,a.in_circle([3.,2.],1.1));
+    assert_eq!(true,a.in_circle([1.,2.],0.1));
+    assert_eq!(true,a.in_circle([1.,2.],5.1));
+
+    let b = RefCell::new(Body {
+        x: 0.,
+        y: 0.,
+        width2: 10.,
+        height2: 1.,
+        id: 1,
+        weight: 0.,
+        velocity: 0.,
+        angle: 0.,
+        mask: 0,
+        group: 0,
+        collision_behavior: CollisionBehavior::Stop,
+        body_type: BodyType::Wall,
+    });
+    assert_eq!(true,b.in_circle([0.,5.],5.));
+    assert_eq!(true,b.in_circle([5.,0.],10.));
+}
+
 //impl BodyTrait for Rc<Body> {
 //    fn id(&self) -> usize {
 //        (self as &Body).id()

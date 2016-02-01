@@ -180,6 +180,68 @@ pub trait BodyTrait {
         bounding_box_raycast(self.x(),self.y(),self.width2()*2.,self.height2()*2.,a,b,c)
     }
 
+    fn in_circle(&self, origin: [f64;2], radius: f64) -> bool {
+        use std::f64::consts::FRAC_PI_2;
+
+        let trans = vec![
+            [self.down()-origin[0],self.left()-origin[1]],
+            [self.up()-origin[0],self.left()-origin[1]],
+            [self.down()-origin[0],self.right()-origin[1]],
+            [self.up()-origin[0],self.right()-origin[1]]
+        ];
+        println!("trans {:?}",trans);
+
+        let alpha = {
+            let mut index = 0;
+            let mut min = trans[0][0].powi(2) + trans[0][1].powi(2);
+            for p in 1..4 {
+                let d = trans[p][0].powi(2) + trans[p][1].powi(2);
+                if d < min {
+                    min = d;
+                    index = p
+                }
+            } 
+
+            println!("index: {}",index);
+            trans[index][1].atan2(trans[index][0])
+        };
+        println!("alpha: {}",alpha);
+
+        let mut projections = Vec::new();
+        for p in trans {
+            let proj_x = p[0]*alpha.cos() + p[1]*alpha.sin();
+            let proj_y = -p[0]*alpha.sin() + p[1]*alpha.cos();
+
+            projections.push([proj_x,proj_y]);
+        }
+        println!("projections {:?}",projections);
+        let mut min_x = projections[0][0];
+        let mut max_x = projections[0][0];
+        let mut min_y = projections[0][1];
+        let mut max_y = projections[0][1];
+        for i in 1..4 {
+            let x = projections[i][0];
+            let y = projections[i][1];
+            if x < min_x {
+                min_x = x;
+            } else if x > max_x {
+                max_x = x;
+            }
+            if y < min_y {
+                min_y = y;
+            } else if y > max_y {
+                max_y = y;
+            }
+        }
+
+        println!("projections");
+        if (min_x >= radius) || (-radius >= max_x) || (min_y >= radius) || (-radius >= max_y) {
+            false
+        } else {
+            true
+        }
+    }
+
     //fn delta_snapshot(&mut self) -> Option<BodySnapshot>;
 
     //fn interpolate(&mut self, from: &BodySnapshot, to: &BodySnapshot, percent: f64);
