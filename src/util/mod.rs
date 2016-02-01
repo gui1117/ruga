@@ -236,3 +236,33 @@ fn test_bounding_box_raycast() {
     assert_eq!(Some((-4.,-1.96,2.,-2.02)),bounding_box_raycast( -1., -2., 6., 2., 0.01, 1., 2.));
 }
 
+
+///return the angle in ]-PI,PI]
+pub fn minus_pi_pi(a: f64) -> f64 {
+    use std::f64::consts::PI;
+    use std::ops::Rem;
+
+    if a.abs() < PI {
+        a
+    } else if a == PI {
+        a
+    } else {
+        let a = a.rem(2.*PI);
+        if a > PI {
+            a - 2.*PI
+        } else if a <= -PI {
+            a + 2.*PI
+        } else {
+            a
+        }
+    }
+}
+
+#[test]
+fn test_minus_pi_pi() {
+    use std::f64::consts::PI;
+    assert_eq!(minus_pi_pi(PI),PI);
+    assert_eq!(minus_pi_pi(-PI),PI);
+    assert_eq!(minus_pi_pi(3.*PI),PI);
+    assert_eq!(minus_pi_pi(3.*PI),PI);
+}
