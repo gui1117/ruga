@@ -242,6 +242,14 @@ pub trait BodyTrait {
         }
     }
 
+    fn in_location(&self,loc: &Location) -> bool {
+        if (self.left() >= loc.right) || (loc.left >= self.right()) || (self.down() >= loc.up) || (loc.down >= self.up()) {
+            false
+        } else {
+            true
+        }
+    }
+
     //fn delta_snapshot(&mut self) -> Option<BodySnapshot>;
 
     //fn interpolate(&mut self, from: &BodySnapshot, to: &BodySnapshot, percent: f64);

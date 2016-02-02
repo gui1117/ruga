@@ -40,8 +40,16 @@ impl Batch {
     }
 
     pub fn apply_locally<F: FnMut(&Rc<BodyTrait>)>(&self, loc: &Location, callback: &mut F) {
-        self.static_hashmap.apply_locally(loc,callback);
-        self.dynamic_hashmap.apply_locally(loc,callback);
+        self.static_hashmap.apply_locally(loc, &mut |body: &Rc<BodyTrait>| {
+            if body.in_location(loc) {
+                callback(body);
+            }
+        });
+        self.dynamic_hashmap.apply_locally(loc, &mut |body: &Rc<BodyTrait>| {
+            if body.in_location(loc) {
+                callback(body);
+            }
+        });
     }
 
     pub fn apply_on_index<F: FnMut(&Rc<BodyTrait>)>(&self, index: &[i32;2], callback: &mut F) {
@@ -157,6 +165,9 @@ impl Batch {
         let mut vec = Vec::new();
         vec.append(&mut self.static_hashmap.get_locally(loc));
         vec.append(&mut self.dynamic_hashmap.get_locally(loc));
+        vec.retain(&mut |body: &Rc<BodyTrait>| {
+            body.in_location(loc)
+        });
         vec
     }
 
