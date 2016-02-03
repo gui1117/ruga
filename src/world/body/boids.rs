@@ -127,8 +127,5 @@ impl BodyTrait for RefCell<Boid> {
 
     fn damage(&self, damage: f64) {
         self.borrow_mut().life -= damage;
-        if self.borrow().life <= 0. {
-            self.borrow_mut().body.mask = !0;
-        }
     }
 }
