@@ -4,6 +4,7 @@ use rand;
 use rand::distributions::{IndependentSample, Range};
 use world::{ 
     Camera, 
+    World,
 };
 use world::spatial_hashing::Location;
 
@@ -358,12 +359,15 @@ impl GunManager for RefCell<Character> {
     }
 }
 
+const GRENADE_DISTANCE: f64 = 5.;
+
 pub trait CharacterTrait {
     fn aim(&self) -> f64;
     fn set_aim(&self, a: f64);
     fn set_gun_shoot(&self,bool);
     fn do_sword_attack(&self);
     fn set_next_gun_type(&self, next_type: GunType);
+    fn launch_grenade(&self,&mut World);
 }
 
 impl CharacterTrait for RefCell<Character> {
@@ -385,6 +389,13 @@ impl CharacterTrait for RefCell<Character> {
 
     fn do_sword_attack(&self) {
         self.sword_attack();
+    }
+
+    fn launch_grenade(&self,world: &mut World) {
+        let aim = self.aim();
+        let x = self.x() + GRENADE_DISTANCE*aim.cos();
+        let y = self.y() + GRENADE_DISTANCE*aim.sin();
+        world.insert_grenade(x,y,aim);
     }
 }
 

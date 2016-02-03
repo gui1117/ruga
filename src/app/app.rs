@@ -104,10 +104,9 @@ impl App {
         self.world.characters[0].set_gun_shoot(shoot);
     }
 
-    //pub fn set_player_launch_grenade(&mut self) {
-    //	if let Some(id) = self.player_id {
-    //		GrenadeLauncher::shoot(&mut self.world, id);
-    //	}
-    //}
+    pub fn set_player_launch_grenade(&mut self) {
+        let character = self.world.characters[0].clone();
+        character.launch_grenade(&mut self.world);
+    }
 }
 

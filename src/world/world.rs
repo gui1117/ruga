@@ -68,6 +68,9 @@ impl World {
         self.walls.push(wall);
     }
 
+    pub fn insert_grenade(&mut self, x: f64, y: f64, angle: f64) {
+    }
+
     pub fn insert_character(&mut self, x: f64, y: f64, angle: f64) {
         let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle,self.batch.clone())));
         let a_character = character.clone() as Rc<BodyTrait>;
