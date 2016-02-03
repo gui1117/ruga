@@ -29,6 +29,7 @@ pub enum BodyType {
     Monster,
     Boid,
     Snake,
+    Armory,
 }
 
 //pub struct BodySnapshot;

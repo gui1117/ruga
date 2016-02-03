@@ -118,8 +118,8 @@ impl App {
 
 			Button::Mouse(mouse_button) => {
 				match mouse_button {
-					MouseButton::Left => self.set_player_shoot(),
-					//MouseButton::Right => self.set_player_launch_grenade(),
+					MouseButton::Left => self.set_player_shoot(true),
+					MouseButton::Right => self.set_player_attack_sword(),
 					_ => (),
 				}
 			},
@@ -180,7 +180,13 @@ impl App {
 			},
 
 			Button::Joystick(_joystick_button) => (),
-			Button::Mouse(_mouse_button) => ()
+			Button::Mouse(mouse_button) => {
+				match mouse_button {
+					MouseButton::Left => self.set_player_shoot(false),
+					//MouseButton::Right => self.set_player_launch_grenade(),
+					_ => (),
+				}
+			},
 		}
 
 	}

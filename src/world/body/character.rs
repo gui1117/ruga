@@ -1,8 +1,11 @@
 use viewport::Viewport;
 use opengl_graphics::GlGraphics;
+use rand;
+use rand::distributions::{IndependentSample, Range};
 use world::{ 
     Camera, 
 };
+use world::spatial_hashing::Location;
 
 use super::{ 
     Body, 
@@ -13,11 +16,14 @@ use super::{
 use world::batch::Batch;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::f64;
+use util::minus_pi_pi;
 
 pub struct Character {
     body: Body,
     aim: f64,
-    gun: ModularGun,
+    gun: Gun,
+    sword: Sword,
     world_batch: Rc<RefCell<Batch>>,
 }
 
@@ -47,147 +53,317 @@ impl Character {
                 body_type: BodyType::Character,
             },
             aim: angle,
-            gun: ModularGun::new(),
+            gun: Gun::new(),
+            sword: Sword::new(),
             world_batch: batch,
         }
     }
 }
 
-const MODULAR_GUN_RANGE_UNIT: f64 = 7.;
-const MODULAR_GUN_WIDTH_UNIT: f64 = 4.;
-const MODULAR_GUN_DAMAGE_UNIT: f64 = 1.;
-const MODULAR_GUN_DISTANCE_FACTOR: f64 = 1.;
-const MODULAR_GUN_REALODING_FACTOR: f64 = 1.;
-const MODULAR_GUN_MODULING_FACTOR: f64 = 1.;
-const MODULAR_GUN_MAX_BULLET: u32 = 12;
-
-#[derive(Clone)]
-pub struct ModularGunSettings {
-    pub nbr_of_cannon: u32,
-    pub range: u32,
-    pub width: u32,
-    pub damage: u32,
+struct SwordAttack {
+    x: f64,
+    y: f64,
+    aim: f64,
 }
 
-impl ModularGunSettings {
-    pub fn distance(&self, other: &ModularGunSettings) -> f64 {
-        (((self.nbr_of_cannon - other.nbr_of_cannon) as f64).abs()
-        + ((self.range - other.range) as f64).abs()
-        + ((self.width - other.width) as f64).abs()
-        + ((self.damage - other.damage) as f64).abs())
-            * MODULAR_GUN_DISTANCE_FACTOR
-    }
+pub const SWORD_RECOVER: f64 = 0.8;
+pub const SWORD_LENGTH: f64 = 5.;
+pub const SWORD_DAMAGE: f64 = 5.;
+
+struct Sword {
+    recover: f64,
+    attacks: Vec<SwordAttack>,
 }
 
-struct ModularGun {
-    settings: ModularGunSettings,
-    nbr_of_bullet: u32,
-    reloading: f64,
-    moduling: f64,
-}
-
-impl ModularGun {
-    pub fn new() -> ModularGun {
-        ModularGun {
-            settings: ModularGunSettings {
-                nbr_of_cannon: 4,
-                range: 4,
-                width: 1,
-                damage: 10,
-            },
-            nbr_of_bullet: 0,
-            reloading: 0.,
-            moduling: 0.,
+impl Sword {
+    fn new() -> Sword {
+        Sword {
+            recover: 0.,
+            attacks: Vec::new(),
         }
     }
+}
 
-    pub fn settings(&self) -> ModularGunSettings {
-        self.settings.clone()
-    }
+trait SwordManager {
+    fn sword_attack(&self);
+    fn sword_update(&self, dt: f64);
+    fn sword_render_debug(&self, lines: &mut Vec<[f64;4]>);
+}
 
-    pub fn set(&mut self, settings: &ModularGunSettings) {
-        self.moduling = self.settings.distance(settings);
-        self.settings = settings.clone();
-    }
-
-    pub fn update(&mut self, dt: f64) {
-        if self.moduling > 0. {
-            self.moduling -= dt * MODULAR_GUN_MODULING_FACTOR;
-        } else if self.nbr_of_bullet != MODULAR_GUN_MAX_BULLET {
-            self.reloading += dt * MODULAR_GUN_REALODING_FACTOR;
-
-            while self.reloading > 1. {
-                self.reloading -= 1.;
-                self.nbr_of_bullet += 1;
-            }
-
-            if self.nbr_of_bullet >= MODULAR_GUN_MAX_BULLET {
-                self.reloading = 0.;
-                self.nbr_of_bullet = MODULAR_GUN_MAX_BULLET;
-            }
+impl SwordManager for RefCell<Character> {
+    fn sword_update(&self, dt: f64) {
+        let recover = self.borrow().sword.recover;
+        if recover > 0. {
+            self.borrow_mut().sword.recover = (recover - dt).max(0.);
         }
     }
+    fn sword_attack(&self) {
+        use std::f64::consts::{PI, FRAC_PI_2};
 
-    pub fn range(&self) -> f64 {
-        (self.settings.range as f64) * MODULAR_GUN_RANGE_UNIT
-    }
+        if self.borrow().sword.recover <= 0. {
+            self.borrow_mut().sword.recover = SWORD_RECOVER;
 
-    pub fn width(&self) -> f64 {
-        (self.settings.width as f64) * MODULAR_GUN_WIDTH_UNIT
-    }
+            let (id,x,y,aim) = (self.id(),self.x(), self.y(), minus_pi_pi(self.aim()));
+            let batch = self.borrow().world_batch.clone();
+            let loc = Location {
+                up: y + SWORD_LENGTH,
+                down: y - SWORD_LENGTH,
+                left: x - SWORD_LENGTH,
+                right: x + SWORD_LENGTH,
+            };
 
-    pub fn damage(&self) -> f64 {
-        (self.settings.damage as f64) * MODULAR_GUN_DAMAGE_UNIT
-    }
 
-    pub fn shoot(&mut self) {
-    }
+            batch.borrow().apply_locally(&loc, &mut |body: &Rc<BodyTrait>| {
+                if body.id() != id && body.in_circle([x,y],SWORD_LENGTH) {
+                    let in_part = if aim == PI {
+                        body.left() <= x
+                    } else if aim > FRAC_PI_2 {
+                        let t_x = body.left() - x;
+                        let t_y = body.up() - y;
+                        let a = aim - FRAC_PI_2;
+                        t_y >= a * t_x
+                    } else if aim == FRAC_PI_2 {
+                        body.up() >= y
+                    } else if aim > 0. {
+                        let t_x = body.right() - x;
+                        let t_y = body.up() - y;
+                        let a = aim - FRAC_PI_2;
+                        t_y >= a * t_x
+                    } else  if aim == 0. {
+                        body.right() >= x
+                    } else if aim > -FRAC_PI_2 {
+                        let t_x = body.right() - x;
+                        let t_y = body.down() - y;
+                        let a = aim - FRAC_PI_2;
+                        t_y >= a * t_x
+                    } else if aim == -FRAC_PI_2 {
+                        body.down() <= y
+                    } else {
+                        let t_x = body.left() - x;
+                        let t_y = body.down() - y;
+                        let a = aim - FRAC_PI_2;
+                        t_y >= a * t_x
+                    };
 
-    pub fn render_debug(&self, id: usize, x: f64, y: f64, angle: f64, batch: &Rc<RefCell<Batch>>, lines: &mut Vec<[f64;4]>) {
-        use std::f64::consts::PI;
-
-        let orth_angle = angle + PI/2.;
-        let (o_x,o_y,dx,dy) = if self.settings.nbr_of_cannon > 1 {
-            (
-                x - self.width()/2.*orth_angle.cos(),
-                y - self.width()/2.*orth_angle.sin(),
-                self.width()/((self.settings.nbr_of_cannon-1) as f64) * orth_angle.cos(),
-                self.width()/((self.settings.nbr_of_cannon-1) as f64) * orth_angle.sin(),
-            )
-        } else {
-            (x,y,0.,0.)
-        };
-
-        let mut c_x = o_x;
-        let mut c_y = o_y;
-        for _ in 0..self.settings.nbr_of_cannon {
-            let mut ray_length = self.range();
-            batch.borrow().raycast(c_x,c_y,angle,self.range(),&mut |body,min,_| {
-                if body.id() != id {
-                    ray_length = min.max(0.);
-                    true
-                } else {
-                    false
+                    if in_part {
+                        body.damage(SWORD_DAMAGE);
+                    }
                 }
             });
-            lines.push([ c_x,c_y,c_x+ray_length*angle.cos(),c_y+ray_length*angle.sin()]);
-            c_x += dx;
-            c_y += dy;
+
+            self.borrow_mut().sword.attacks.push(SwordAttack {
+                x: x,
+                y: y,
+                aim: aim,
+            });
+        }
+    }
+    fn sword_render_debug(&self, lines: &mut Vec<[f64;4]>) {
+        use std::f64::consts::{PI, FRAC_PI_2};
+
+        let ref mut attacks = self.borrow_mut().sword.attacks;
+        let n = 16;
+        let da = PI/(n as f64);
+        while let Some(a) = attacks.pop() {
+            for i in 0..n+1 {
+                let angle = a.aim - FRAC_PI_2 + (i as f64)*da;
+                lines.push([a.x,a.y,a.x+SWORD_LENGTH*angle.cos(),a.y+SWORD_LENGTH*angle.sin()]);
+            }
+        }
+    }
+}
+
+#[derive(Clone,Copy,PartialEq)]
+pub enum GunType {
+    None,
+    Rifle,
+    Shotgun,
+    Sniper,
+}
+
+pub enum GunShoot {
+    Rifle(f64,f64,f64,f64),
+    Sniper(f64,f64,f64,f64),
+    Shotgun(f64,f64,f64,f64),
+}
+
+struct Gun {
+    gun_type: GunType,
+    next_type: GunType,
+    reloading: f64,
+    shooting: bool,
+    ammo: u32,
+    shoots: Vec<GunShoot>,
+}
+
+pub const RIFLE_RELOADING_TIME: f64 = 0.1;
+pub const SHOTGUN_RELOADING_TIME: f64 = 0.8;
+pub const SNIPER_RELOADING_TIME: f64 = 1.5;
+
+pub const RIFLE_LENGTH: f64 = 30.;
+pub const SHOTGUN_LENGTH: f64 = 30.;
+pub const SNIPER_LENGTH: f64 = 70.;
+
+pub const RIFLE_DAMAGE: f64 = 10.;
+pub const SHOTGUN_DAMAGE: f64 = 10.;
+pub const SNIPER_DAMAGE: f64 = 100.;
+
+pub const RIFLE_MAX_DELTA_ANGLE: f64 = f64::consts::PI/16.;
+pub const SHOTGUN_MAX_DELTA_ANGLE: f64 = f64::consts::PI/6.;
+pub const SHOTGUN_SHOOT_NUMBER: u32 = 4;
+
+impl Gun {
+    pub fn new() -> Gun {
+        Gun {
+            gun_type: GunType::Rifle,
+            next_type: GunType::Rifle,
+            shooting: false,
+            reloading: 0.,
+            ammo: 10000000,
+            shoots: Vec::new(),
         }
     }
 
-    pub fn ready(&self) -> bool {
-        self.nbr_of_bullet > 0
+    pub fn time_to_reload(&mut self) -> f64 {
+        match self.gun_type {
+            GunType::Sniper => SNIPER_RELOADING_TIME,
+            GunType::Shotgun => SHOTGUN_RELOADING_TIME,
+            GunType::Rifle => RIFLE_RELOADING_TIME,
+            GunType::None => 0.,
+        }
+    }
+}
+
+trait GunManager {
+    fn gun_shoot(&self);
+    fn gun_update(&self, dt: f64);
+    fn gun_render_debug(&self, lines: &mut Vec<[f64;4]>);
+}
+
+impl GunManager for RefCell<Character> {
+    fn gun_shoot(&self) {
+        let (id,x,y,aim,batch,gun_type) = {
+            let this = self.borrow();
+            (this.body.id,this.body.x,this.body.y,this.aim,this.world_batch.clone(),this.gun.gun_type)
+        };
+        match gun_type {
+            GunType::Sniper => {
+                let mut length = SNIPER_LENGTH;
+                batch.borrow().raycast(x,y,aim,SNIPER_LENGTH, &mut |body,min,_| {
+                    if body.id() != id {
+                        if let BodyType::Wall = body.body_type() {
+                            length = min;
+                            true
+                        } else {
+                            body.damage(SNIPER_DAMAGE);
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                });
+                self.borrow_mut().gun.shoots.push(GunShoot::Sniper(x,y,aim,length));
+            },
+            GunType::Shotgun => {
+                let range = Range::new(-SHOTGUN_MAX_DELTA_ANGLE,SHOTGUN_MAX_DELTA_ANGLE);
+                let mut rng = rand::thread_rng();
+                for _ in 0..SHOTGUN_SHOOT_NUMBER {
+                    let aim = aim + range.ind_sample(&mut rng);
+                    let mut length = SHOTGUN_LENGTH;
+                    batch.borrow().raycast(x,y,aim,SHOTGUN_LENGTH, &mut |body,min,_| {
+                        if body.id() != id {
+                            body.damage(SHOTGUN_DAMAGE);
+                            length = min;
+                            true
+                        } else {
+                            false
+                        }
+                    });
+                    self.borrow_mut().gun.shoots.push(GunShoot::Shotgun(x,y,aim,length));
+                }
+            },
+            GunType::Rifle => {
+                let range = Range::new(-RIFLE_MAX_DELTA_ANGLE,RIFLE_MAX_DELTA_ANGLE);
+                let mut rng = rand::thread_rng();
+                let aim = aim + range.ind_sample(&mut rng);
+                let mut length = RIFLE_LENGTH;
+                batch.borrow().raycast(x,y,aim,RIFLE_LENGTH, &mut |body,min,_| {
+                    if body.id() != id {
+                        body.damage(RIFLE_DAMAGE);
+                        length = min;
+                        true
+                    } else {
+                        false
+                    }
+                });
+                self.borrow_mut().gun.shoots.push(GunShoot::Rifle(x,y,aim,length));
+            },
+            GunType::None => (),
+        }
+    }
+
+    fn gun_update(&self, dt: f64) {
+        {
+            let current_type = self.borrow().gun.gun_type;
+            let next_type = self.borrow().gun.next_type;
+            if next_type != current_type {
+                let loc = self.location();
+                let batch = self.borrow().world_batch.clone();
+                let mut on_armory = false;
+                batch.borrow().apply_locally(&loc, &mut |body: &Rc<BodyTrait>| {
+                    if body.body_type() == BodyType::Armory {
+                        on_armory = true;
+                    }
+                });
+                if on_armory {
+                    self.borrow_mut().gun.gun_type = next_type;
+                }
+            }
+        }
+
+        let mut shoot = false;
+        {
+            let mut this = self.borrow_mut();
+            if this.gun.ammo > 0 {
+                if this.gun.reloading > 0. {
+                    if this.gun.shooting {
+                        this.gun.reloading -= dt;
+                    } else {
+                        let t = this.gun.reloading - dt;
+                        this.gun.reloading = t.max(0.);
+                    }
+                } else if this.gun.shooting {
+                    shoot = true;
+                    this.gun.ammo -= 1;
+                    this.gun.reloading += this.gun.time_to_reload();
+                }
+            }
+        }
+        if shoot {
+            self.gun_shoot();
+        }
+    }
+
+    fn gun_render_debug(&self, lines: &mut Vec<[f64;4]>) {
+        let ref mut shoots = self.borrow_mut().gun.shoots;
+        while let Some(shoot) = shoots.pop() {
+            match shoot {
+                GunShoot::Sniper(x,y,aim,length)
+                | GunShoot::Shotgun(x,y,aim,length)
+                | GunShoot::Rifle(x,y,aim,length) => {
+                    lines.push([x,y,x+length*aim.cos(),y+length*aim.sin()]);
+                },
+            }
+        }
     }
 }
 
 pub trait CharacterTrait {
     fn aim(&self) -> f64;
     fn set_aim(&self, a: f64);
-    fn gun_shoot(&self);
-    fn set_gun(&self,&ModularGunSettings);
-    fn gun_settings(&self) -> ModularGunSettings;
-    fn gun_ready(&self) -> bool;
+    fn set_gun_shoot(&self,bool);
+    fn do_sword_attack(&self);
+    fn set_next_gun_type(&self, next_type: GunType);
 }
 
 impl CharacterTrait for RefCell<Character> {
@@ -199,20 +375,16 @@ impl CharacterTrait for RefCell<Character> {
         self.borrow_mut().aim = a;
     }
 
-    fn gun_shoot(&self) {
-        self.borrow_mut().gun.shoot();
+    fn set_gun_shoot(&self, shoot: bool) {
+        self.borrow_mut().gun.shooting = shoot;
     }
 
-    fn set_gun(&self,settings: &ModularGunSettings) {
-        self.borrow_mut().gun.set(settings);
+    fn set_next_gun_type(&self, next_type: GunType) {
+        self.borrow_mut().gun.next_type = next_type;
     }
 
-    fn gun_settings(&self) -> ModularGunSettings {
-        self.borrow().gun.settings()
-    }
-
-    fn gun_ready(&self) -> bool {
-        self.borrow().gun.ready()
+    fn do_sword_attack(&self) {
+        self.sword_attack();
     }
 }
 
@@ -241,14 +413,18 @@ impl BodyTrait for RefCell<Character> {
     }
 
     fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
+        self.gun_render_debug(lines);
+        self.sword_render_debug(lines);
         let this = self.borrow();
-        this.gun.render_debug(this.body.id,this.body.x,this.body.y,this.aim,&this.world_batch,lines);
         this.body.render_debug(lines);
     }
 
     fn update(&self, dt: f64) {
-        let mut this = self.borrow_mut();
-        this.body.update(dt);
-        this.gun.update(dt);
+        self.sword_update(dt);
+        self.gun_update(dt);
+        {
+            let mut this = self.borrow_mut();
+            this.body.update(dt);
+        }
     }
 }

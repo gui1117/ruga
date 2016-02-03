@@ -96,8 +96,12 @@ impl App {
         self.world.characters[0].set_angle(a);
     }
 
-    pub fn set_player_shoot(&mut self) {
-        self.world.characters[0].gun_shoot();
+    pub fn set_player_attack_sword(&mut self) {
+        self.world.characters[0].do_sword_attack();
+    }
+
+    pub fn set_player_shoot(&mut self, shoot: bool) {
+        self.world.characters[0].set_gun_shoot(shoot);
     }
 
     //pub fn set_player_launch_grenade(&mut self) {
