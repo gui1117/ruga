@@ -102,6 +102,9 @@ impl App {
 					Key::Escape => { 
 						self.quit = true; 
 					},
+                    Key::E => {
+                        self.set_player_launch_grenade();
+                    }
 					_ => (),
 				}
 
@@ -183,7 +186,6 @@ impl App {
 			Button::Mouse(mouse_button) => {
 				match mouse_button {
 					MouseButton::Left => self.set_player_shoot(false),
-					//MouseButton::Right => self.set_player_launch_grenade(),
 					_ => (),
 				}
 			},

@@ -5,7 +5,9 @@ pub mod monster;
 pub mod boids;
 pub mod traits;
 pub mod snake;
+pub mod grenade;
 
+pub use self::grenade::Grenade;
 pub use self::character::Character;
 pub use self::wall::Wall;
 pub use self::body::Body;
@@ -29,6 +31,7 @@ pub enum BodyType {
     Monster,
     Boid,
     Snake,
+    Grenade,
     Armory,
 }
 

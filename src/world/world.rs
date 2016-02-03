@@ -5,6 +5,7 @@ use super::Camera;
 use super::body::{ 
     Wall, 
     Character, 
+    Grenade,
     Snake,
     Monster, 
         Boid,
@@ -69,6 +70,10 @@ impl World {
     }
 
     pub fn insert_grenade(&mut self, x: f64, y: f64, angle: f64) {
+        let grenade = Rc::new(RefCell::new(Grenade::new(self.next_id(),x,y,angle,self.batch.clone())));
+        let a_grenade = grenade as Rc<BodyTrait>;
+        self.batch.borrow_mut().insert_dynamic(&a_grenade);
+        self.dynamic_vec.push(a_grenade);
     }
 
     pub fn insert_character(&mut self, x: f64, y: f64, angle: f64) {
@@ -151,6 +156,16 @@ impl World {
             body.update(dt);
         }
 
+        // destroy dead bodies
+        let mut i = 0;
+        while i < self.dynamic_vec.len() {
+            if self.dynamic_vec[i].dead() {
+                self.dynamic_vec.swap_remove(i);
+            } else {
+                i += 1;
+            }
+        }
+
         // resolve collisions
         {
             let mut batch = self.batch.borrow_mut();
@@ -170,16 +185,6 @@ impl World {
                     batch.apply_locally(&location,&mut callback);
                 }
                 batch.insert_dynamic(&(body.clone() as Rc<BodyTrait>));
-            }
-        }
-
-        // destroy dead bodies
-        let mut i = 0;
-        while i < self.dynamic_vec.len() {
-            if self.dynamic_vec[i].dead() {
-                self.dynamic_vec.swap_remove(i);
-            } else {
-                i += 1;
             }
         }
     }
