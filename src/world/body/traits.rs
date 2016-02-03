@@ -181,8 +181,6 @@ pub trait BodyTrait {
     }
 
     fn in_circle(&self, origin: [f64;2], radius: f64) -> bool {
-        use std::f64::consts::FRAC_PI_2;
-
         let trans = vec![
             [self.left()-origin[0],self.down()-origin[1]],
             [self.left()-origin[0],self.up()-origin[1]],
