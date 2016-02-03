@@ -403,6 +403,7 @@ impl BodyTrait for RefCell<Character> {
     delegate!{
         body:
             id() -> usize,
+            dead() -> bool,
             body_type() -> BodyType,
             damage(d: f64) -> (),
             width2() -> f64,

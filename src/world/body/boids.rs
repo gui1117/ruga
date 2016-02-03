@@ -19,10 +19,11 @@ use super::{
 
 pub struct Boid {
     body: Body,
-    alive: bool,
+    life: f64,
     world_batch: Rc<RefCell<Batch>>,
 }
 
+pub const LIFE: f64 = 1.;
 pub const WIDTH: f64 = 1.;
 pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;
@@ -52,7 +53,7 @@ impl Boid {
                 collision_behavior: CollisionBehavior::Random,
                 body_type: BodyType::Boid,
             },
-            alive: true,
+            life: LIFE,
             world_batch: batch,
         }
     }
@@ -81,6 +82,10 @@ impl BodyTrait for RefCell<Boid> {
            render_debug(lines: &mut Vec<[f64;4]>) -> (),
     }
 
+    fn dead(&self) -> bool {
+        self.borrow_mut().life <= 0.
+    }
+
     fn update(&self, dt: f64) {
         let mut counter = 0;
         let mut sum = 0.;
@@ -97,7 +102,6 @@ impl BodyTrait for RefCell<Boid> {
             let mut callback = |body: &Rc<BodyTrait>| {
                 let body = &*body;
                 if body.body_type() == BodyType::Boid {
-                    // WARNING if the delta angle is n*PI then it is counted
                     let delta_angle = minus_pi_pi(body.angle() - self.angle());
                     if delta_angle.abs() < COHESION_MAX_DELTA_ANGLE {
                         counter += 1;
@@ -116,10 +120,15 @@ impl BodyTrait for RefCell<Boid> {
     }
 
     fn on_collision(&self, other: &BodyTrait) {
-        other.damage(DAMAGE);
+        if other.body_type() != BodyType::Boid {
+            other.damage(DAMAGE);
+        }
     }
 
-    fn damage(&self, _: f64) {
-        self.borrow_mut().alive = false;
+    fn damage(&self, damage: f64) {
+        self.borrow_mut().life -= damage;
+        if self.borrow().life <= 0. {
+            self.borrow_mut().body.mask = !0;
+        }
     }
 }

@@ -172,6 +172,16 @@ impl World {
                 batch.insert_dynamic(&(body.clone() as Rc<BodyTrait>));
             }
         }
+
+        // destroy dead bodies
+        let mut i = 0;
+        while i < self.dynamic_vec.len() {
+            if self.dynamic_vec[i].dead() {
+                self.dynamic_vec.swap_remove(i);
+            } else {
+                i += 1;
+            }
+        }
     }
 
 }

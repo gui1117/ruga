@@ -53,6 +53,10 @@ impl Body {
     pub fn id(&self) -> usize {
         self.id
     }
+
+    pub fn dead(&self) -> bool {
+        false
+    }
     
     pub fn body_type(&self) -> BodyType {
         self.body_type.clone()
@@ -194,6 +198,10 @@ impl Body {
 impl BodyTrait for RefCell<Body> {
     fn id(&self) -> usize {
         self.borrow().id
+    }
+
+    fn dead(&self) -> bool {
+        false
     }
     
     fn body_type(&self) -> BodyType {

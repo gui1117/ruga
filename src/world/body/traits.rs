@@ -15,6 +15,8 @@ use rand::distributions::{IndependentSample, Range};
 pub trait BodyTrait {
     fn id(&self) -> usize;
 
+    fn dead(&self) -> bool;
+
     fn damage(&self, d: f64);
 
     fn body_type(&self) -> BodyType;
