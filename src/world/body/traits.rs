@@ -201,7 +201,6 @@ pub trait BodyTrait {
                 }
             } 
 
-            println!("index: {}",index);
             trans[index][1].atan2(trans[index][0])
         };
 
