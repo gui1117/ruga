@@ -184,12 +184,11 @@ pub trait BodyTrait {
         use std::f64::consts::FRAC_PI_2;
 
         let trans = vec![
-            [self.down()-origin[0],self.left()-origin[1]],
-            [self.up()-origin[0],self.left()-origin[1]],
-            [self.down()-origin[0],self.right()-origin[1]],
-            [self.up()-origin[0],self.right()-origin[1]]
+            [self.left()-origin[0],self.down()-origin[1]],
+            [self.left()-origin[0],self.up()-origin[1]],
+            [self.right()-origin[0],self.down()-origin[1]],
+            [self.right()-origin[0],self.up()-origin[1]]
         ];
-        println!("trans {:?}",trans);
 
         let alpha = {
             let mut index = 0;
@@ -205,7 +204,6 @@ pub trait BodyTrait {
             println!("index: {}",index);
             trans[index][1].atan2(trans[index][0])
         };
-        println!("alpha: {}",alpha);
 
         let mut projections = Vec::new();
         for p in trans {
@@ -214,7 +212,6 @@ pub trait BodyTrait {
 
             projections.push([proj_x,proj_y]);
         }
-        println!("projections {:?}",projections);
         let mut min_x = projections[0][0];
         let mut max_x = projections[0][0];
         let mut min_y = projections[0][1];
@@ -234,7 +231,6 @@ pub trait BodyTrait {
             }
         }
 
-        println!("projections");
         if (min_x >= radius) || (-radius >= max_x) || (min_y >= radius) || (-radius >= max_y) {
             false
         } else {
