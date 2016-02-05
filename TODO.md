@@ -17,6 +17,10 @@
 * COLLISION: when resolving overlap move in the direction perpendicular
   of the collision vector the length of the overlap
 
+* snake
+
+* real destroy
+
 #long term
 
 * maybe rethink methods of refcell etc..
@@ -38,3 +42,4 @@
 	but basic method of bodies are safe because they to have access to batch.
 
   
+

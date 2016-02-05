@@ -1,65 +1,17 @@
-use viewport::Viewport;
-use opengl_graphics::GlGraphics;
 use rand;
 use rand::distributions::{IndependentSample, Range};
-use world::{ 
-    Camera, 
-    World,
-};
 use world::spatial_hashing::Location;
-
+use world::batch::Batch;
+use world::World;
 use super::{ 
     Body, 
     BodyTrait, 
     BodyType,
     CollisionBehavior,
 };
-use world::batch::Batch;
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::f64;
 use util::minus_pi_pi;
-
-pub struct Character {
-    body: Body,
-    aim: f64,
-    gun: Gun,
-    sword: Sword,
-    world_batch: Rc<RefCell<Batch>>,
-}
-
-pub const WIDTH: f64 = 1.;
-pub const VELOCITY: f64 = 65.;
-pub const HEIGHT: f64 = 1.;
-pub const WEIGHT: f64 = 1.;
-pub const MASK: u32 = !0;
-pub const GROUP: u32 = 2;
-
-
-impl Character {
-    pub fn new(id: usize, x: f64, y: f64, angle: f64, batch: Rc<RefCell<Batch>>) -> Character {
-        Character {
-            body: Body {
-                id: id,
-                x: x,
-                y: y,
-                width2: WIDTH/2.,
-                height2: HEIGHT/2.,
-                weight: WEIGHT,
-                velocity: 0.,
-                angle: angle,
-                mask: MASK,
-                group: GROUP,
-                collision_behavior: CollisionBehavior::Persist,
-                body_type: BodyType::Character,
-            },
-            aim: angle,
-            gun: Gun::new(),
-            sword: Sword::new(),
-            world_batch: batch,
-        }
-    }
-}
 
 struct SwordAttack {
     x: f64,
@@ -83,29 +35,42 @@ impl Sword {
             attacks: Vec::new(),
         }
     }
+
+    fn update(&mut self, dt: f64) {
+        if self.recover > 0. {
+            self.recover = (self.recover - dt).max(0.);
+        }
+    }
+
+    fn render_debug(&mut self, lines: &mut Vec<[f64;4]>) {
+        use std::f64::consts::{PI, FRAC_PI_2};
+
+        let n = 16;
+        let da = PI/(n as f64);
+        while let Some(a) = self.attacks.pop() {
+            for i in 0..n+1 {
+                let angle = a.aim - FRAC_PI_2 + (i as f64)*da;
+                lines.push([a.x,a.y,a.x+SWORD_LENGTH*angle.cos(),a.y+SWORD_LENGTH*angle.sin()]);
+            }
+        }
+    }
 }
 
 trait SwordManager {
-    fn sword_attack(&self);
-    fn sword_update(&self, dt: f64);
-    fn sword_render_debug(&self, lines: &mut Vec<[f64;4]>);
+    fn sword_attack(&self, batch: &Batch);
 }
 
 impl SwordManager for RefCell<Character> {
-    fn sword_update(&self, dt: f64) {
-        let recover = self.borrow().sword.recover;
-        if recover > 0. {
-            self.borrow_mut().sword.recover = (recover - dt).max(0.);
-        }
-    }
-    fn sword_attack(&self) {
+    fn sword_attack(&self,batch: &Batch) {
         use std::f64::consts::{PI, FRAC_PI_2};
 
         if self.borrow().sword.recover <= 0. {
             self.borrow_mut().sword.recover = SWORD_RECOVER;
 
-            let (id,x,y,aim) = (self.id(),self.x(), self.y(), minus_pi_pi(self.aim()));
-            let batch = self.borrow().world_batch.clone();
+            let (id,x,y,aim) = {
+                let this = self.borrow();
+                (this.id(),this.x(), this.y(), minus_pi_pi(self.aim()))
+            };
             let loc = Location {
                 up: y + SWORD_LENGTH,
                 down: y - SWORD_LENGTH,
@@ -114,7 +79,7 @@ impl SwordManager for RefCell<Character> {
             };
 
 
-            batch.borrow().apply_locally(&loc, &mut |body: &Rc<BodyTrait>| {
+            batch.apply_locally(&loc, &mut |body: &mut BodyTrait| {
                 if body.id() != id && body.in_circle([x,y],SWORD_LENGTH) {
                     let in_part = if aim == PI {
                         body.left() <= x
@@ -157,19 +122,6 @@ impl SwordManager for RefCell<Character> {
                 y: y,
                 aim: aim,
             });
-        }
-    }
-    fn sword_render_debug(&self, lines: &mut Vec<[f64;4]>) {
-        use std::f64::consts::{PI, FRAC_PI_2};
-
-        let ref mut attacks = self.borrow_mut().sword.attacks;
-        let n = 16;
-        let da = PI/(n as f64);
-        while let Some(a) = attacks.pop() {
-            for i in 0..n+1 {
-                let angle = a.aim - FRAC_PI_2 + (i as f64)*da;
-                lines.push([a.x,a.y,a.x+SWORD_LENGTH*angle.cos(),a.y+SWORD_LENGTH*angle.sin()]);
-            }
         }
     }
 }
@@ -233,24 +185,35 @@ impl Gun {
             GunType::None => 0.,
         }
     }
+
+    fn render_debug(&mut self, lines: &mut Vec<[f64;4]>) {
+        while let Some(shoot) = self.shoots.pop() {
+            match shoot {
+                GunShoot::Sniper(x,y,aim,length)
+                    | GunShoot::Shotgun(x,y,aim,length)
+                    | GunShoot::Rifle(x,y,aim,length) => {
+                        lines.push([x,y,x+length*aim.cos(),y+length*aim.sin()]);
+                    },
+            }
+        }
+    }
 }
 
 trait GunManager {
-    fn gun_shoot(&self);
-    fn gun_update(&self, dt: f64);
-    fn gun_render_debug(&self, lines: &mut Vec<[f64;4]>);
+    fn gun_shoot(&self, batch: &Batch);
+    fn gun_update(&self, dt: f64, batch: &Batch);
 }
 
 impl GunManager for RefCell<Character> {
-    fn gun_shoot(&self) {
-        let (id,x,y,aim,batch,gun_type) = {
+    fn gun_shoot(&self,batch: &Batch) {
+        let (id,x,y,aim,gun_type) = {
             let this = self.borrow();
-            (this.body.id,this.body.x,this.body.y,this.aim,this.world_batch.clone(),this.gun.gun_type)
+            (this.body.id,this.body.x,this.body.y,this.aim,this.gun.gun_type)
         };
         match gun_type {
             GunType::Sniper => {
                 let mut length = SNIPER_LENGTH;
-                batch.borrow().raycast(x,y,aim,SNIPER_LENGTH, &mut |body,min,_| {
+                batch.raycast(x,y,aim,SNIPER_LENGTH, &mut |body,min,_| {
                     if body.id() != id {
                         if let BodyType::Wall = body.body_type() {
                             length = min;
@@ -271,7 +234,7 @@ impl GunManager for RefCell<Character> {
                 for _ in 0..SHOTGUN_SHOOT_NUMBER {
                     let aim = aim + range.ind_sample(&mut rng);
                     let mut length = SHOTGUN_LENGTH;
-                    batch.borrow().raycast(x,y,aim,SHOTGUN_LENGTH, &mut |body,min,_| {
+                    batch.raycast(x,y,aim,SHOTGUN_LENGTH, &mut |body,min,_| {
                         if body.id() != id {
                             body.damage(SHOTGUN_DAMAGE);
                             length = min;
@@ -288,7 +251,7 @@ impl GunManager for RefCell<Character> {
                 let mut rng = rand::thread_rng();
                 let aim = aim + range.ind_sample(&mut rng);
                 let mut length = RIFLE_LENGTH;
-                batch.borrow().raycast(x,y,aim,RIFLE_LENGTH, &mut |body,min,_| {
+                batch.raycast(x,y,aim,RIFLE_LENGTH, &mut |body,min,_| {
                     if body.id() != id {
                         body.damage(RIFLE_DAMAGE);
                         length = min;
@@ -303,15 +266,14 @@ impl GunManager for RefCell<Character> {
         }
     }
 
-    fn gun_update(&self, dt: f64) {
+    fn gun_update(&self, dt: f64, batch: &Batch) {
         {
             let current_type = self.borrow().gun.gun_type;
             let next_type = self.borrow().gun.next_type;
             if next_type != current_type {
-                let loc = self.location();
-                let batch = self.borrow().world_batch.clone();
+                let loc = self.borrow().location();
                 let mut on_armory = false;
-                batch.borrow().apply_locally(&loc, &mut |body: &Rc<BodyTrait>| {
+                batch.apply_locally(&loc, &mut |body: &mut BodyTrait| {
                     if body.body_type() == BodyType::Armory {
                         on_armory = true;
                     }
@@ -341,31 +303,58 @@ impl GunManager for RefCell<Character> {
             }
         }
         if shoot {
-            self.gun_shoot();
-        }
-    }
-
-    fn gun_render_debug(&self, lines: &mut Vec<[f64;4]>) {
-        let ref mut shoots = self.borrow_mut().gun.shoots;
-        while let Some(shoot) = shoots.pop() {
-            match shoot {
-                GunShoot::Sniper(x,y,aim,length)
-                | GunShoot::Shotgun(x,y,aim,length)
-                | GunShoot::Rifle(x,y,aim,length) => {
-                    lines.push([x,y,x+length*aim.cos(),y+length*aim.sin()]);
-                },
-            }
+            self.gun_shoot(batch);
         }
     }
 }
 
 const GRENADE_DISTANCE: f64 = 5.;
 
+pub struct Character {
+    body: Body,
+    aim: f64,
+    gun: Gun,
+    sword: Sword,
+}
+
+pub const WIDTH: f64 = 1.;
+pub const VELOCITY: f64 = 65.;
+pub const HEIGHT: f64 = 1.;
+pub const WEIGHT: f64 = 1.;
+pub const MASK: u32 = !0;
+pub const GROUP: u32 = 2;
+
+
+impl Character {
+    pub fn new(id: usize, x: f64, y: f64, angle: f64) -> Character {
+        Character {
+            body: Body {
+                id: id,
+                x: x,
+                y: y,
+                width: WIDTH,
+                height: HEIGHT,
+                weight: WEIGHT,
+                velocity: 0.,
+                angle: angle,
+                mask: MASK,
+                group: GROUP,
+                collision_behavior: CollisionBehavior::Persist,
+                body_type: BodyType::Character,
+            },
+            aim: angle,
+            gun: Gun::new(),
+            sword: Sword::new(),
+        }
+    }
+}
+
+
 pub trait CharacterTrait {
     fn aim(&self) -> f64;
     fn set_aim(&self, a: f64);
     fn set_gun_shoot(&self,bool);
-    fn do_sword_attack(&self);
+    fn do_sword_attack(&self, batch: &Batch);
     fn set_next_gun_type(&self, next_type: GunType);
     fn launch_grenade(&self,&mut World);
 }
@@ -387,27 +376,50 @@ impl CharacterTrait for RefCell<Character> {
         self.borrow_mut().gun.next_type = next_type;
     }
 
-    fn do_sword_attack(&self) {
-        self.sword_attack();
+    fn do_sword_attack(&self, batch: &Batch) {
+        self.sword_attack(batch);
     }
 
     fn launch_grenade(&self,world: &mut World) {
         let aim = self.aim();
-        let x = self.x() + GRENADE_DISTANCE*aim.cos();
-        let y = self.y() + GRENADE_DISTANCE*aim.sin();
+        let x = self.borrow().x() + GRENADE_DISTANCE*aim.cos();
+        let y = self.borrow().y() + GRENADE_DISTANCE*aim.sin();
         world.insert_grenade(x,y,aim);
     }
 }
 
-impl BodyTrait for RefCell<Character> {
+pub trait CharacterManager {
+    fn render_debug(&self, lines: &mut Vec<[f64;4]>);
+    fn update(&self, dt: f64, batch: &Batch);
+}
+
+impl CharacterManager for RefCell<Character> {
+    fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
+        self.borrow_mut().gun.render_debug(lines);
+        self.borrow_mut().sword.render_debug(lines);
+        let this = self.borrow();
+        this.body.render_debug(lines);
+    }
+
+    fn update(&self, dt: f64, batch: &Batch) {
+        self.borrow_mut().sword.update(dt);
+        self.gun_update(dt,batch);
+        {
+            let mut this = self.borrow_mut();
+            this.body.update(dt);
+        }
+    }
+}
+
+impl BodyTrait for Character {
     delegate!{
         body:
             id() -> usize,
             dead() -> bool,
             body_type() -> BodyType,
-            damage(d: f64) -> (),
-            width2() -> f64,
-            height2() -> f64,
+            mut damage(d: f64) -> (),
+            width() -> f64,
+            height() -> f64,
             x() -> f64,
             mut set_x(x: f64) -> (),
             y() -> f64,
@@ -420,23 +432,7 @@ impl BodyTrait for RefCell<Character> {
             mask() -> u32,
             group() -> u32,
             collision_behavior() -> CollisionBehavior,
-            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
-            on_collision(other: &BodyTrait) -> (),
-    }
-
-    fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
-        self.gun_render_debug(lines);
-        self.sword_render_debug(lines);
-        let this = self.borrow();
-        this.body.render_debug(lines);
-    }
-
-    fn update(&self, dt: f64) {
-        self.sword_update(dt);
-        self.gun_update(dt);
-        {
-            let mut this = self.borrow_mut();
-            this.body.update(dt);
-        }
+            mut on_collision(other: &mut BodyTrait) -> (),
     }
 }
+

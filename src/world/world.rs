@@ -4,14 +4,18 @@ use opengl_graphics::GlGraphics;
 use super::Camera;
 use super::body::{ 
     Wall, 
+    MovingWall, 
     Character, 
     Grenade,
-    Snake,
-    Monster, 
-        Boid,
-        Body,
-        BodyTrait, 
+    //Snake,
+    Boid,
+    Body,
+    BodyTrait, 
 };
+use super::body::character::CharacterManager;
+use super::body::moving_wall::MovingWallManager;
+use super::body::grenade::GrenadeManager;
+use super::body::boids::BoidManager;
 use super::batch::Batch;
 use util::direction::Direction;
 
@@ -24,15 +28,16 @@ pub struct World {
     pub unit: f64,
     next_id: usize,
     /// whether there is a wall or not
-    pub wall_map: Rc<RefCell<HashMap<[i32;2],bool>>>,
+    pub wall_map: HashMap<[i32;2],bool>,
     pub walls: Vec<Rc<RefCell<Body>>>,
-    pub monsters: Vec<Rc<RefCell<Body>>>,
     pub boids: Vec<Rc<RefCell<Boid>>>,
-    pub snakes: Vec<Rc<RefCell<Snake>>>,
+    pub grenades: Vec<Rc<RefCell<Grenade>>>,
+    pub moving_walls: Vec<Rc<RefCell<MovingWall>>>,
+    //pub snakes: Vec<Rc<RefCell<Snake>>>,
     pub characters: Vec<Rc<RefCell<Character>>>,
-    pub static_vec: Vec<Rc<BodyTrait>>,
-    pub dynamic_vec: Vec<Rc<BodyTrait>>,
-    pub batch: Rc<RefCell<Batch>>,
+    pub static_vec: Vec<Rc<RefCell<BodyTrait>>>,
+    pub dynamic_vec: Vec<Rc<RefCell<BodyTrait>>>,
+    pub batch: Batch,
 }
 
 impl World {
@@ -42,14 +47,15 @@ impl World {
             time: 0.,
             next_id: 1,
             characters: Vec::new(),
-            snakes: Vec::new(),
-            monsters: Vec::new(),
+            moving_walls: Vec::new(),
+            //snakes: Vec::new(),
             boids: Vec::new(),
+            grenades: Vec::new(),
             walls: Vec::new(),
             static_vec: Vec::new(),
             dynamic_vec: Vec::new(),
-            batch: Rc::new(RefCell::new(Batch::new(unit))),
-            wall_map: Rc::new(RefCell::new(HashMap::new())),
+            batch: Batch::new(unit),
+            wall_map: HashMap::new(),
         }
     }
 
@@ -60,61 +66,56 @@ impl World {
     }
 
     pub fn insert_wall(&mut self, x: i32, y: i32) {
-        self.wall_map.borrow_mut().insert([x,y],true);
+        self.wall_map.insert([x,y],true);
 
         let wall = Rc::new(RefCell::new(Wall::new(self.next_id(),x,y,self.unit)));
-        let a_wall = wall.clone() as Rc<BodyTrait>;
-        self.batch.borrow_mut().insert_static(&a_wall);
+        let a_wall = wall.clone() as Rc<RefCell<BodyTrait>>;
+        self.batch.insert_static(&a_wall);
         self.static_vec.push(a_wall);
         self.walls.push(wall);
     }
 
     pub fn insert_grenade(&mut self, x: f64, y: f64, angle: f64) {
-        let grenade = Rc::new(RefCell::new(Grenade::new(self.next_id(),x,y,angle,self.batch.clone())));
-        let a_grenade = grenade as Rc<BodyTrait>;
-        self.batch.borrow_mut().insert_dynamic(&a_grenade);
+        let grenade = Rc::new(RefCell::new(Grenade::new(self.next_id(),x,y,angle)));
+        let a_grenade = grenade.clone() as Rc<RefCell<BodyTrait>>;
+        self.batch.insert_dynamic(&a_grenade);
         self.dynamic_vec.push(a_grenade);
+        self.grenades.push(grenade);
     }
 
     pub fn insert_character(&mut self, x: f64, y: f64, angle: f64) {
-        let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle,self.batch.clone())));
-        let a_character = character.clone() as Rc<BodyTrait>;
-        self.batch.borrow_mut().insert_dynamic(&a_character);
+        let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle)));
+        let a_character = character.clone() as Rc<RefCell<BodyTrait>>;
+        self.batch.insert_dynamic(&a_character);
         self.dynamic_vec.push(a_character);
         self.characters.push(character);
     }
 
-    pub fn insert_monster(&mut self, x: f64, y: f64, angle: f64) {
-        let monster: Rc<RefCell<Body>> = Rc::new(RefCell::new(Monster::new(self.next_id(),x,y,angle)));
-        let a_monster = monster.clone() as Rc<BodyTrait>;
-        self.batch.borrow_mut().insert_dynamic(&a_monster);
-        self.dynamic_vec.push(a_monster);
-        self.monsters.push(monster);
-    }
-
     pub fn insert_boid(&mut self, x: f64, y: f64, angle: f64) {
-        let boid = Rc::new(RefCell::new(Boid::new(self.next_id(),x,y,angle,self.batch.clone())));
-        let a_boid = boid.clone() as Rc<BodyTrait>;
-        self.batch.borrow_mut().insert_dynamic(&a_boid);
+        let boid = Rc::new(RefCell::new(Boid::new(self.next_id(),x,y,angle)));
+        let a_boid = boid.clone() as Rc<RefCell<BodyTrait>>;
+        self.batch.insert_dynamic(&a_boid);
         self.dynamic_vec.push(a_boid);
         self.boids.push(boid);
     }
 
-    pub fn insert_snake(&mut self, x: i32, y: i32, angle: Direction) {
-        let snake = Rc::new(RefCell::new(Snake::new(self.next_id(),x,y,angle,self.unit,self.wall_map.clone(),self.batch.clone())));
-        let a_snake = snake.clone() as Rc<BodyTrait>;
-        self.batch.borrow_mut().insert_dynamic(&a_snake);
-        self.dynamic_vec.push(a_snake);
-        self.snakes.push(snake);
+    pub fn insert_moving_wall(&mut self, x: i32, y: i32, angle: Direction) {
+        let moving_wall = Rc::new(RefCell::new(MovingWall::new(self.next_id(),x,y,angle,self.unit)));
+        let a_moving_wall = moving_wall.clone() as Rc<RefCell<BodyTrait>>;
+        self.batch.insert_dynamic(&a_moving_wall);
+        self.dynamic_vec.push(a_moving_wall);
+        self.moving_walls.push(moving_wall);
     }
 
-    pub fn render(&mut self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
-        for b in self.static_vec.iter() {
-            b.render(viewport,camera,gl);
-        }
-        for b in self.dynamic_vec.iter() {
-            b.render(viewport,camera,gl);
-        }
+    //pub fn insert_snake(&mut self, x: i32, y: i32, angle: Direction) {
+    //    let snake = Rc::new(RefCell::new(Snake::new(self.next_id(),x,y,angle,self.unit,self.wall_map.clone(),self.batch.clone())));
+    //    let a_snake = snake.clone() as Rc<BodyTrait>;
+    //    self.batch.borrow_mut().insert_dynamic(&a_snake);
+    //    self.dynamic_vec.push(a_snake);
+    //    self.snakes.push(snake);
+    //}
+
+    pub fn render(&mut self, _viewport: &Viewport, _camera: &Camera, _gl: &mut GlGraphics) {
     }
 
     pub fn render_debug(&mut self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
@@ -134,11 +135,20 @@ impl World {
         };
 
         let mut lines = Vec::<[f64; 4]>::new();
-        for b in self.static_vec.iter() {
-            b.render_debug(&mut lines);
+        for w in &self.walls {
+            w.borrow().render_debug(&mut lines);
         }
-        for b in self.dynamic_vec.iter() {
-            b.render_debug(&mut lines);
+        for mw in &self.moving_walls {
+            mw.borrow().render_debug(&mut lines);
+        }
+        for b in &self.boids {
+            b.borrow().render_debug(&mut lines);
+        }
+        for g in &self.grenades {
+            g.borrow_mut().render_debug(&mut lines);
+        }
+        for c in &self.characters {
+            c.render_debug(&mut lines);
         }
 
         gl.draw(*viewport, |context, gl| {
@@ -151,15 +161,24 @@ impl World {
     }
 
     pub fn update(&mut self, dt: f64) {
-        // update bodies
-        for body in self.dynamic_vec.iter() {
-            body.update(dt);
+        for g in &self.grenades {
+            g.update(dt,&self.batch);
+        }
+        for b in &self.boids {
+            b.update(dt,&self.batch);
+        }
+        for c in &self.characters {
+            c.update(dt,&self.batch);
+        }
+        for mw in &self.moving_walls {
+            mw.update(dt,&self.batch);
         }
 
         // destroy dead bodies
         let mut i = 0;
         while i < self.dynamic_vec.len() {
-            if self.dynamic_vec[i].dead() {
+            let b = self.dynamic_vec[i].borrow().dead();
+            if b {
                 self.dynamic_vec.swap_remove(i);
             } else {
                 i += 1;
@@ -168,23 +187,22 @@ impl World {
 
         // resolve collisions
         {
-            let mut batch = self.batch.borrow_mut();
-            batch.clear_dynamic();
+            self.batch.clear_dynamic();
             for body in self.dynamic_vec.iter() {
                 {
+                    let body = &mut *body.borrow_mut();
                     let location = body.location();
-                    let mut callback = |other: &Rc<BodyTrait>| {
-                        let other = &**other;
+                    let mut callback = |other: &mut BodyTrait| {
                         if body.collide(other) {
                             body.resolve_collision(other);
-                            other.resolve_collision(&**body);
+                            other.resolve_collision(body);
                             body.on_collision(other);
-                            other.on_collision(&**body);
+                            other.on_collision(body);
                         }
                     };
-                    batch.apply_locally(&location,&mut callback);
+                    self.batch.apply_locally(&location,&mut callback);
                 }
-                batch.insert_dynamic(&(body.clone() as Rc<BodyTrait>));
+                self.batch.insert_dynamic(&(body.clone() as Rc<RefCell<BodyTrait>>));
             }
         }
     }

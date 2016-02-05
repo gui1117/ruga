@@ -43,7 +43,7 @@ impl App {
         use graphics::*;
 
         {
-            let player = self.world.characters[0].clone();
+            let player = self.world.characters[0].borrow();
             self.camera.x = player.x();
             self.camera.y = player.y();
         }
@@ -80,24 +80,25 @@ impl App {
     }
 
     pub fn player_velocity(&self) -> f64 {
-        self.world.characters[0].velocity()
+        self.world.characters[0].borrow().velocity()
     }
 
     pub fn set_player_velocity(&mut self, v: f64) {
         let v = v.min(1.);
-        self.world.characters[0].set_velocity(v*character::VELOCITY);
+        self.world.characters[0].borrow_mut().set_velocity(v*character::VELOCITY);
     }
 
     pub fn player_angle(&self) -> f64 {
-        self.world.characters[0].angle()
+        self.world.characters[0].borrow().angle()
     }
 
     pub fn set_player_angle(&mut self, a: f64) {
-        self.world.characters[0].set_angle(a);
+        self.world.characters[0].borrow_mut().set_angle(a);
     }
 
     pub fn set_player_attack_sword(&mut self) {
-        self.world.characters[0].do_sword_attack();
+        let character = &*self.world.characters[0];
+        character.do_sword_attack(&self.world.batch);
     }
 
     pub fn set_player_shoot(&mut self, shoot: bool) {
@@ -105,7 +106,7 @@ impl App {
     }
 
     pub fn set_player_launch_grenade(&mut self) {
-        let character = self.world.characters[0].clone();
+        let character = &*self.world.characters[0].clone();
         character.launch_grenade(&mut self.world);
     }
 }

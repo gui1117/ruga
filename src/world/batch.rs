@@ -7,18 +7,19 @@ use super::BodyTrait;
 use util::grid_raycast;
 use util::minus_pi_pi;
 use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::cmp::Ordering;
 
 pub struct Batch {
     pub unit: f64,
-    static_hashmap: SpatialHashing<Rc<BodyTrait>>,
-    dynamic_hashmap: SpatialHashing<Rc<BodyTrait>>,
+    static_hashmap: SpatialHashing<Rc<RefCell<BodyTrait>>>,
+    dynamic_hashmap: SpatialHashing<Rc<RefCell<BodyTrait>>>,
 }
 
-impl Identifiable for Rc<BodyTrait> {
+impl Identifiable for Rc<RefCell<BodyTrait>> {
     fn id(&self) -> usize {
-        (**self).id()
+        self.borrow().id()
     }
 }
 
@@ -31,34 +32,40 @@ impl Batch {
         }
     }
 
-    pub fn insert_static(&mut self, body: &Rc<BodyTrait>) {
-        self.static_hashmap.insert_locally(&body.location(),body);
+    pub fn insert_static(&mut self, body: &Rc<RefCell<BodyTrait>>) {
+        self.static_hashmap.insert_locally(&body.borrow().location(),body);
     }
 
-    pub fn insert_dynamic(&mut self, body: &Rc<BodyTrait>) {
-        self.dynamic_hashmap.insert_locally(&body.location(),body);
+    pub fn insert_dynamic(&mut self, body: &Rc<RefCell<BodyTrait>>) {
+        self.dynamic_hashmap.insert_locally(&body.borrow().location(),body);
     }
 
-    pub fn apply_locally<F: FnMut(&Rc<BodyTrait>)>(&self, loc: &Location, callback: &mut F) {
-        self.static_hashmap.apply_locally(loc, &mut |body: &Rc<BodyTrait>| {
+    pub fn apply_locally<F: FnMut(&mut BodyTrait)>(&self, loc: &Location, callback: &mut F) {
+        self.static_hashmap.apply_locally(loc, &mut |body: &Rc<RefCell<BodyTrait>>| {
+            let body = &mut *body.borrow_mut();
             if body.in_location(loc) {
                 callback(body);
             }
         });
-        self.dynamic_hashmap.apply_locally(loc, &mut |body: &Rc<BodyTrait>| {
+        self.dynamic_hashmap.apply_locally(loc, &mut |body: &Rc<RefCell<BodyTrait>>| {
+            let body = &mut *body.borrow_mut();
             if body.in_location(loc) {
                 callback(body);
             }
         });
     }
 
-    pub fn apply_on_index<F: FnMut(&Rc<BodyTrait>)>(&self, index: &[i32;2], callback: &mut F) {
-        self.static_hashmap.apply_on_index(index,callback);
-        self.dynamic_hashmap.apply_on_index(index,callback);
+    pub fn apply_on_index<F: FnMut(&mut BodyTrait)>(&self, index: &[i32;2], callback: &mut F) {
+        let c = &mut |body: &Rc<RefCell<BodyTrait>>| {
+            let body = &mut *body.borrow_mut();
+            callback(body);
+        };
+        self.static_hashmap.apply_on_index(index,c);
+        self.dynamic_hashmap.apply_on_index(index,c);
     }
 
     /// callback return true when stop
-    pub fn raycast<F: FnMut(&BodyTrait, f64, f64) -> bool>(&self, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
+    pub fn raycast<F: FnMut(&mut BodyTrait, f64, f64) -> bool>(&self, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
         use std::f64::consts::PI;
 
         //println!("");
@@ -84,7 +91,7 @@ impl Batch {
         let line_start = x0.min(x1);
         let line_end = x0.max(x1);
 
-        let mut bodies: Vec<(Rc<BodyTrait>,f64,f64)>;
+        let mut bodies: Vec<(Rc<RefCell<BodyTrait>>,f64,f64)>;
         let mut visited = HashSet::new();
         for i in &index_vec {
             //println!("index:{:?}",i);
@@ -99,7 +106,7 @@ impl Batch {
             res.append(&mut self.dynamic_hashmap.get_on_index(i));
             while let Some(body) = res.pop() {
                 if !visited.contains(&body.id()) {
-                    let intersections = body.raycast(a,b,c);
+                    let intersections = body.borrow().raycast(a,b,c);
                     if let Some((x_min,y_min,x_max,y_max)) = intersections {
                         //println!("intersection");
                         //println!("start:{},end:{},min:{},max:{}",segment_start,segment_end,x_min,x_max);
@@ -143,8 +150,8 @@ impl Batch {
 
             for (body,min,max) in bodies {
                 let body = &*body;
-                visited.insert(body.id());
-                if callback(body,min,max) {
+                visited.insert(body.borrow().id());
+                if callback(&mut *body.borrow_mut(),min,max) {
                     return;
                 }
             }
@@ -154,19 +161,19 @@ impl Batch {
     pub fn get_on_segment(&self) {
     }
 
-    pub fn get_on_index(&self, index: &[i32;2]) -> Vec<Rc<BodyTrait>> {
+    pub fn get_on_index(&self, index: &[i32;2]) -> Vec<Rc<RefCell<BodyTrait>>> {
         let mut vec = Vec::new();
         vec.append(&mut self.static_hashmap.get_on_index(index));
         vec.append(&mut self.dynamic_hashmap.get_on_index(index));
         vec
     }
 
-    pub fn get_locally(&self, loc: &Location) -> Vec<Rc<BodyTrait>> {
+    pub fn get_locally(&self, loc: &Location) -> Vec<Rc<RefCell<BodyTrait>>> {
         let mut vec = Vec::new();
         vec.append(&mut self.static_hashmap.get_locally(loc));
         vec.append(&mut self.dynamic_hashmap.get_locally(loc));
-        vec.retain(&mut |body: &Rc<BodyTrait>| {
-            body.in_location(loc)
+        vec.retain(&mut |body: &Rc<RefCell<BodyTrait>>| {
+            body.borrow().in_location(loc)
         });
         vec
     }
