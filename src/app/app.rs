@@ -2,6 +2,7 @@ use util::direction::Direction;
 use opengl_graphics::GlGraphics;
 use world::{ World, Camera, BodyTrait };
 use world::body::character::CharacterTrait;
+use world::body::character::GunType;
 use world::body::character;
 use piston::input::{ 
     RenderArgs, 
@@ -103,6 +104,10 @@ impl App {
 
     pub fn set_player_shoot(&mut self, shoot: bool) {
         self.world.characters[0].set_gun_shoot(shoot);
+    }
+
+    pub fn set_player_next_gun(&mut self, gun_type: GunType) {
+        self.world.characters[0].set_next_gun_type(gun_type);
     }
 
     pub fn set_player_launch_grenade(&mut self) {

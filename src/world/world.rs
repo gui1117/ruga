@@ -5,6 +5,7 @@ use super::Camera;
 use super::body::{ 
     Wall, 
     MovingWall, 
+    Armory,
     Character, 
     Grenade,
     //Snake,
@@ -30,6 +31,7 @@ pub struct World {
     /// whether there is a wall or not
     pub wall_map: HashMap<[i32;2],bool>,
     pub walls: Vec<Rc<RefCell<Body>>>,
+    pub armories: Vec<Rc<RefCell<Body>>>,
     pub boids: Vec<Rc<RefCell<Boid>>>,
     pub grenades: Vec<Rc<RefCell<Grenade>>>,
     pub moving_walls: Vec<Rc<RefCell<MovingWall>>>,
@@ -48,6 +50,7 @@ impl World {
             next_id: 1,
             characters: Vec::new(),
             moving_walls: Vec::new(),
+            armories: Vec::new(),
             //snakes: Vec::new(),
             boids: Vec::new(),
             grenades: Vec::new(),
@@ -63,6 +66,14 @@ impl World {
         let id = self.next_id;
         self.next_id += 1;
         id
+    }
+
+    pub fn insert_armory(&mut self, x: i32, y: i32) {
+        let armory = Rc::new(RefCell::new(Armory::new(self.next_id(),x,y,self.unit)));
+        let a_armory = armory.clone() as Rc<RefCell<BodyTrait>>;
+        self.batch.insert_static(&a_armory);
+        self.static_vec.push(a_armory);
+        self.armories.push(armory);
     }
 
     pub fn insert_wall(&mut self, x: i32, y: i32) {
@@ -137,6 +148,9 @@ impl World {
         let mut lines = Vec::<[f64; 4]>::new();
         for w in &self.walls {
             w.borrow().render_debug(&mut lines);
+        }
+        for a in &self.armories {
+            a.borrow().render_debug(&mut lines);
         }
         for mw in &self.moving_walls {
             mw.borrow().render_debug(&mut lines);

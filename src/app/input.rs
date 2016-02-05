@@ -1,3 +1,4 @@
+use world::body::character::GunType;
 use util::direction::Direction;
 use super::point::Point;
 use super::app::App;
@@ -104,6 +105,15 @@ impl App {
 					},
                     Key::E => {
                         self.set_player_launch_grenade();
+                    }
+                    Key::R => {
+                        self.set_player_next_gun(GunType::Rifle);
+                    }
+                    Key::T => {
+                        self.set_player_next_gun(GunType::Shotgun);
+                    }
+                    Key::Y => {
+                        self.set_player_next_gun(GunType::Sniper);
                     }
 					_ => (),
 				}

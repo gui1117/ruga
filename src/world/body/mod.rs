@@ -3,11 +3,13 @@ pub mod wall;
 pub mod moving_wall;
 pub mod body;
 pub mod boids;
+pub mod armory;
 pub mod traits;
 //pub mod snake;
 pub mod grenade;
 
 pub use self::grenade::Grenade;
+pub use self::armory::Armory;
 pub use self::moving_wall::MovingWall;
 pub use self::character::Character;
 pub use self::wall::Wall;
