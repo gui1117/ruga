@@ -125,7 +125,7 @@ impl BodyTrait for Body {
 
 #[test]
 fn test_trait_in_circle() {
-    let a = RefCell::new(Body {
+    let a = Body {
         x: 1.,
         y: 2.,
         width: 2.,
@@ -138,14 +138,14 @@ fn test_trait_in_circle() {
         group: 0,
         collision_behavior: CollisionBehavior::Stop,
         body_type: BodyType::Wall,
-    });
+    };
     assert_eq!(true,a.in_circle([3.,3.],1.));
     assert_eq!(false,a.in_circle([3.,3.],0.9));
     assert_eq!(true,a.in_circle([3.,2.],1.1));
     assert_eq!(true,a.in_circle([1.,2.],0.1));
     assert_eq!(true,a.in_circle([1.,2.],5.1));
 
-    let b = RefCell::new(Body {
+    let b = Body {
         x: 0.,
         y: 0.,
         width: 20.,
@@ -158,7 +158,7 @@ fn test_trait_in_circle() {
         group: 0,
         collision_behavior: CollisionBehavior::Stop,
         body_type: BodyType::Wall,
-    });
+    };
     assert_eq!(true,b.in_circle([0.,5.],5.));
     assert_eq!(true,b.in_circle([5.,0.],10.));
 }
