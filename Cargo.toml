@@ -13,6 +13,7 @@ piston2d-graphics = "0.13.0"
 piston2d-opengl_graphics = "0.22.0"
 piston-viewport = "0.2.0"
 rand = "0.3.0"
+portaudio = "0.6.0"
 
 #xml-rs = "0.2"
 #regex = "0.1"
