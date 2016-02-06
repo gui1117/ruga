@@ -1,9 +1,3 @@
-use viewport::Viewport;
-use opengl_graphics::GlGraphics;
-use world::{ 
-    Camera, 
-};
-
 use super::{
     Body,
     BodyTrait,
@@ -19,8 +13,6 @@ use std::collections::HashMap;
 
 pub struct Snake {
     body: Body,
-    wall_map: Rc<RefCell<HashMap<[i32;2],bool>>>,
-    batch: Rc<RefCell<Batch>>,
     unit: f64,
     direction: Direction,
     last_position: [f64;2],
@@ -30,18 +22,18 @@ pub const SIZE_RATIO: f64 = 0.8;
 pub const WEIGHT: f64 = 10000.;
 pub const VELOCITY: f64 = 200.;
 pub const MASK: u32 = !0;
-pub const GROUP: u32 = 16;
+pub const GROUP: u32 = super::SNAKE_GROUP;
 pub const VIEW_RANGE: i32 = 4;
 
 impl Snake {
-    pub fn new(id: usize, x: i32, y: i32, angle: Direction, unit: f64, wall_map: Rc<RefCell<HashMap<[i32;2],bool>>>, batch: Rc<RefCell<Batch>>) -> Snake {
+    pub fn new(id: usize, x: i32, y: i32, angle: Direction, unit: f64) -> Snake {
         Snake {
             body: Body {
                 id: id,
                 x: (x as f64 + 0.5) * unit,
                 y: (y as f64 + 0.5) * unit,
-                width2: unit * SIZE_RATIO / 2.,
-                height2: unit * SIZE_RATIO / 2.,
+                width: unit * SIZE_RATIO,
+                height: unit * SIZE_RATIO,
                 weight: WEIGHT,
                 velocity: VELOCITY,
                 angle: angle.to_f64(),
@@ -50,15 +42,13 @@ impl Snake {
                 collision_behavior: CollisionBehavior::Persist,
                 body_type: BodyType::Snake,
             },
-            wall_map: wall_map,
             unit: unit,
-            batch: batch,
             direction: angle,
             last_position: [(x as f64 + 0.5)*unit,(y as f64 + 0.5)*unit],
         }
     }
 
-    fn free_directions(&self) -> Vec<Direction> {
+    fn free_directions(&self, batch: &Batch) -> Vec<Direction> {
         let mut free_dir = Vec::new();
 
         let check_free = |body_vec: Vec<Rc<BodyTrait>>| {
@@ -89,7 +79,7 @@ impl Snake {
                 Direction::Left => [x_i32 - 1, y_i32],
                 Direction::Right => [x_i32 + 1, y_i32],
             };
-            if check_free(self.batch.borrow().get_on_index(&index)) {
+            if check_free(batch.get_on_index(&index)) {
                 free_dir.push(dir);
             }
         }
@@ -154,35 +144,18 @@ impl Snake {
         }
         None
     }
+
+    pub fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
+        self.body.render_debug(lines);
+    }
 }
 
-impl BodyTrait for RefCell<Snake> {
-    delegate!{
-        body:
-            id() -> usize,
-            dead() -> bool,
-            body_type() -> BodyType,
-            damage(d: f64) -> (),
-            width2() -> f64,
-            height2() -> f64,
-            x() -> f64,
-            mut set_x(x: f64) -> (),
-            y() -> f64,
-            mut set_y(y: f64) -> (),
-            weight() -> f64,
-            velocity() -> f64,
-            mut set_velocity(v: f64) -> (),
-            angle() -> f64,
-            mut set_angle(a: f64) -> (),
-            mask() -> u32,
-            group() -> u32,
-            collision_behavior() -> CollisionBehavior,
-            render(viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) -> (),
-            render_debug(lines: &mut Vec<[f64;4]>) -> (),
-            on_collision(other: &BodyTrait) -> (),
-    }
+pub trait SnakeManager {
+    fn update(&self, dt: f64, batch: &Batch);
+}
 
-    fn update(&self, dt: f64) {
+impl SnakeManager for RefCell<Snake> {
+    fn update(&self, dt: f64, batch: &Batch) {
         use std::i32;
 
         let take_decision = {
@@ -238,5 +211,30 @@ impl BodyTrait for RefCell<Snake> {
         }
 
         self.borrow_mut().body.update(dt);
+    }
+}
+
+impl BodyTrait for Snake {
+    delegate!{
+        body:
+            id() -> usize,
+            dead() -> bool,
+            body_type() -> BodyType,
+            mut damage(d: f64) -> (),
+            width() -> f64,
+            height() -> f64,
+            x() -> f64,
+            mut set_x(x: f64) -> (),
+            y() -> f64,
+            mut set_y(y: f64) -> (),
+            weight() -> f64,
+            velocity() -> f64,
+            mut set_velocity(v: f64) -> (),
+            angle() -> f64,
+            mut set_angle(a: f64) -> (),
+            mask() -> u32,
+            group() -> u32,
+            collision_behavior() -> CollisionBehavior,
+            mut on_collision(other: &mut BodyTrait) -> (),
     }
 }
