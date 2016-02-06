@@ -21,7 +21,7 @@ pub const WIDTH: f64 = 1.;
 pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
-pub const GROUP: u32 = 4;
+pub const GROUP: u32 = super::BOID_GROUP;
 pub const DAMAGE: f64 = 10.;
 pub const VELOCITY: f64 = 50.;
 

@@ -26,14 +26,21 @@ pub enum CollisionBehavior {
     Random,
 }
 
+//GROUP
+pub const GRENADE_GROUP: u32 =      0b00000000000000000000000000000001;
+pub const ARMORY_GROUP: u32 =       0b00000000000000000000000000000010;
+pub const MOVING_WALL_GROUP: u32 =  0b00000000000000000000000000000100;
+pub const CHARACTER_GROUP: u32 =    0b00000000000000000000000000001000;
+pub const WALL_GROUP: u32 =         0b00000000000000000000000000010000;
+pub const BOID_GROUP: u32 =         0b00000000000000000000000000100000;
+
 #[derive(Clone,PartialEq)]
 pub enum BodyType {
     Wall,
     MovingWall,
     Character,
-    Monster,
     Boid,
-    Snake,
+    //Snake,
     Grenade,
     Armory,
 }

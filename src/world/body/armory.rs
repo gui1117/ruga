@@ -19,7 +19,7 @@ impl Armory {
             velocity: 0.,
             angle: 0.,
             mask: 0,
-            group: 128,
+            group: super::ARMORY_GROUP,
             collision_behavior: CollisionBehavior::Stop,
             body_type: BodyType::Armory,
         }

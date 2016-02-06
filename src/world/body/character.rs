@@ -214,7 +214,7 @@ impl GunManager for RefCell<Character> {
             GunType::Sniper => {
                 let mut length = SNIPER_LENGTH;
                 batch.raycast(x,y,aim,SNIPER_LENGTH, &mut |body,min,_| {
-                    if body.id() != id {
+                    if body.id() != id && body.body_type() != BodyType::Armory {
                         if let BodyType::Wall = body.body_type() {
                             length = min;
                             true
@@ -235,7 +235,7 @@ impl GunManager for RefCell<Character> {
                     let aim = aim + range.ind_sample(&mut rng);
                     let mut length = SHOTGUN_LENGTH;
                     batch.raycast(x,y,aim,SHOTGUN_LENGTH, &mut |body,min,_| {
-                        if body.id() != id {
+                        if body.id() != id && body.body_type() != BodyType::Armory {
                             body.damage(SHOTGUN_DAMAGE);
                             length = min;
                             true
@@ -252,7 +252,7 @@ impl GunManager for RefCell<Character> {
                 let aim = aim + range.ind_sample(&mut rng);
                 let mut length = RIFLE_LENGTH;
                 batch.raycast(x,y,aim,RIFLE_LENGTH, &mut |body,min,_| {
-                    if body.id() != id {
+                    if body.id() != id && body.body_type() != BodyType::Armory {
                         body.damage(RIFLE_DAMAGE);
                         length = min;
                         true
@@ -322,7 +322,7 @@ pub const VELOCITY: f64 = 65.;
 pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
-pub const GROUP: u32 = 2;
+pub const GROUP: u32 = super::CHARACTER_GROUP;
 
 
 impl Character {

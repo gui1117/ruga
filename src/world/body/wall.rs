@@ -19,7 +19,7 @@ impl Wall {
             velocity: 0.,
             angle: 0.,
             mask: !0,
-            group: 1,
+            group: super::WALL_GROUP,
             collision_behavior: CollisionBehavior::Stop,
             body_type: BodyType::Wall,
         }

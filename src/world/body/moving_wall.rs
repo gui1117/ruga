@@ -21,7 +21,7 @@ pub const SIZE_RATIO: f64 = 0.8;
 pub const WEIGHT: f64 = 10000.;
 pub const VELOCITY: f64 = 200.;
 pub const MASK: u32 = !0;
-pub const GROUP: u32 = 16;
+pub const GROUP: u32 = super::MOVING_WALL_GROUP;
 pub const VIEW_RANGE: i32 = 4;
 pub const DAMAGE: f64 = 100.;
 

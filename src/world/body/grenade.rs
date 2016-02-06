@@ -16,7 +16,7 @@ pub const WIDTH: f64 = 1.;
 pub const HEIGHT: f64 = 1.;
 pub const DAMAGE: f64 = 10.;
 pub const WEIGHT: f64 = 1.;
-pub const GROUP: u32 = 64;
+pub const GROUP: u32 = super::GRENADE_GROUP;
 pub const MASK: u32 = !0;
 pub const NUMBER_OF_SPATTERS: u32 = 32;
 pub const SPATTER_MAX_RADIUS: f64 = 10.;
@@ -94,7 +94,7 @@ impl GrenadeManager for RefCell<Grenade> {
                     let angle = angle_range.ind_sample(&mut rng);
                     let mut length = length_range.ind_sample(&mut rng);
                     batch.raycast(x,y,angle,length, &mut |body,min,_| {
-                        if body.id() != id {
+                        if body.id() != id && body.body_type() != BodyType::Armory {
                             body.damage(DAMAGE);
                             length = min;
                             true
