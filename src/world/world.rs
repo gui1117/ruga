@@ -11,6 +11,7 @@ use super::body::{
     //Snake,
     Boid,
     Body,
+    BodyType,
     BodyTrait, 
 };
 use super::body::character::CharacterManager;
@@ -193,6 +194,17 @@ impl World {
         while i < self.dynamic_vec.len() {
             let b = self.dynamic_vec[i].borrow().dead();
             if b {
+                let id = self.dynamic_vec[i].borrow().id();
+                let body_type = self.dynamic_vec[i].borrow().body_type();
+                match body_type {
+                    BodyType::Boid => self.boids.retain(|b| {
+                        b.borrow().id() != id
+                    }),
+                    BodyType::Grenade => self.grenades.retain(|b| {
+                        b.borrow().id() != id
+                    }),
+                    _ => Err("detroy undetroyable body").unwrap(),
+                }
                 self.dynamic_vec.swap_remove(i);
             } else {
                 i += 1;
