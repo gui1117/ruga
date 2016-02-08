@@ -7,25 +7,24 @@ use sndfile::{
 };
 use portaudio::PortAudio;
 use portaudio as pa;
+use std::i32;
+use std::sync::mpsc::channel;
 
 const CHANNELS: i32 = 2;
-const NUM_SECONDS: i32 = 5;
-const SAMPLE_RATE: f64 = 48_000.0;
+const SAMPLE_RATE: f64 = 44_100.0;
 const FRAMES_PER_BUFFER: u32 = 64;
-//const TABLE_SIZE: usize = 200;
 
 pub mod sounds {
-    pub const PISTOL: u32 = 0;
-    pub const BOMB: u32 = 1;
-    pub const CLICK: u32 = 2;
+    pub const RIFLE: u32 = 0;
+    pub const SNIPER: u32 = 1;
+    pub const SHOTGUN: u32 = 2;
+    //pub const BOMB: u32 = 1;
+    //pub const CLICK: u32 = 2;
 }
 
-pub mod musics {
-    pub const ChampionOfLight: u32 = 0;
-    pub const IceFlow: u32 = 1;
-    pub const InAHeartbeat: u32 = 2;
-    pub const LatinIndustries: u32 = 3;
-}
+//pub mod musics {
+//    pub const Cylindric: u32 = 0;
+//}
 
 pub struct SoundManager {
     listener: [f64;2],
@@ -33,24 +32,20 @@ pub struct SoundManager {
 
 impl SoundManager {
     pub fn new(x: f64, y: f64) -> SoundManager {
+        //let (s_tx,s_rx) = channel();
         thread::spawn(move || {
-            let sound_path = Path::new("assets/musics/Champion_of_Light.ogg");
-            let mut sound_file = SndFile::new(sound_path,OpenMode::Read).unwrap();
-
-            //let mut left_phase = 0;
-            //let mut right_phase = 0;
+            let mut music = SndFile::new(Path::new("assets/musics/cylindric.ogg"),OpenMode::Read).unwrap();
+            let mut sound = Vec::new();
+            sound.push(SndFile::new(Path::new("assets/sounds/rifle.ogg"),OpenMode::Read).unwrap());
+            sound.push(SndFile::new(Path::new("assets/sounds/sniper.ogg"),OpenMode::Read).unwrap());
+            sound.push(SndFile::new(Path::new("assets/sounds/shotgun.ogg"),OpenMode::Read).unwrap());
 
             let pa = pa::PortAudio::new().unwrap();
 
-            let mut settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER).unwrap();
-            // we won't output out of range samples so don't bother clipping them.
-            //settings.flags = pa::stream_flags::CLIP_OFF;
+            let settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER).unwrap();
 
-            // This routine will be called by the PortAudio engine when audio is needed. It may called at
-            // interrupt level on some machines so don't do anything that could mess up the system like
-            // dynamic resource allocation or IO.
             let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
-                sound_file.readf_f32(buffer,frames as i64);
+                music.readf_f32(buffer,frames as i64);
                 for f in buffer {
                     *f /= 10.;
                 }
@@ -60,7 +55,7 @@ impl SoundManager {
             let mut stream = pa.open_non_blocking_stream(settings, callback).unwrap();
 
             stream.start().unwrap();
-            pa.sleep(NUM_SECONDS * 1_000_000);
+            pa.sleep(i32::max_value());
         });
 
 
