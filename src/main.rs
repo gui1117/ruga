@@ -4,12 +4,15 @@ extern crate graphics;
 extern crate opengl_graphics;
 extern crate viewport;
 extern crate rand;
+extern crate sndfile;
+extern crate portaudio;
 
 #[macro_use]
 pub mod util;
 pub mod world;
 pub mod app;
 pub mod maze;
+pub mod sound_manager;
 
 use piston::window::{ WindowSettings, AdvancedWindow };
 use piston::event_loop::Events;

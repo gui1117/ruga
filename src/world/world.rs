@@ -20,6 +20,7 @@ use super::body::grenade::GrenadeManager;
 use super::body::boids::BoidManager;
 use super::batch::Batch;
 use util::direction::Direction;
+use sound_manager::SoundManager;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -41,6 +42,7 @@ pub struct World {
     pub static_vec: Vec<Rc<RefCell<BodyTrait>>>,
     pub dynamic_vec: Vec<Rc<RefCell<BodyTrait>>>,
     pub batch: Batch,
+    pub sound_manager: SoundManager,
 }
 
 impl World {
@@ -60,6 +62,7 @@ impl World {
             dynamic_vec: Vec::new(),
             batch: Batch::new(unit),
             wall_map: HashMap::new(),
+            sound_manager: SoundManager::new(0.,0.),
         }
     }
 
