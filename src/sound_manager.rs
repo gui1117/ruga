@@ -10,8 +10,13 @@ use sndfile::{
 use portaudio::PortAudio;
 use portaudio as pa;
 use std::i32;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{
+    channel,
+    Sender,
+    Receiver,
+};
 use std::ops::Rem;
+use std::time;
 
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 44_100.0;
@@ -56,7 +61,7 @@ impl Sound {
         let len = if self.start <= self.end {
             self.end-self.start
         } else {
-            self.end-self.start+self.batch.len()
+            (self.end+self.batch.len())-self.start
         };
         if buffers.len() - *index < len {
             for _ in 0..*index + len - buffers.len() {
@@ -77,7 +82,7 @@ impl Sound {
                 buffers[counter][k] *= self.volume[i];
             }
             if frame == 0 {
-                self.start += 1;
+                self.start = (self.start+1).rem(self.batch.len());
             }
             counter += 1;
         }
@@ -88,9 +93,9 @@ impl Sound {
         self.volume[self.end] = volume;
         self.batch[self.end].seek(0,SeekMode::SeekSet);
 
-        self.end += 1.rem(self.batch.len());
+        self.end = (self.end+1).rem(self.batch.len());
         if self.start == self.end {
-            self.start += 1;
+            self.start = (self.start+1).rem(self.batch.len());
         }
     }
 }
@@ -112,6 +117,10 @@ impl Music {
     }
 
     fn fill_buffers(&mut self, buffers: &mut Vec<[f32; BUFFER_SIZE]>, index: &mut usize, frames: i64) {
+        if buffers.len() == *index {
+            buffers.push([0.;BUFFER_SIZE]);
+        }
+
         let frame = self.snd_file.readf_f32(&mut buffers[*index],frames);
         for k in 0..BUFFER_SIZE {
             buffers[*index][k] *= self.volume;
@@ -122,21 +131,37 @@ impl Music {
         *index += 1;
     }
 
-    fn set_voluem(&mut self, v: f32) {
+    fn set_volume(&mut self, v: f32) {
         self.volume = v;
     }
 }
 
+enum SoundMsg {
+    Play(usize,f32),
+    SetMusicVolume(f32),
+}
+
 pub struct SoundManager {
     listener: [f64;2],
+    music_volume: f32,
+    global_volume: f32,
+    sounds_volume: f32,
+    start_decrease: f64,
+    end_decrease: f64,
+    pa_tx: Sender<SoundMsg>,
 }
 
 impl SoundManager {
-    pub fn new(x: f64, y: f64) -> SoundManager {
-        //let (s_tx,s_rx) = channel();
+    pub fn new() -> SoundManager {
+        let (pa_tx,pa_rx) = channel();
+
         thread::spawn(move || {
             let mut music = Music::new("cylindric.ogg");
-            let mut sound = Sound::new("rifle.ogg",20);
+            let mut sounds = vec![
+                Sound::new("rifle.ogg",20),
+                Sound::new("sniper.ogg",20),
+                Sound::new("shotgun.ogg",20)
+            ];
 
             let mut buffers: Vec<[f32;(BUFFER_SIZE) as usize]> = Vec::with_capacity(10);
             for _ in 0..10 {
@@ -148,16 +173,26 @@ impl SoundManager {
             let settings = pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER).unwrap();
 
             let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
+
+                while let Ok(sound_msg) = pa_rx.try_recv() {
+                    match sound_msg {
+                        SoundMsg::Play(n,vol) => sounds[n].play(vol),
+                        SoundMsg::SetMusicVolume(vol) => music.set_volume(vol),
+                    }
+                }
+
                 let mut index = 0;
 
                 music.fill_buffers(&mut buffers,&mut index,frames as i64);
-                sound.fill_buffers(&mut buffers,&mut index,frames as i64);
+                for sound in &mut sounds {
+                    sound.fill_buffers(&mut buffers,&mut index,frames as i64);
+                }
 
                 let mut i = 0;
                 for f in buffer {
                     *f = buffers[0][i];
                     for k in 1..index {
-                        *f += buffers[i][k]
+                        *f += buffers[k][i]
                     }
                     i += 1;
                 }
@@ -175,22 +210,53 @@ impl SoundManager {
 
 
         SoundManager {
-            listener: [x,y],
+            start_decrease: 1.,
+            end_decrease: 100.,
+            listener: [0.,0.],
+            music_volume: 1.,
+            global_volume: 1.,
+            sounds_volume: 1.,
+            pa_tx: pa_tx,
         }
     }
-
-    pub fn set_music_volume(v: f32) {
+    
+    pub fn set_decrease_bounds(&mut self, start: f64, end: f64) {
+        self.start_decrease = start;
+        self.end_decrease = end;
     }
 
-    pub fn set_sounds_volume(v: f32) {
+    pub fn set_listener(&mut self, pos: [f64;2]) {
+        self.listener = pos;
     }
 
-    pub fn set_global_volume(v: f32) {
+    pub fn set_music_volume(&mut self, v: f32) {
+        self.music_volume = v;
+        self.pa_tx.send(SoundMsg::SetMusicVolume(self.music_volume*self.global_volume));
+    }
+
+    pub fn set_sounds_volume(&mut self, v: f32) {
+        self.sounds_volume = v;
+    }
+
+    pub fn set_global_volume(&mut self, v: f32) {
+        self.global_volume = v;
+        self.pa_tx.send(SoundMsg::SetMusicVolume(self.music_volume*self.global_volume));
     }
 
     pub fn add_sound(&mut self, x: f64, y: f64, sound: u32) {
         // the volume of sounds effects are set only at the beginning
-        // send the sound number with the volume desired
+
+        let dist = ((self.listener[0] - x).powi(2) + (self.listener[1] - y).powi(2)).sqrt();
+        let k_dist = if dist >= self.end_decrease {
+            return;
+        } else if dist > self.start_decrease {
+            (self.end_decrease - dist) as f32
+        } else {
+            1.
+        };
+
+        let vol = k_dist * self.global_volume * self.sounds_volume;
+        self.pa_tx.send(SoundMsg::Play(sound as usize,vol));
     }
 }
 

@@ -62,7 +62,7 @@ impl World {
             dynamic_vec: Vec::new(),
             batch: Batch::new(unit),
             wall_map: HashMap::new(),
-            sound_manager: SoundManager::new(0.,0.),
+            sound_manager: SoundManager::new(),
         }
     }
 
