@@ -227,6 +227,7 @@ impl SoundManager {
         self.listener = pos;
     }
 
+    #[allow(unused_must_use)]
     pub fn set_music_volume(&mut self, v: f32) {
         self.music_volume = v;
         self.pa_tx.send(SoundMsg::SetMusicVolume(self.music_volume*self.global_volume));
@@ -236,11 +237,13 @@ impl SoundManager {
         self.sounds_volume = v;
     }
 
+    #[allow(unused_must_use)]
     pub fn set_global_volume(&mut self, v: f32) {
         self.global_volume = v;
         self.pa_tx.send(SoundMsg::SetMusicVolume(self.music_volume*self.global_volume));
     }
 
+    #[allow(unused_must_use)]
     pub fn play(&mut self, x: f64, y: f64, sound: u32) {
         // the volume of sounds effects are set only at the beginning
 
