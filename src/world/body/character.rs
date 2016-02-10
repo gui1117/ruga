@@ -12,6 +12,10 @@ use super::{
 use std::cell::RefCell;
 use std::f64;
 use util::minus_pi_pi;
+use sound_manager::{
+    SoundManager,
+    sounds,
+};
 
 struct SwordAttack {
     x: f64,
@@ -42,7 +46,7 @@ impl Sword {
         }
     }
 
-    fn render_debug(&mut self, lines: &mut Vec<[f64;4]>) {
+    fn render_debug(&mut self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager) {
         use std::f64::consts::{PI, FRAC_PI_2};
 
         let n = 16;
@@ -52,6 +56,7 @@ impl Sword {
                 let angle = a.aim - FRAC_PI_2 + (i as f64)*da;
                 lines.push([a.x,a.y,a.x+SWORD_LENGTH*angle.cos(),a.y+SWORD_LENGTH*angle.sin()]);
             }
+            sound_manager.play(a.x,a.y,sounds::SWORD);
         }
     }
 }
@@ -186,7 +191,7 @@ impl Gun {
         }
     }
 
-    fn render_debug(&mut self, lines: &mut Vec<[f64;4]>) {
+    fn render_debug(&mut self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager) {
         while let Some(shoot) = self.shoots.pop() {
             match shoot {
                 GunShoot::Sniper(x,y,aim,length)
@@ -194,6 +199,11 @@ impl Gun {
                     | GunShoot::Rifle(x,y,aim,length) => {
                         lines.push([x,y,x+length*aim.cos(),y+length*aim.sin()]);
                     },
+            }
+            match shoot {
+                GunShoot::Sniper(x,y,_,_) => sound_manager.play(x,y,sounds::SNIPER),
+                GunShoot::Shotgun(x,y,_,_) => sound_manager.play(x,y,sounds::SHOTGUN),
+                GunShoot::Rifle(x,y,_,_) => sound_manager.play(x,y,sounds::RIFLE),
             }
         }
     }
@@ -389,14 +399,14 @@ impl CharacterTrait for RefCell<Character> {
 }
 
 pub trait CharacterManager {
-    fn render_debug(&self, lines: &mut Vec<[f64;4]>);
+    fn render_debug(&self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager);
     fn update(&self, dt: f64, batch: &Batch);
 }
 
 impl CharacterManager for RefCell<Character> {
-    fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
-        self.borrow_mut().gun.render_debug(lines);
-        self.borrow_mut().sword.render_debug(lines);
+    fn render_debug(&self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager) {
+        self.borrow_mut().gun.render_debug(lines,sound_manager);
+        self.borrow_mut().sword.render_debug(lines,sound_manager);
         let this = self.borrow();
         this.body.render_debug(lines);
     }

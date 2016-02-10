@@ -42,7 +42,6 @@ pub struct World {
     pub static_vec: Vec<Rc<RefCell<BodyTrait>>>,
     pub dynamic_vec: Vec<Rc<RefCell<BodyTrait>>>,
     pub batch: Batch,
-    pub sound_manager: SoundManager,
 }
 
 impl World {
@@ -62,7 +61,6 @@ impl World {
             dynamic_vec: Vec::new(),
             batch: Batch::new(unit),
             wall_map: HashMap::new(),
-            sound_manager: SoundManager::new(),
         }
     }
 
@@ -133,7 +131,7 @@ impl World {
     pub fn render(&mut self, _viewport: &Viewport, _camera: &Camera, _gl: &mut GlGraphics) {
     }
 
-    pub fn render_debug(&mut self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics) {
+    pub fn render_debug(&mut self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics, sound_manager: &mut SoundManager) {
         use graphics::Transformed;
         use graphics::line::{ 
             Line as LineDrawer, 
@@ -166,7 +164,7 @@ impl World {
             g.borrow_mut().render_debug(&mut lines);
         }
         for c in &self.characters {
-            c.render_debug(&mut lines);
+            c.render_debug(&mut lines,sound_manager);
         }
 
         gl.draw(*viewport, |context, gl| {

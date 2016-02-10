@@ -1,6 +1,4 @@
 use std::thread;
-use std::collections::HashSet;
-use std::collections::HashMap;
 use std::path::Path;
 use sndfile::{
     SndFile,
@@ -13,10 +11,8 @@ use std::i32;
 use std::sync::mpsc::{
     channel,
     Sender,
-    Receiver,
 };
 use std::ops::Rem;
-use std::time;
 
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 44_100.0;
@@ -24,9 +20,10 @@ const FRAMES_PER_BUFFER: u32 = 64;
 const BUFFER_SIZE: usize = (CHANNELS as usize) * (FRAMES_PER_BUFFER as usize);
 
 pub mod sounds {
-    pub const RIFLE: u32 = 0;
-    pub const SNIPER: u32 = 1;
-    pub const SHOTGUN: u32 = 2;
+    pub const RIFLE: u32 =      0;
+    pub const SNIPER: u32 =     1;
+    pub const SHOTGUN: u32 =    2;
+    pub const SWORD: u32 =      3;
 }
 
 struct Sound {
@@ -158,8 +155,9 @@ impl SoundManager {
         thread::spawn(move || {
             let mut music = Music::new("cylindric.ogg");
             let mut sounds = vec![
-                Sound::new("rifle.ogg",20),
+                Sound::new("rifle.ogg",40),
                 Sound::new("sniper.ogg",20),
+                Sound::new("shotgun.ogg",20),
                 Sound::new("shotgun.ogg",20)
             ];
 
@@ -243,14 +241,14 @@ impl SoundManager {
         self.pa_tx.send(SoundMsg::SetMusicVolume(self.music_volume*self.global_volume));
     }
 
-    pub fn add_sound(&mut self, x: f64, y: f64, sound: u32) {
+    pub fn play(&mut self, x: f64, y: f64, sound: u32) {
         // the volume of sounds effects are set only at the beginning
 
         let dist = ((self.listener[0] - x).powi(2) + (self.listener[1] - y).powi(2)).sqrt();
         let k_dist = if dist >= self.end_decrease {
             return;
         } else if dist > self.start_decrease {
-            (self.end_decrease - dist) as f32
+            ((self.end_decrease - dist)/(self.end_decrease - self.start_decrease)) as f32
         } else {
             1.
         };

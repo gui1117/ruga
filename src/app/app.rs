@@ -10,6 +10,7 @@ use piston::input::{
     UpdateEvent,
 };
 use maze::generate_kruskal;
+use sound_manager::SoundManager;
 
 pub struct App {
     pub gl: GlGraphics,
@@ -18,6 +19,7 @@ pub struct App {
     pub camera: Camera,
     pub player_dir: Vec<Direction>,
     pub window_size: [f64;2],
+    pub sound_manager: SoundManager
 //    pub debug: usize,
 //    pub debug2: f64,
 }
@@ -33,6 +35,7 @@ impl App {
             window_size: [width,height],
             player_dir: vec![],
             camera: Camera::new(0.,0., width, height, ZOOM),
+            sound_manager: SoundManager::new(),
 //            debug: 0,
 //            debug2: 0.,
         };
@@ -49,13 +52,19 @@ impl App {
             self.camera.y = player.y();
         }
 
+        let listener = {
+            let character = self.world.characters[0].borrow();
+            [character.x(),character.y()]
+        };
+        self.sound_manager.set_listener(listener);
+
         const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
         self.gl.draw(args.viewport(), |_, gl| {
             clear(BLACK, gl);
         });
 
-        self.world.render_debug(&args.viewport(),&self.camera,&mut self.gl);
+        self.world.render_debug(&args.viewport(),&self.camera,&mut self.gl,&mut self.sound_manager);
 
 //        if !false {
 //            self.debug += 1;
