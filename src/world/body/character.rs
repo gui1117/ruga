@@ -49,6 +49,10 @@ impl Sword {
     fn render_debug(&mut self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager) {
         use std::f64::consts::{PI, FRAC_PI_2};
 
+        if let Some(a) = self.attacks.get(0) {
+            sound_manager.play(a.x,a.y,sounds::SWORD);
+        }
+
         let n = 16;
         let da = PI/(n as f64);
         while let Some(a) = self.attacks.pop() {
@@ -56,7 +60,6 @@ impl Sword {
                 let angle = a.aim - FRAC_PI_2 + (i as f64)*da;
                 lines.push([a.x,a.y,a.x+SWORD_LENGTH*angle.cos(),a.y+SWORD_LENGTH*angle.sin()]);
             }
-            sound_manager.play(a.x,a.y,sounds::SWORD);
         }
     }
 }
@@ -192,6 +195,14 @@ impl Gun {
     }
 
     fn render_debug(&mut self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager) {
+        if let Some(shoot) = self.shoots.get(0) {
+            match shoot {
+                &GunShoot::Sniper(x,y,_,_) => sound_manager.play(x,y,sounds::SNIPER),
+                &GunShoot::Shotgun(x,y,_,_) => sound_manager.play(x,y,sounds::SHOTGUN),
+                &GunShoot::Rifle(x,y,_,_) => sound_manager.play(x,y,sounds::RIFLE),
+            }
+        }
+
         while let Some(shoot) = self.shoots.pop() {
             match shoot {
                 GunShoot::Sniper(x,y,aim,length)
@@ -199,11 +210,6 @@ impl Gun {
                     | GunShoot::Rifle(x,y,aim,length) => {
                         lines.push([x,y,x+length*aim.cos(),y+length*aim.sin()]);
                     },
-            }
-            match shoot {
-                GunShoot::Sniper(x,y,_,_) => sound_manager.play(x,y,sounds::SNIPER),
-                GunShoot::Shotgun(x,y,_,_) => sound_manager.play(x,y,sounds::SHOTGUN),
-                GunShoot::Rifle(x,y,_,_) => sound_manager.play(x,y,sounds::RIFLE),
             }
         }
     }
