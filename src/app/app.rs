@@ -1,25 +1,19 @@
 use util::direction::Direction;
-use opengl_graphics::GlGraphics;
-use world::{ World, Camera, BodyTrait };
+use world::{ World, BodyTrait };
 use world::body::character::CharacterTrait;
 use world::body::character::GunType;
 use world::body::character;
-use piston::input::{ 
-    RenderArgs, 
-    UpdateArgs, 
-    UpdateEvent,
-};
 use maze::generate_kruskal;
 use sound_manager::SoundManager;
+use graphic_manager::GraphicManager;
 
 pub struct App {
-    pub gl: GlGraphics,
     pub world: World,
     pub quit: bool,
-    pub camera: Camera,
     pub player_dir: Vec<Direction>,
     pub window_size: [f64;2],
-    pub sound_manager: SoundManager
+    pub sound_manager: SoundManager,
+    pub graphic_manager: GraphicManager,
 //    pub debug: usize,
 //    pub debug2: f64,
 }
@@ -27,15 +21,14 @@ pub struct App {
 const ZOOM: f64 = 8.;
 
 impl App {
-    pub fn new(gl: GlGraphics, width: f64, height: f64) -> App {
+    pub fn new(width: f64, height: f64) -> App {
         let app = App {
-            gl: gl,
             world: generate_kruskal(),
             quit: false,
             window_size: [width,height],
             player_dir: vec![],
-            camera: Camera::new(0.,0., width, height, ZOOM),
             sound_manager: SoundManager::new(),
+            graphic_manager: GraphicManager::new(),
 //            debug: 0,
 //            debug2: 0.,
         };
@@ -43,28 +36,28 @@ impl App {
         app
     }
 
-    pub fn render(&mut self, args: &RenderArgs) {
-        use graphics::*;
+    pub fn render(&mut self) {
+        //use graphics::*;
 
-        {
-            let player = self.world.characters[0].borrow();
-            self.camera.x = player.x();
-            self.camera.y = player.y();
-        }
+        //{
+        //    let player = self.world.characters[0].borrow();
+        //    self.camera.x = player.x();
+        //    self.camera.y = player.y();
+        //}
 
-        let listener = {
-            let character = self.world.characters[0].borrow();
-            [character.x(),character.y()]
-        };
-        self.sound_manager.set_listener(listener);
+        //let listener = {
+        //    let character = self.world.characters[0].borrow();
+        //    [character.x(),character.y()]
+        //};
+        //self.sound_manager.set_listener(listener);
 
-        const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+        //const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
-        self.gl.draw(args.viewport(), |_, gl| {
-            clear(BLACK, gl);
-        });
+        //self.gl.draw(args.viewport(), |_, gl| {
+        //    clear(BLACK, gl);
+        //});
 
-        self.world.render_debug(&args.viewport(),&self.camera,&mut self.gl,&mut self.sound_manager);
+        //self.world.render_debug(&args.viewport(),&self.camera,&mut self.gl,&mut self.sound_manager);
 
 //        if !false {
 //            self.debug += 1;
@@ -77,8 +70,8 @@ impl App {
 //        }
     }
 
-    pub fn update(&mut self, args: &UpdateArgs) {
-        self.world.update(args.dt);
+    pub fn update(&mut self, dt: f64) {
+        self.world.update(dt);
     }
 
     pub fn player_aim(&self) -> f64 {

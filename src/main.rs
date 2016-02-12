@@ -13,6 +13,7 @@ pub mod world;
 pub mod app;
 pub mod maze;
 pub mod sound_manager;
+pub mod graphic_manager;
 
 use piston::window::{ WindowSettings, AdvancedWindow };
 use piston::event_loop::Events;
@@ -35,15 +36,15 @@ fn main() {
         .unwrap();
 
     let gl = opengl_graphics::GlGraphics::new(opengl);
-    let mut app = App::new(gl,640.,480.);
+    let mut app = App::new(640.,480.);
 
     let mut event_loop = window.events();
     loop {
         if app.quit { return; } 
 
         match event_loop.next().unwrap() {
-            Event::Render(args) => app.render(&args),
-            Event::Update(args) => app.update(&args),
+            Event::Render(args) => app.render(),
+            Event::Update(args) => app.update(args.dt),
             Event::AfterRender(_args) => (),
             Event::Idle(_args) => (),
             Event::Input(Input::Press(button)) => app.press(&button),

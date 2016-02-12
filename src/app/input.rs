@@ -207,23 +207,23 @@ impl App {
 		match *motion {
 			Motion::MouseCursor(x,y) => {
 
-				let cursor_rel_cam = Point {
-					x: x-self.window_size[0]/2.,
-					y: y-self.window_size[1]/2.,
-				};
+				//let cursor_rel_cam = Point {
+				//	x: x-self.window_size[0]/2.,
+				//	y: y-self.window_size[1]/2.,
+				//};
 
-                let cam_rel_player;
-                {
-                    let player = self.world.characters[0].borrow();
-                    cam_rel_player = Point {
-                        x: self.camera.x - player.x(),
-                        y: self.camera.y - player.y(),
-                    };
-                }
+                //let cam_rel_player;
+                //{
+                //    let player = self.world.characters[0].borrow();
+                //    cam_rel_player = Point {
+                //        x: self.camera.x - player.x(),
+                //        y: self.camera.y - player.y(),
+                //    };
+                //}
 
-                let cursor_rel_player = cursor_rel_cam + cam_rel_player;
-
-                self.set_player_aim(cursor_rel_player.angle_0x());
+                //let cursor_rel_player = cursor_rel_cam + cam_rel_player;
+//
+//                self.set_player_aim(cursor_rel_player.angle_0x());
             },
             _ => (),
         }

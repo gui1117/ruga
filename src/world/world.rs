@@ -1,7 +1,3 @@
-use viewport::Viewport;
-use opengl_graphics::GlGraphics;
-
-use super::Camera;
 use super::body::{ 
     Wall, 
     MovingWall, 
@@ -21,6 +17,7 @@ use super::body::boids::BoidManager;
 use super::batch::Batch;
 use util::direction::Direction;
 use sound_manager::SoundManager;
+use graphic_manager::GraphicManager;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -128,52 +125,52 @@ impl World {
     //    self.snakes.push(snake);
     //}
 
-    pub fn render(&mut self, _viewport: &Viewport, _camera: &Camera, _gl: &mut GlGraphics) {
-    }
+    //pub fn render(&mut self, _viewport: &Viewport, _camera: &Camera, _gl: &mut GlGraphics) {
+    //}
 
-    pub fn render_debug(&mut self, viewport: &Viewport, camera: &Camera, gl: &mut GlGraphics, sound_manager: &mut SoundManager) {
-        use graphics::Transformed;
-        use graphics::line::{ 
-            Line as LineDrawer, 
-            Shape as LineShape,
-        };
-        use graphics::default_draw_state;
+    pub fn render_debug(&mut self, graphic_manager: &mut GraphicManager, sound_manager: &mut SoundManager) {
+        //use graphics::Transformed;
+        //use graphics::line::{ 
+        //    Line as LineDrawer, 
+        //    Shape as LineShape,
+        //};
+        //use graphics::default_draw_state;
 
-        const RED: [f32; 4] = [1.0, 0.0, 0.0, 0.5]; 
+        //const RED: [f32; 4] = [1.0, 0.0, 0.0, 0.5]; 
 
-        let line_drawer = LineDrawer {
-            color: RED,
-            radius: 0.2,
-            shape: LineShape::Round,
-        };
+        //let line_drawer = LineDrawer {
+        //    color: RED,
+        //    radius: 0.2,
+        //    shape: LineShape::Round,
+        //};
 
-        let mut lines = Vec::<[f64; 4]>::new();
-        for w in &self.walls {
-            w.borrow().render_debug(&mut lines);
-        }
-        for a in &self.armories {
-            a.borrow().render_debug(&mut lines);
-        }
-        for mw in &self.moving_walls {
-            mw.borrow().render_debug(&mut lines);
-        }
-        for b in &self.boids {
-            b.borrow().render_debug(&mut lines);
-        }
-        for g in &self.grenades {
-            g.borrow_mut().render_debug(&mut lines);
-        }
-        for c in &self.characters {
-            c.render_debug(&mut lines,sound_manager);
-        }
+        //let mut lines = Vec::<[f64; 4]>::new();
+        //for w in &self.walls {
+        //    w.borrow().render_debug(&mut lines);
+        //}
+        //for a in &self.armories {
+        //    a.borrow().render_debug(&mut lines);
+        //}
+        //for mw in &self.moving_walls {
+        //    mw.borrow().render_debug(&mut lines);
+        //}
+        //for b in &self.boids {
+        //    b.borrow().render_debug(&mut lines);
+        //}
+        //for g in &self.grenades {
+        //    g.borrow_mut().render_debug(&mut lines);
+        //}
+        //for c in &self.characters {
+        //    c.render_debug(&mut lines,sound_manager);
+        //}
 
-        gl.draw(*viewport, |context, gl| {
-            let transform = camera.trans(context.transform);
+        //gl.draw(*viewport, |context, gl| {
+        //    let transform = camera.trans(context.transform);
 
-            for line in lines {
-                line_drawer.draw(line, default_draw_state(), transform, gl);
-            }
-        });
+        //    for line in lines {
+        //        line_drawer.draw(line, default_draw_state(), transform, gl);
+        //    }
+        //});
     }
 
     pub fn update(&mut self, dt: f64) {
