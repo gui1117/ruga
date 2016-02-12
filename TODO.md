@@ -18,6 +18,8 @@
 
 * sounds manager
 
+* use glium instead of piston
+
 #graphics manager
 
 the graphics are inspired by m6502 screensaver, it must have:

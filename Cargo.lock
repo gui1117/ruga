@@ -9,7 +9,7 @@ dependencies = [
  "pistoncore-glutin_window 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "portaudio 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "sndfile 0.0.1 (git+https://github.com/jeremyletang/rust-sndfile.git)",
+ "sndfile 0.0.1 (git+https://github.com/thiolliere/rust-sndfile.git)",
 ]
 
 [[package]]
@@ -586,7 +586,7 @@ dependencies = [
 [[package]]
 name = "sndfile"
 version = "0.0.1"
-source = "git+https://github.com/jeremyletang/rust-sndfile.git#e58cce5bb049999919a3a2ca48cea6323686f791"
+source = "git+https://github.com/thiolliere/rust-sndfile.git#e58cce5bb049999919a3a2ca48cea6323686f791"
 dependencies = [
  "libc 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

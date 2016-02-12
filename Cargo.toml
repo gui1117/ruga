@@ -15,7 +15,7 @@ piston-viewport = "0.2.0"
 rand = "0.3.0"
 
 portaudio = "0.6.0"
-sndfile = { git = "https://github.com/jeremyletang/rust-sndfile.git" }
+sndfile = { git = "https://github.com/thiolliere/rust-sndfile.git" }
 
 #xml-rs = "0.2"
 #regex = "0.1"
