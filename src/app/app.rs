@@ -5,7 +5,10 @@ use world::body::character::GunType;
 use world::body::character;
 use maze::generate_kruskal;
 use sound_manager::SoundManager;
-use graphic_manager::GraphicManager;
+use frame_manager::{
+    FrameManager,
+    Assets,
+};
 use event_loop::{
     RenderArgs,
     UpdateArgs,
@@ -15,33 +18,35 @@ pub struct App {
     pub world: World,
     pub quit: bool,
     pub player_dir: Vec<Direction>,
-    pub window_size: [f64;2],
+    pub window_size: [u32;2],
     pub sound_manager: SoundManager,
-    pub graphic_manager: GraphicManager,
+    pub zoom: f64,
+    pub frame_assets: Assets,
 }
 
 const ZOOM: f64 = 8.;
 
 impl App {
-    pub fn new(width: f64, height: f64) -> App {
+    pub fn new(width: u32, height: u32) -> App {
         let app = App {
             world: generate_kruskal(),
             quit: false,
             window_size: [width,height],
             player_dir: vec![],
             sound_manager: SoundManager::new(),
-            graphic_manager: GraphicManager::new(),
+            zoom: ZOOM,
+            frame_assets: Assets::new(),
         };
 
         app
     }
 
     pub fn render(&mut self, args: RenderArgs) {
-        //{
-        //    let player = self.world.characters[0].borrow();
-        //    self.camera.x = player.x();
-        //    self.camera.y = player.y();
-        //}
+        let (x,y) = {
+            let player = self.world.characters[0].borrow();
+            (player.x(), player.y())
+        };
+        let mut frame_manager = FrameManager::new(&self.frame_assets,args.frame,args.ext_dt,x,y,self.zoom);
 
         let listener = {
             let character = self.world.characters[0].borrow();
@@ -55,8 +60,8 @@ impl App {
         //    clear(BLACK, gl);
         //});
 
-        //self.world.render_debug(&args.viewport(),&self.camera,&mut self.gl,&mut self.sound_manager);
-        args.frame.finish().unwrap();
+        self.world.render(&mut frame_manager, &mut self.sound_manager);
+        frame_manager.finish();
     }
 
     pub fn update(&mut self, args: UpdateArgs) {

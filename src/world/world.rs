@@ -17,7 +17,7 @@ use super::body::boids::BoidManager;
 use super::batch::Batch;
 use util::direction::Direction;
 use sound_manager::SoundManager;
-use graphic_manager::GraphicManager;
+use frame_manager::FrameManager;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -128,7 +128,7 @@ impl World {
     //pub fn render(&mut self, _viewport: &Viewport, _camera: &Camera, _gl: &mut GlGraphics) {
     //}
 
-    pub fn render_debug(&mut self, graphic_manager: &mut GraphicManager, sound_manager: &mut SoundManager) {
+    pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
         //use graphics::Transformed;
         //use graphics::line::{ 
         //    Line as LineDrawer, 

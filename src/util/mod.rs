@@ -1,9 +1,6 @@
 #[macro_use]
 mod delegate;
 
-#[macro_use]
-mod drawer;
-
 pub mod direction;
 
 pub fn grid_raycast(x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<[i32;2]> {
