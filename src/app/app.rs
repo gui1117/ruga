@@ -6,6 +6,10 @@ use world::body::character;
 use maze::generate_kruskal;
 use sound_manager::SoundManager;
 use graphic_manager::GraphicManager;
+use event_loop::{
+    RenderArgs,
+    UpdateArgs,
+};
 
 pub struct App {
     pub world: World,
@@ -14,8 +18,6 @@ pub struct App {
     pub window_size: [f64;2],
     pub sound_manager: SoundManager,
     pub graphic_manager: GraphicManager,
-//    pub debug: usize,
-//    pub debug2: f64,
 }
 
 const ZOOM: f64 = 8.;
@@ -29,27 +31,23 @@ impl App {
             player_dir: vec![],
             sound_manager: SoundManager::new(),
             graphic_manager: GraphicManager::new(),
-//            debug: 0,
-//            debug2: 0.,
         };
 
         app
     }
 
-    pub fn render(&mut self) {
-        //use graphics::*;
-
+    pub fn render(&mut self, args: RenderArgs) {
         //{
         //    let player = self.world.characters[0].borrow();
         //    self.camera.x = player.x();
         //    self.camera.y = player.y();
         //}
 
-        //let listener = {
-        //    let character = self.world.characters[0].borrow();
-        //    [character.x(),character.y()]
-        //};
-        //self.sound_manager.set_listener(listener);
+        let listener = {
+            let character = self.world.characters[0].borrow();
+            [character.x(),character.y()]
+        };
+        self.sound_manager.set_listener(listener);
 
         //const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
@@ -58,20 +56,11 @@ impl App {
         //});
 
         //self.world.render_debug(&args.viewport(),&self.camera,&mut self.gl,&mut self.sound_manager);
-
-//        if !false {
-//            self.debug += 1;
-//            self.debug2 += args.ext_dt / 10.;
-//            if self.debug >= 10 {
-//                println!("{}",1./self.debug2);
-//                self.debug2 = 0.;
-//                self.debug = 0;
-//            }
-//        }
+        args.frame.finish().unwrap();
     }
 
-    pub fn update(&mut self, dt: f64) {
-        self.world.update(dt);
+    pub fn update(&mut self, args: UpdateArgs) {
+        self.world.update(args.dt);
     }
 
     pub fn player_aim(&self) -> f64 {

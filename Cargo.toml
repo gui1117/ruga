@@ -7,15 +7,18 @@ authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 name = "ruga"
 
 [dependencies]
-piston = "0.16.0"
-pistoncore-glutin_window = "0.20.0"
-piston2d-graphics = "0.13.0"
-piston2d-opengl_graphics = "0.22.0"
-piston-viewport = "0.2.0"
+#piston = "0.16.0"
+#pistoncore-glutin_window = "0.20.0"
+#piston2d-graphics = "0.13.0"
+#piston2d-opengl_graphics = "0.22.0"
+#piston-viewport = "0.2.0"
 rand = "0.3.0"
+time = "0.1.0"
 
 portaudio = "0.6.0"
 sndfile = { git = "https://github.com/thiolliere/rust-sndfile.git" }
+
+glium = "0.13.0"
 
 #xml-rs = "0.2"
 #regex = "0.1"
