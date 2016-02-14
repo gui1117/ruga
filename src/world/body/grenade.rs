@@ -8,6 +8,11 @@ use super::{
     CollisionBehavior,
     BodyType,
 };
+use frame_manager::{
+    color,
+    FrameManager,
+};
+use sound_manager::SoundManager;
 
 pub const VELOCITY: f64 = 10.;
 pub const TIME_TO_STOP: f64 = 0.8;
@@ -58,14 +63,14 @@ impl Grenade {
         }
     }
 
-    pub fn render_debug(&mut self, lines: &mut Vec<[f64;4]>) {
-        self.body.render_debug(lines);
+    pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
+        self.body.render(color::RED,frame_manager);
         while let Some(spatter) = self.spatters.pop() {
             let x = spatter.x;
             let y = spatter.y;
             let length = spatter.length;
             let angle = spatter.angle;
-            lines.push([x,y,x+length*angle.cos(),y+length*angle.sin()]);
+            frame_manager.draw_line(color::RED,x,y,angle,length);
         }
     }
 }

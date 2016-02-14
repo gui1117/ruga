@@ -6,7 +6,6 @@ use super::body::{
     Grenade,
     //Snake,
     Boid,
-    Body,
     BodyType,
     BodyTrait, 
 };
@@ -29,8 +28,8 @@ pub struct World {
     next_id: usize,
     /// whether there is a wall or not
     pub wall_map: HashMap<[i32;2],bool>,
-    pub walls: Vec<Rc<RefCell<Body>>>,
-    pub armories: Vec<Rc<RefCell<Body>>>,
+    pub walls: Vec<Rc<RefCell<Wall>>>,
+    pub armories: Vec<Rc<RefCell<Armory>>>,
     pub boids: Vec<Rc<RefCell<Boid>>>,
     pub grenades: Vec<Rc<RefCell<Grenade>>>,
     pub moving_walls: Vec<Rc<RefCell<MovingWall>>>,
@@ -129,48 +128,24 @@ impl World {
     //}
 
     pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
-        //use graphics::Transformed;
-        //use graphics::line::{ 
-        //    Line as LineDrawer, 
-        //    Shape as LineShape,
-        //};
-        //use graphics::default_draw_state;
-
-        //const RED: [f32; 4] = [1.0, 0.0, 0.0, 0.5]; 
-
-        //let line_drawer = LineDrawer {
-        //    color: RED,
-        //    radius: 0.2,
-        //    shape: LineShape::Round,
-        //};
-
-        //let mut lines = Vec::<[f64; 4]>::new();
-        //for w in &self.walls {
-        //    w.borrow().render_debug(&mut lines);
-        //}
-        //for a in &self.armories {
-        //    a.borrow().render_debug(&mut lines);
-        //}
-        //for mw in &self.moving_walls {
-        //    mw.borrow().render_debug(&mut lines);
-        //}
-        //for b in &self.boids {
-        //    b.borrow().render_debug(&mut lines);
-        //}
-        //for g in &self.grenades {
-        //    g.borrow_mut().render_debug(&mut lines);
-        //}
-        //for c in &self.characters {
-        //    c.render_debug(&mut lines,sound_manager);
-        //}
-
-        //gl.draw(*viewport, |context, gl| {
-        //    let transform = camera.trans(context.transform);
-
-        //    for line in lines {
-        //        line_drawer.draw(line, default_draw_state(), transform, gl);
-        //    }
-        //});
+        for w in &self.walls {
+            w.borrow().render(frame_manager);
+        }
+        for a in &self.armories {
+            a.borrow().render(frame_manager);
+        }
+        for mw in &self.moving_walls {
+            mw.borrow_mut().render(frame_manager, sound_manager);
+        }
+        for b in &self.boids {
+            b.borrow_mut().render(frame_manager, sound_manager);
+        }
+        for g in &self.grenades {
+            g.borrow_mut().render(frame_manager, sound_manager);
+        }
+        for c in &self.characters {
+            c.borrow_mut().render(frame_manager, sound_manager);
+        }
     }
 
     pub fn update(&mut self, dt: f64) {

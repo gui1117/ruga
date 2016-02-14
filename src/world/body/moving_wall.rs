@@ -6,6 +6,11 @@ use super::{
 };
 use world::batch::Batch;
 use util::direction::Direction;
+use frame_manager::{
+    color,
+    FrameManager,
+};
+use sound_manager::SoundManager;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -46,6 +51,10 @@ impl MovingWall {
             direction: angle,
             last_position: [(x as f64 + 0.5)*unit,(y as f64 + 0.5)*unit],
         }
+    }
+
+    pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
+        self.body.render(color::RED,frame_manager);
     }
 
     fn free_directions(&self, batch: &Batch) -> Vec<Direction> {
@@ -143,10 +152,6 @@ impl MovingWall {
             }
         }
         None
-    }
-
-    pub fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
-        self.body.render_debug(lines);
     }
 }
 

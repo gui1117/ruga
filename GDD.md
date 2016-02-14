@@ -152,3 +152,6 @@ when your done you can be rescued by other at any time
 but you can lost people in maze and no indication are given ?
 or maybe you have the direction of people if the distance is not to high
 
+#graphisme
+
+parfois lors du draw la camera peut sauter sur plusieur draw ? et donc glitch?..

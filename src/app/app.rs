@@ -13,6 +13,7 @@ use event_loop::{
     RenderArgs,
     UpdateArgs,
 };
+use glium::backend::glutin_backend::GlutinFacade;
 
 pub struct App {
     pub world: World,
@@ -24,21 +25,22 @@ pub struct App {
     pub frame_assets: Assets,
 }
 
-const ZOOM: f64 = 8.;
+const ZOOM: f64 = 0.05;
 
 impl App {
-    pub fn new(width: u32, height: u32) -> App {
-        let app = App {
+    pub fn new(facade: &GlutinFacade) -> App {
+        let window = facade.get_window().unwrap();
+        let (width,height) = window.get_inner_size_pixels().unwrap();
+
+        App {
             world: generate_kruskal(),
             quit: false,
             window_size: [width,height],
             player_dir: vec![],
             sound_manager: SoundManager::new(),
             zoom: ZOOM,
-            frame_assets: Assets::new(),
-        };
-
-        app
+            frame_assets: Assets::new(facade),
+        }
     }
 
     pub fn render(&mut self, args: RenderArgs) {
@@ -48,18 +50,9 @@ impl App {
         };
         let mut frame_manager = FrameManager::new(&self.frame_assets,args.frame,args.ext_dt,x,y,self.zoom);
 
-        let listener = {
-            let character = self.world.characters[0].borrow();
-            [character.x(),character.y()]
-        };
-        self.sound_manager.set_listener(listener);
+        self.sound_manager.set_listener([x,y]);
 
-        //const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
-
-        //self.gl.draw(args.viewport(), |_, gl| {
-        //    clear(BLACK, gl);
-        //});
-
+        frame_manager.clear();
         self.world.render(&mut frame_manager, &mut self.sound_manager);
         frame_manager.finish();
     }

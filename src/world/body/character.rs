@@ -12,10 +12,8 @@ use super::{
 use std::cell::RefCell;
 use std::f64;
 use util::minus_pi_pi;
-use sound_manager::{
-    SoundManager,
-    sounds,
-};
+use frame_manager::{color, FrameManager};
+use sound_manager::{SoundManager, sounds};
 
 struct SwordAttack {
     x: f64,
@@ -46,7 +44,7 @@ impl Sword {
         }
     }
 
-    fn render_debug(&mut self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager) {
+    fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
         use std::f64::consts::{PI, FRAC_PI_2};
 
         if let Some(a) = self.attacks.get(0) {
@@ -58,7 +56,7 @@ impl Sword {
         while let Some(a) = self.attacks.pop() {
             for i in 0..n+1 {
                 let angle = a.aim - FRAC_PI_2 + (i as f64)*da;
-                lines.push([a.x,a.y,a.x+SWORD_LENGTH*angle.cos(),a.y+SWORD_LENGTH*angle.sin()]);
+                frame_manager.draw_line(color::RED,a.x,a.y,angle,SWORD_LENGTH);
             }
         }
     }
@@ -194,7 +192,7 @@ impl Gun {
         }
     }
 
-    fn render_debug(&mut self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager) {
+    fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
         if let Some(shoot) = self.shoots.get(0) {
             match shoot {
                 &GunShoot::Sniper(x,y,_,_) => sound_manager.play(x,y,sounds::SNIPER),
@@ -208,7 +206,7 @@ impl Gun {
                 GunShoot::Sniper(x,y,aim,length)
                     | GunShoot::Shotgun(x,y,aim,length)
                     | GunShoot::Rifle(x,y,aim,length) => {
-                        lines.push([x,y,x+length*aim.cos(),y+length*aim.sin()]);
+                        frame_manager.draw_line(color::RED,x,y,aim,length);
                     },
             }
         }
@@ -363,6 +361,12 @@ impl Character {
             sword: Sword::new(),
         }
     }
+
+    pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
+        self.gun.render(frame_manager,sound_manager);
+        self.sword.render(frame_manager,sound_manager);
+        self.body.render(color::RED,frame_manager);
+    }
 }
 
 
@@ -405,18 +409,10 @@ impl CharacterTrait for RefCell<Character> {
 }
 
 pub trait CharacterManager {
-    fn render_debug(&self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager);
     fn update(&self, dt: f64, batch: &Batch);
 }
 
 impl CharacterManager for RefCell<Character> {
-    fn render_debug(&self, lines: &mut Vec<[f64;4]>, sound_manager: &mut SoundManager) {
-        self.borrow_mut().gun.render_debug(lines,sound_manager);
-        self.borrow_mut().sword.render_debug(lines,sound_manager);
-        let this = self.borrow();
-        this.body.render_debug(lines);
-    }
-
     fn update(&self, dt: f64, batch: &Batch) {
         self.borrow_mut().sword.update(dt);
         self.gun_update(dt,batch);

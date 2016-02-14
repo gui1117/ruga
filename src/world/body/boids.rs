@@ -3,6 +3,11 @@ use world::spatial_hashing::Location;
 use std::cell::RefCell;
 use std::f64::consts::PI;
 use util::minus_pi_pi;
+use frame_manager::{
+    color,
+    FrameManager,
+};
+use sound_manager::SoundManager;
 
 use super::{ 
     Body, 
@@ -50,8 +55,8 @@ impl Boid {
         }
     }
 
-    pub fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
-        self.body.render_debug(lines);
+    pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
+        self.body.render(color::RED,frame_manager);
     }
 }
 

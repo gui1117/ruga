@@ -3,6 +3,7 @@ use super::{
     CollisionBehavior,
     BodyType,
 };
+use frame_manager::FrameManager;
 
 pub struct Body {
     pub x: f64,
@@ -27,23 +28,8 @@ impl Body {
         }
     }
 
-    pub fn render_debug(&self, lines: &mut Vec<[f64;4]>) {
-        lines.push([
-                   self.x-self.width()/2.,self.y-self.height()/2.,
-                   self.x-self.width()/2.,self.y+self.height()/2.,
-        ]);
-        lines.push([
-                   self.x-self.width()/2.,self.y+self.height()/2.,
-                   self.x+self.width()/2.,self.y+self.height()/2.,
-        ]);
-        lines.push([
-                   self.x+self.width()/2.,self.y+self.height()/2.,
-                   self.x+self.width()/2.,self.y-self.height()/2.,
-        ]);
-        lines.push([
-                   self.x+self.width()/2.,self.y-self.height()/2.,
-                   self.x-self.width()/2.,self.y-self.height()/2.,
-        ]);
+    pub fn render(&self, color: [f64;4], frame_manager: &mut FrameManager) {
+        frame_manager.draw_square(color,self.x,self.y,self.width,self.height);
     }
 }
 

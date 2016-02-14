@@ -28,9 +28,12 @@ use event_loop::{
 };
 
 fn main() {
-    let mut window = glium::glutin::WindowBuilder::new().build_glium().unwrap();
+    let mut window = glium::glutin::WindowBuilder::new()
+        .with_depth_buffer(24)
+        .build_glium()
+        .unwrap();
 
-    let mut app = App::new(640,480);
+    let mut app = App::new(&window);
 
     let mut window_events = window.events();
     while let Some(event) = window_events.next(&mut window) {

@@ -36,29 +36,29 @@ impl App {
 			match dir {
 				&Direction::Up => {
 					match last_perpendicular {
-						Some(&Direction::Left) => angle = -3.*PI/4.,
-						Some(&Direction::Right) => angle = -PI/4.,
-						_ => angle = -PI/2.,
-					}
-				},
-				&Direction::Down => {
-					match last_perpendicular {
 						Some(&Direction::Left) => angle = 3.*PI/4.,						
 						Some(&Direction::Right) => angle = PI/4.,
 						_ => angle = PI/2.,
 					}
 				},
+				&Direction::Down => {
+					match last_perpendicular {
+						Some(&Direction::Left) => angle = -3.*PI/4.,
+						Some(&Direction::Right) => angle = -PI/4.,
+						_ => angle = -PI/2.,
+					}
+				},
 				&Direction::Right => {
 					match last_perpendicular {
-						Some(&Direction::Up) => angle = -PI/4.,
-						Some(&Direction::Down) => angle = PI/4.,
+						Some(&Direction::Down) => angle = -PI/4.,
+						Some(&Direction::Up) => angle = PI/4.,
 						_ => angle = 0.,
 					}
 				},
 				&Direction::Left => {
 					match last_perpendicular {
-						Some(&Direction::Up) => angle = -3.*PI/4.,
-						Some(&Direction::Down) => angle = 3.*PI/4.,
+						Some(&Direction::Down) => angle = -3.*PI/4.,
+						Some(&Direction::Up) => angle = 3.*PI/4.,
 						_ => angle = PI,
 					}
 				},
