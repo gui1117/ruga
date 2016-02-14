@@ -201,7 +201,7 @@ impl App {
             y: y as f64 - center.y,
         };
 
-        self.set_player_aim(cursor.angle_0x());
+        self.set_player_aim(-cursor.angle_0x());
     }
 }
 

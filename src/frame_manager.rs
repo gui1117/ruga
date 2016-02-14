@@ -25,6 +25,8 @@ implement_vertex!(Vertex, position);
 pub struct Assets {
     square_vertex_buffer: VertexBuffer<Vertex>,
     square_indices: index::NoIndices,
+    line_vertex_buffer: VertexBuffer<Vertex>,
+    line_indices: index::NoIndices,
     program: Program,
 }
 
@@ -34,10 +36,19 @@ impl Assets {
             Vertex { position: [-0.5, -0.5] },
             Vertex { position: [ 0.5, -0.5] },
             Vertex { position: [-0.5,  0.5] },
-            Vertex { position: [ 0.5,  0.5] }];
+            Vertex { position: [ 0.5,  0.5] }
+        ];
 
         let square_vertex_buffer = VertexBuffer::new(facade, &square_vertex).unwrap();
         let square_indices = index::NoIndices(index::PrimitiveType::TriangleStrip);
+
+        let line_vertex = vec![
+            Vertex { position: [0., 0.] },
+            Vertex { position: [ 1., 1.] }
+        ];
+
+        let line_vertex_buffer = VertexBuffer::new(facade, &line_vertex).unwrap();
+        let line_indices = index::NoIndices(index::PrimitiveType::LinesList);
 
         let vertex_shader_src = r#"
             #version 140
@@ -71,6 +82,8 @@ impl Assets {
         Assets {
             square_vertex_buffer: square_vertex_buffer,
             square_indices: square_indices,
+            line_vertex_buffer: line_vertex_buffer,
+            line_indices: line_indices,
             program: program,
         }
     }
@@ -138,6 +151,29 @@ impl<'l> FrameManager<'l> {
     }
 
     pub fn draw_line(&mut self, color: [f64;4], x: f64, y: f64, angle: f64, length: f64) {
+        let trans = {
+            let kx = (length*angle.cos()) as f32;
+            let ky = (length*angle.sin()) as f32;
+            let dx = x as f32;
+            let dy = y as f32;
+            [
+                [   kx,    0., 0., 0.],
+                [   0.,    ky, 0., 0.],
+                [   0.,    0., 1., 0.],
+                [dx, dy, 0., 1.]
+            ]
+        };
+        let uniform = uniform!{
+            trans: trans,
+            camera: self.camera,
+            color: [1.,0.,0.,1.0f32],
+        };
+        self.frame.draw(
+            &self.assets.line_vertex_buffer, 
+            &self.assets.line_indices, 
+            &self.assets.program, 
+            &uniform,
+            &Default::default()).unwrap();
     }
 
     pub fn clear(&mut self) {
