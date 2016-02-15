@@ -13,6 +13,7 @@ use super::body::character::CharacterManager;
 use super::body::moving_wall::MovingWallManager;
 use super::body::grenade::GrenadeManager;
 use super::body::boids::BoidManager;
+use super::body::boids::boid_generator;
 use super::batch::Batch;
 use util::direction::Direction;
 use sound_manager::SoundManager;
@@ -20,14 +21,14 @@ use frame_manager::FrameManager;
 
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 pub struct World {
     pub time: f64,
     pub unit: f64,
     next_id: usize,
     /// whether there is a wall or not
-    pub wall_map: HashMap<[i32;2],bool>,
+    pub wall_map: HashSet<[i32;2]>,
     pub walls: Vec<Rc<RefCell<Wall>>>,
     pub armories: Vec<Rc<RefCell<Armory>>>,
     pub boids: Vec<Rc<RefCell<Boid>>>,
@@ -56,7 +57,7 @@ impl World {
             static_vec: Vec::new(),
             dynamic_vec: Vec::new(),
             batch: Batch::new(unit),
-            wall_map: HashMap::new(),
+            wall_map: HashSet::new(),
         }
     }
 
@@ -75,7 +76,7 @@ impl World {
     }
 
     pub fn insert_wall(&mut self, x: i32, y: i32) {
-        self.wall_map.insert([x,y],true);
+        self.wall_map.insert([x,y]);
 
         let wall = Rc::new(RefCell::new(Wall::new(self.next_id(),x,y,self.unit)));
         let a_wall = wall.clone() as Rc<RefCell<BodyTrait>>;
@@ -152,8 +153,13 @@ impl World {
         for g in &self.grenades {
             g.update(dt,&self.batch);
         }
+        let character_pos = [self.characters[0].borrow().x(),self.characters[0].borrow().y()];
+        let to_create = boid_generator(self.boids.len(),character_pos,&self.wall_map,self.unit);
+        for (x,y,a) in to_create {
+            self.insert_boid(x,y,a);
+        }
         for b in &self.boids {
-            b.update(dt,&self.batch);
+            b.update(dt,character_pos,&self.boids);
         }
         for c in &self.characters {
             c.update(dt,&self.batch);

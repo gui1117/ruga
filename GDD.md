@@ -161,3 +161,15 @@ parfois lors du draw la camera peut sauter sur plusieur draw ? et donc glitch?..
 les boids ne doivent pas vraiment etre tué mais plutot exquivé 
 aussi si on les touche on prend 1*x de damage mais notre vie remonte toute seule
 on a 3*x de vie
+
+#boid 
+
+pour etre plus efficace on pourrait les faire apparaitre autour du heros comme une aura maudite de mouche
+le boid meurt s'il est trop loin et le nombre total de boid est constant un boid generator les generes autour du
+heros dans les case a une distance 3 ou 4
+
+#output 
+
+une classe output interne a world qui est envoyé lors des update des monstres
+le rendu de world fera appel au render des bodies et aussi de output
+le sound_manager est envoyé a world update et celui ci ne fait que output.play(sound_manager)

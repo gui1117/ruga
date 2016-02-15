@@ -6,7 +6,7 @@ use util::direction::Direction;
 use self::rand::distributions::{IndependentSample, Range};
 use world::World;
 
-const AVERAGE_BOID_PER_UNIT: u32 = 1;
+const MAX_BOID_PER_UNIT: u32 = 2;
 
 #[derive(Debug)]
 enum Wall {
@@ -95,7 +95,7 @@ pub fn generate() -> World {
 
     let mut rng = rand::thread_rng();
 
-    let boid_range = Range::new(0,AVERAGE_BOID_PER_UNIT*2);//.ind_sample(&mut rng);
+    let boid_range = Range::new(0,MAX_BOID_PER_UNIT);
     let unit_range = Range::new(0.,unit);
     let angle_range = Range::new(0.,6.28);
 
