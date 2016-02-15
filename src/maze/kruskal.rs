@@ -6,6 +6,8 @@ use util::direction::Direction;
 use self::rand::distributions::{IndependentSample, Range};
 use world::World;
 
+const AVERAGE_BOID_PER_UNIT: u32 = 1;
+
 #[derive(Debug)]
 enum Wall {
     Vertical(usize,usize),
@@ -91,29 +93,32 @@ pub fn generate() -> World {
 
     let mut world = World::new(unit);
 
-    for i in 0..maze.len() {
-        if maze[i] {
-            let x = (i.wrapping_rem(width)) as i32;
-            let y = (i/width) as i32;
+    let mut rng = rand::thread_rng();
 
+    let boid_range = Range::new(0,AVERAGE_BOID_PER_UNIT*2);//.ind_sample(&mut rng);
+    let unit_range = Range::new(0.,unit);
+    let angle_range = Range::new(0.,6.28);
+
+    for i in 0..maze.len() {
+        let x = (i.wrapping_rem(width)) as i32;
+        let y = (i/width) as i32;
+
+        if maze[i] {
             world.insert_wall(x,y);
+        } else {
+            // insert boids
+            let nbr_of_boid = boid_range.ind_sample(&mut rng);
+            for _ in 0..nbr_of_boid {
+                let boid_x = unit_range.ind_sample(&mut rng) + x as f64 * unit;
+                let boid_y = unit_range.ind_sample(&mut rng) + y as f64 * unit;
+                let boid_angle = angle_range.ind_sample(&mut rng);
+                world.insert_boid(boid_x,boid_y,boid_angle);
+            }
         }
     }
 
-    world.insert_boid(unit*1.5,unit*1.5,0.);
-    world.insert_boid(unit*1.5,unit*1.5,-0.1);
-    world.insert_boid(unit*1.5,unit*1.5,0.2);
-    world.insert_boid(unit*1.5,unit*1.5,-0.3);
-    world.insert_boid(unit*1.5,unit*1.5,0.4);
-    world.insert_boid(unit*1.5,unit*1.5,-0.5);
-    world.insert_boid(unit*1.5,unit*1.5,1.);
-    world.insert_boid(unit*1.5,unit*1.5,-1.1);
-    world.insert_boid(unit*1.5,unit*1.5,1.2);
-    world.insert_boid(unit*1.5,unit*1.5,-1.3);
-    world.insert_boid(unit*1.5,unit*1.5,1.4);
-    world.insert_boid(unit*1.5,unit*1.5,-1.5);
     world.insert_armory(1,1);
-    world.insert_moving_wall(width as i32 - 1,height as i32 - 2,Direction::Left);
+    //world.insert_moving_wall(width as i32 - 1,height as i32 - 2,Direction::Left);
     world.insert_character(unit*1.5,unit*1.5,0.);
 
     world

@@ -2,10 +2,10 @@
 extern crate glium;
 
 extern crate rand;
+extern crate time;
 extern crate sndfile;
 extern crate portaudio;
 
-extern crate time;
 
 #[macro_use]
 pub mod util;

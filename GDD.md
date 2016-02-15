@@ -139,9 +139,9 @@ genre le rouge dépasse du mur tandis que le vert est en retard
 * second weapon: rifle/shotgun/sniper
 * third weapon: grenade
 
-the third weapon can be used everytime
+the first weapon can be used everytime
 the weapons can be changed in weapon armory dispatched in the world
-also ammo are very limited and every weapon armroy give full ammo
+also ammo are very limited and every weapon armroy can give full ammo to a specific weapon
 
 very inspired by left4dead
 
@@ -155,3 +155,9 @@ or maybe you have the direction of people if the distance is not to high
 #graphisme
 
 parfois lors du draw la camera peut sauter sur plusieur draw ? et donc glitch?..
+
+#gameplay
+
+les boids ne doivent pas vraiment etre tué mais plutot exquivé 
+aussi si on les touche on prend 1*x de damage mais notre vie remonte toute seule
+on a 3*x de vie

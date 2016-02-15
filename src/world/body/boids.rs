@@ -27,10 +27,10 @@ pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
 pub const GROUP: u32 = super::BOID_GROUP;
-pub const DAMAGE: f64 = 10.;
-pub const VELOCITY: f64 = 50.;
+pub const DAMAGE: f64 = 0.4;
+pub const VELOCITY: f64 = 20.;
 
-pub const COHESION_RADIUS: f64 = 40.;
+pub const COHESION_RADIUS: f64 = 10.;
 pub const COHESION_MAX_DELTA_ANGLE: f64 = PI;
 pub const COHESION_FACTOR: f64 = 5.;
 
