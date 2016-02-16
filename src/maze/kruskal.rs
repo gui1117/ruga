@@ -118,7 +118,6 @@ pub fn generate() -> World {
     }
 
     world.insert_armory(1,1);
-    world.insert_moving_wall(width as i32 - 1,height as i32 - 2,Direction::Left);
     world.insert_character(unit*1.5,unit*1.5,0.);
 
     world

@@ -23,14 +23,16 @@ pub struct MovingWall {
     unit: f64,
     direction: Direction,
     last_position: [f64;2],
+    no_decision_time: f64,
 }
 
-pub const SIZE_RATIO: f64 = 0.99;
+pub const SIZE_RATIO: f64 = 0.999;
 pub const WEIGHT: f64 = 1000.;
 pub const VELOCITY: f64 = 35.;
 pub const MASK: u32 = !0;
 pub const GROUP: u32 = super::MOVING_WALL_GROUP;
 pub const VIEW_RANGE: i32 = 4;
+pub const TIMEOUT: f64 = 1.;
 
 impl MovingWall {
     pub fn new(id: usize, x: i32, y: i32, angle: Direction, unit: f64) -> MovingWall {
@@ -50,6 +52,7 @@ impl MovingWall {
                 body_type: BodyType::MovingWall,
             },
             unit: unit,
+            no_decision_time: 0.,
             direction: angle,
             last_position: [(x as f64 + 0.5)*unit,(y as f64 + 0.5)*unit],
         }
@@ -60,36 +63,37 @@ impl MovingWall {
     }
 }
 
-fn free_directions(x: i32, y: i32, direction: Direction, unit: f64, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>) -> Vec<Direction> {
+fn free_directions(id: usize, x: i32, y: i32, direction: Direction, unit: f64, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>) -> Vec<Direction> {
     let mut free_dir = Vec::new();
 
-    let check_dir = match direction {
-        Direction::Up => vec![Direction::Up,Direction::Right,Direction::Left],
-        Direction::Down => vec![Direction::Right,Direction::Left,Direction::Down],
-        Direction::Left => vec![Direction::Up,Direction::Left,Direction::Down],
-        Direction::Right => vec![Direction::Up,Direction::Right,Direction::Down],
-    };
+    //let check_dir = match direction {
+    //    Direction::Up => vec![Direction::Up,Direction::Right,Direction::Left],
+    //    Direction::Down => vec![Direction::Right,Direction::Left,Direction::Down],
+    //    Direction::Left => vec![Direction::Up,Direction::Left,Direction::Down],
+    //    Direction::Right => vec![Direction::Up,Direction::Right,Direction::Down],
+    //};
 
     let moving_walls_pos = {
         let mut vec = Vec::new();
         for mv in moving_walls {
+            let mv_id = mv.borrow().id();
             let mv_x = mv.borrow().x()/unit;
             let mv_y = mv.borrow().y()/unit;
             let mv_dir = mv.borrow().direction;
-            vec.push((mv_x,mv_y,mv_dir));
+            vec.push((mv_id,mv_x,mv_y,mv_dir));
         }
         vec
     };
 
-    for dir in check_dir {
+    for dir in vec![Direction::Up,Direction::Right,Direction::Left,Direction::Down] {
         let index = match dir {
             Direction::Up => [x, y + 1],
             Direction::Down => [x, y - 1],
             Direction::Left => [x - 1, y],
             Direction::Right => [x + 1, y],
         };
-        let moving_wall_blocking = moving_walls_pos.iter().any(|&(mv_x,mv_y,mv_dir)| {
-            if (mv_x-x as f64).abs() < 0.5 && (mv_y-y as f64).abs() < 0.5 && dir != mv_dir {
+        let moving_wall_blocking = moving_walls_pos.iter().any(|&(mv_id,mv_x,mv_y,mv_dir)| {
+            if id != mv_id && (mv_x-index[0] as f64).abs() < 1. && (mv_y-index[1] as f64).abs() < 1. {
                 true
             } else {
                 false
@@ -114,7 +118,9 @@ impl MovingWallManager for RefCell<MovingWall> {
         use std::i32;
 
 
-        let take_decision = {
+        let take_decision = if self.borrow().no_decision_time > TIMEOUT {
+            true
+        } else {
             let this = self.borrow();
 
             match this.direction {
@@ -135,27 +141,37 @@ impl MovingWallManager for RefCell<MovingWall> {
 
         if take_decision {
             let next_dir = {
-                let (x,y,direction,unit) = {
+                let (id,x,y,direction,unit) = {
                     let this = self.borrow();
                     let x_i32 = (this.x()/this.unit).floor() as i32;
                     let y_i32 = (this.y()/this.unit).floor() as i32;
-                    (x_i32,y_i32,this.direction,this.unit)
+                    (this.id(),x_i32,y_i32,this.direction,this.unit)
                 };
-                let free_dir = free_directions(x,y,direction,unit,moving_walls,wall_map);
+                let mut free_dir = free_directions(id,x,y,direction,unit,moving_walls,wall_map);
 
                 let this = self.borrow();
 
                 if !free_dir.contains(&this.direction) {
-                    println!("ecrase ?");
+                    //TODO ecrase
                 }
 
                 let mut next_dir = if free_dir.len() > 0 {
-                    let mut rng = rand::thread_rng();
-                    let range = Range::new(0,free_dir.len());
-                    let i = range.ind_sample(&mut rng);
-                    free_dir[i]
+                    let free_opposite = free_dir.contains(&this.direction.opposite());
+                    free_dir.retain(|&dir| {
+                        dir != this.direction.opposite()
+                    });
+                    if free_dir.len() > 0 {
+                        let mut rng = rand::thread_rng();
+                        let range = Range::new(0,free_dir.len());
+                        let i = range.ind_sample(&mut rng);
+                        Some(free_dir[i])
+                    } else if free_opposite {
+                        Some(this.direction.opposite())
+                    } else {
+                        None
+                    }
                 } else {
-                    this.direction.opposite()
+                    None
                 };
 
                 next_dir
@@ -166,8 +182,17 @@ impl MovingWallManager for RefCell<MovingWall> {
             this.last_position = [x,y];
             this.body.set_x(x);
             this.body.set_y(y);
-            this.direction = next_dir;
-            this.body.angle = next_dir.to_f64();
+            this.no_decision_time = 0.;
+            if let Some(next_dir) = next_dir {
+                this.direction = next_dir;
+                this.body.angle = next_dir.to_f64();
+                this.body.velocity = VELOCITY;
+            } else {
+                this.body.velocity = 0.;
+            }
+
+        } else {
+            self.borrow_mut().no_decision_time += dt;
         }
 
         self.borrow_mut().body.update(dt);
