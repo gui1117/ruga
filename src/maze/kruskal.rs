@@ -6,7 +6,7 @@ use util::direction::Direction;
 use self::rand::distributions::{IndependentSample, Range};
 use world::World;
 
-const MAX_BOID_PER_UNIT: u32 = 2;
+const AVERAGE_MOVING_WALL_PER_UNIT: f32 = 0.1;
 
 #[derive(Debug)]
 enum Wall {
@@ -95,9 +95,8 @@ pub fn generate() -> World {
 
     let mut rng = rand::thread_rng();
 
-    let boid_range = Range::new(0,MAX_BOID_PER_UNIT);
-    let unit_range = Range::new(0.,unit);
-    let angle_range = Range::new(0.,6.28);
+    let zero_un_range = Range::new(0.,1.);
+    let direction_range = Range::new(0,4);
 
     for i in 0..maze.len() {
         let x = (i.wrapping_rem(width)) as i32;
@@ -106,19 +105,20 @@ pub fn generate() -> World {
         if maze[i] {
             world.insert_wall(x,y);
         } else {
-            // insert boids
-            let nbr_of_boid = boid_range.ind_sample(&mut rng);
-            for _ in 0..nbr_of_boid {
-                let boid_x = unit_range.ind_sample(&mut rng) + x as f64 * unit;
-                let boid_y = unit_range.ind_sample(&mut rng) + y as f64 * unit;
-                let boid_angle = angle_range.ind_sample(&mut rng);
-                world.insert_boid(boid_x,boid_y,boid_angle);
-            }
+            if zero_un_range.ind_sample(&mut rng) < AVERAGE_MOVING_WALL_PER_UNIT {
+                let direction = match direction_range.ind_sample(&mut rng) {
+                    0 => Direction::Left,
+                    1 => Direction::Right,
+                    2 => Direction::Up,
+                    _ => Direction::Down,
+                };
+                world.insert_moving_wall(x,y,direction);
+            } 
         }
     }
 
     world.insert_armory(1,1);
-    //world.insert_moving_wall(width as i32 - 1,height as i32 - 2,Direction::Left);
+    world.insert_moving_wall(width as i32 - 1,height as i32 - 2,Direction::Left);
     world.insert_character(unit*1.5,unit*1.5,0.);
 
     world

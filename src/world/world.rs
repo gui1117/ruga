@@ -165,7 +165,7 @@ impl World {
             c.update(dt,&self.batch);
         }
         for mw in &self.moving_walls {
-            mw.update(dt,&self.batch);
+            mw.update(dt,&self.moving_walls,&self.wall_map);
         }
 
         // destroy dead bodies

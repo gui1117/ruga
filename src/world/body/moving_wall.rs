@@ -11,8 +11,11 @@ use frame_manager::{
     FrameManager,
 };
 use sound_manager::SoundManager;
+use rand::distributions::{IndependentSample, Range};
+use rand;
 
 use std::rc::Rc;
+use std::collections::HashSet;
 use std::cell::RefCell;
 
 pub struct MovingWall {
@@ -22,13 +25,12 @@ pub struct MovingWall {
     last_position: [f64;2],
 }
 
-pub const SIZE_RATIO: f64 = 0.8;
-pub const WEIGHT: f64 = 10000.;
-pub const VELOCITY: f64 = 200.;
+pub const SIZE_RATIO: f64 = 0.99;
+pub const WEIGHT: f64 = 1000.;
+pub const VELOCITY: f64 = 35.;
 pub const MASK: u32 = !0;
 pub const GROUP: u32 = super::MOVING_WALL_GROUP;
 pub const VIEW_RANGE: i32 = 4;
-pub const DAMAGE: f64 = 100.;
 
 impl MovingWall {
     pub fn new(id: usize, x: i32, y: i32, angle: Direction, unit: f64) -> MovingWall {
@@ -56,113 +58,61 @@ impl MovingWall {
     pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
         self.body.render(color::RED,frame_manager);
     }
+}
 
-    fn free_directions(&self, batch: &Batch) -> Vec<Direction> {
-        let mut free_dir = Vec::new();
+fn free_directions(x: i32, y: i32, direction: Direction, unit: f64, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>) -> Vec<Direction> {
+    let mut free_dir = Vec::new();
 
-        let check_free = |body_vec: Vec<Rc<RefCell<BodyTrait>>>| {
-            for body in body_vec {
-                match body.borrow().body_type() {
-                    BodyType::MovingWall | BodyType::Wall => {
-                        return false;
-                    },
-                    _ => (),
-                }
-            }
-            true
-        };
+    let check_dir = match direction {
+        Direction::Up => vec![Direction::Up,Direction::Right,Direction::Left],
+        Direction::Down => vec![Direction::Right,Direction::Left,Direction::Down],
+        Direction::Left => vec![Direction::Up,Direction::Left,Direction::Down],
+        Direction::Right => vec![Direction::Up,Direction::Right,Direction::Down],
+    };
 
-        let check_dir = match self.direction {
-            Direction::Up => vec![Direction::Up,Direction::Right,Direction::Left],
-            Direction::Down => vec![Direction::Right,Direction::Left,Direction::Down],
-            Direction::Left => vec![Direction::Up,Direction::Left,Direction::Down],
-            Direction::Right => vec![Direction::Up,Direction::Right,Direction::Down],
-        };
-
-        let x_i32 = (self.body.x()/self.unit).floor() as i32;
-        let y_i32 = (self.body.y()/self.unit).floor() as i32;
-        for dir in check_dir {
-            let index = match dir {
-                Direction::Up => [x_i32, y_i32 + 1],
-                Direction::Down => [x_i32, y_i32 - 1],
-                Direction::Left => [x_i32 - 1, y_i32],
-                Direction::Right => [x_i32 + 1, y_i32],
-            };
-            if check_free(batch.get_on_index(&index)) {
-                free_dir.push(dir);
-            }
+    let moving_walls_pos = {
+        let mut vec = Vec::new();
+        for mv in moving_walls {
+            let mv_x = mv.borrow().x()/unit;
+            let mv_y = mv.borrow().y()/unit;
+            let mv_dir = mv.borrow().direction;
+            vec.push((mv_x,mv_y,mv_dir));
         }
+        vec
+    };
 
-        free_dir
+    for dir in check_dir {
+        let index = match dir {
+            Direction::Up => [x, y + 1],
+            Direction::Down => [x, y - 1],
+            Direction::Left => [x - 1, y],
+            Direction::Right => [x + 1, y],
+        };
+        let moving_wall_blocking = moving_walls_pos.iter().any(|&(mv_x,mv_y,mv_dir)| {
+            if (mv_x-x as f64).abs() < 0.5 && (mv_y-y as f64).abs() < 0.5 && dir != mv_dir {
+                true
+            } else {
+                false
+            }
+        });
+
+        if !wall_map.contains(&index) && !moving_wall_blocking {
+            free_dir.push(dir);
+        }
     }
 
-    fn visible_prey(&self, dir: Direction, batch: &Batch) -> Option<i32>  {
-        let x_i32 = (self.body.x()/self.unit).floor() as i32;
-        let y_i32 = (self.body.y()/self.unit).floor() as i32;
-
-        let index_vec = match dir {
-            Direction::Up => {
-                let mut vec = Vec::new();
-                let mut y = y_i32;
-                for _ in 0..VIEW_RANGE {
-                    y += 1;
-                    vec.push([x_i32,y]);
-                }
-                vec
-            },
-            Direction::Down => {
-                let mut vec = Vec::new();
-                let mut y = y_i32;
-                for _ in 0..VIEW_RANGE {
-                    y -= 1;
-                    vec.push([x_i32,y]);
-                }
-                vec
-            },
-            Direction::Left => {
-                let mut vec = Vec::new();
-                let mut x = x_i32;
-                for _ in 0..VIEW_RANGE {
-                    x -= 1;
-                    vec.push([x,y_i32]);
-                }
-                vec
-            },
-            Direction::Right => {
-                let mut vec = Vec::new();
-                let mut x = x_i32;
-                for _ in 0..VIEW_RANGE {
-                    x += 1;
-                    vec.push([x,y_i32]);
-                }
-                vec
-            },
-        };
-
-        let mut distance = 0;
-        for index in &index_vec {
-            distance += 1;
-            let body_vec = batch.get_on_index(index);
-            for body in body_vec {
-                if body.borrow().body_type() == BodyType::Wall {
-                    return None;
-                } else if body.borrow().body_type() == BodyType::Character {
-                    return Some(distance);
-                }
-            }
-        }
-        None
-    }
+    free_dir
 }
 
 pub trait MovingWallManager {
-    fn update(&self, dt: f64, batch: &Batch);
+    fn update(&self, dt: f64, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>);
 }
 
 impl MovingWallManager for RefCell<MovingWall> {
 
-    fn update(&self, dt: f64, batch: &Batch) {
+    fn update(&self, dt: f64, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>) {
         use std::i32;
+
 
         let take_decision = {
             let this = self.borrow();
@@ -185,24 +135,28 @@ impl MovingWallManager for RefCell<MovingWall> {
 
         if take_decision {
             let next_dir = {
+                let (x,y,direction,unit) = {
+                    let this = self.borrow();
+                    let x_i32 = (this.x()/this.unit).floor() as i32;
+                    let y_i32 = (this.y()/this.unit).floor() as i32;
+                    (x_i32,y_i32,this.direction,this.unit)
+                };
+                let free_dir = free_directions(x,y,direction,unit,moving_walls,wall_map);
+
                 let this = self.borrow();
-                let free_dir = this.free_directions(batch);
-                let mut next_dir = if free_dir.contains(&this.direction) {
-                    this.direction
-                } else if free_dir.len() > 0 {
-                    free_dir[0]
+
+                if !free_dir.contains(&this.direction) {
+                    println!("ecrase ?");
+                }
+
+                let mut next_dir = if free_dir.len() > 0 {
+                    let mut rng = rand::thread_rng();
+                    let range = Range::new(0,free_dir.len());
+                    let i = range.ind_sample(&mut rng);
+                    free_dir[i]
                 } else {
                     this.direction.opposite()
                 };
-                let mut closest_prey_dist = i32::MAX;
-                for dir in free_dir {
-                    if let Some(distance) = this.visible_prey(dir,batch) {
-                        if distance < closest_prey_dist {
-                            closest_prey_dist = distance;
-                            next_dir = dir;
-                        }
-                    }
-                }
 
                 next_dir
             };
@@ -241,9 +195,6 @@ impl BodyTrait for MovingWall {
             mask() -> u32,
             group() -> u32,
             collision_behavior() -> CollisionBehavior,
-    }
-
-    fn on_collision(&mut self, other: &mut BodyTrait) {
-        other.damage(DAMAGE);
+            mut on_collision(other: &mut BodyTrait) -> (),
     }
 }
