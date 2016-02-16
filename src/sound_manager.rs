@@ -43,7 +43,7 @@ impl Sound {
 
         for _ in 0..capacity {
             batch.push(SndFile::new(path,OpenMode::Read).unwrap());
-            volume.push(1.);
+            volume.push(0.5);
         }
 
         Sound {
@@ -109,7 +109,7 @@ impl Music {
 
         Music {
             snd_file: SndFile::new(path,OpenMode::Read).unwrap(),
-            volume: 1.,
+            volume: 0.5,
         }
     }
 
@@ -212,7 +212,7 @@ impl SoundManager {
             end_decrease: 100.,
             listener: [0.,0.],
             music_volume: 1.,
-            global_volume: 1.,
+            global_volume: 0.5,
             sounds_volume: 1.,
             pa_tx: pa_tx,
         }
