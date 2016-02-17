@@ -63,15 +63,8 @@ impl MovingWall {
     }
 }
 
-fn free_directions(id: usize, x: i32, y: i32, direction: Direction, unit: f64, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>) -> Vec<Direction> {
+fn free_directions(id: usize, x: i32, y: i32, unit: f64, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>) -> Vec<Direction> {
     let mut free_dir = Vec::new();
-
-    //let check_dir = match direction {
-    //    Direction::Up => vec![Direction::Up,Direction::Right,Direction::Left],
-    //    Direction::Down => vec![Direction::Right,Direction::Left,Direction::Down],
-    //    Direction::Left => vec![Direction::Up,Direction::Left,Direction::Down],
-    //    Direction::Right => vec![Direction::Up,Direction::Right,Direction::Down],
-    //};
 
     let moving_walls_pos = {
         let mut vec = Vec::new();
@@ -108,13 +101,16 @@ fn free_directions(id: usize, x: i32, y: i32, direction: Direction, unit: f64, m
     free_dir
 }
 
+fn crushing(x: i32, y: i32, xp: i32, yp: i32, wall: &RefCell<MovingWall>, batch: &Batch) {
+}
+
 pub trait MovingWallManager {
-    fn update(&self, dt: f64, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>);
+    fn update(&self, dt: f64, batch: &Batch, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>);
 }
 
 impl MovingWallManager for RefCell<MovingWall> {
 
-    fn update(&self, dt: f64, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>) {
+    fn update(&self, dt: f64, batch: &Batch, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>) {
         use std::i32;
 
 
@@ -141,18 +137,26 @@ impl MovingWallManager for RefCell<MovingWall> {
 
         if take_decision {
             let next_dir = {
-                let (id,x,y,direction,unit) = {
+                let (id,x,y,unit) = {
                     let this = self.borrow();
                     let x_i32 = (this.x()/this.unit).floor() as i32;
                     let y_i32 = (this.y()/this.unit).floor() as i32;
-                    (this.id(),x_i32,y_i32,this.direction,this.unit)
+                    (this.id(),x_i32,y_i32,this.unit)
                 };
-                let mut free_dir = free_directions(id,x,y,direction,unit,moving_walls,wall_map);
+                let mut free_dir = free_directions(id,x,y,unit,moving_walls,wall_map);
 
                 let this = self.borrow();
 
                 if !free_dir.contains(&this.direction) {
-                    //TODO ecrase
+                    let x_i32 = (this.x()/this.unit).floor() as i32;
+                    let y_i32 = (this.y()/this.unit).floor() as i32;
+                    let (xp_i32,yp_i32) = match this.direction {
+                        Direction::Up => (x, y + 1),
+                        Direction::Down => (x, y - 1),
+                        Direction::Left => (x - 1, y),
+                        Direction::Right => (x + 1, y),
+                    };
+                    crushing(x_i32,y_i32,xp_i32,yp_i32,&*self,batch);
                 }
 
                 let mut next_dir = if free_dir.len() > 0 {
