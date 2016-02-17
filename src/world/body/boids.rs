@@ -1,5 +1,3 @@
-use world::batch::Batch;
-use world::spatial_hashing::Location;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::collections::HashSet;
@@ -41,8 +39,6 @@ pub const BORNING_RADIUS: f64 = 40.;
 pub fn boid_generator(n: usize, character_pos: [f64;2], wall_map: &HashSet<[i32;2]>, unit: f64) -> Vec<(f64,f64,f64)> {
     if n < NUMBER_OF_BOID {
         let free = {
-            let c_x = (character_pos[0]/unit).floor() as i32;
-            let c_y = (character_pos[1]/unit).floor() as i32;
             let bound_up = ((character_pos[0]-BORNING_RADIUS)/unit).floor() as i32;
             let bound_down = ((character_pos[0]+BORNING_RADIUS)/unit).floor() as i32;
             let bound_left = ((character_pos[1]-BORNING_RADIUS)/unit).floor() as i32;
