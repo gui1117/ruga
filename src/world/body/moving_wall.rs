@@ -24,6 +24,7 @@ pub struct MovingWall {
     direction: Direction,
     last_position: [f64;2],
     no_decision_time: f64,
+    crushing: Option<(f64,f64,f64,f64)>,
 }
 
 pub const SIZE_RATIO: f64 = 0.999;
@@ -55,6 +56,7 @@ impl MovingWall {
             no_decision_time: 0.,
             direction: angle,
             last_position: [(x as f64 + 0.5)*unit,(y as f64 + 0.5)*unit],
+            crushing: None,
         }
     }
 
@@ -101,9 +103,6 @@ fn free_directions(id: usize, x: i32, y: i32, unit: f64, moving_walls: &Vec<Rc<R
     free_dir
 }
 
-fn crushing(x: i32, y: i32, xp: i32, yp: i32, wall: &RefCell<MovingWall>, batch: &Batch) {
-}
-
 pub trait MovingWallManager {
     fn update(&self, dt: f64, batch: &Batch, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>);
 }
@@ -111,8 +110,10 @@ pub trait MovingWallManager {
 impl MovingWallManager for RefCell<MovingWall> {
 
     fn update(&self, dt: f64, batch: &Batch, moving_walls: &Vec<Rc<RefCell<MovingWall>>>, wall_map: &HashSet<[i32;2]>) {
-        use std::i32;
-
+        if let Some((x,y,angle,length)) = self.borrow().crushing {
+            //TODO crushing
+            self.borrow_mut().crushing = None;
+        }
 
         let take_decision = if self.borrow().no_decision_time > TIMEOUT {
             true
@@ -146,18 +147,6 @@ impl MovingWallManager for RefCell<MovingWall> {
                 let mut free_dir = free_directions(id,x,y,unit,moving_walls,wall_map);
 
                 let this = self.borrow();
-
-                if !free_dir.contains(&this.direction) {
-                    let x_i32 = (this.x()/this.unit).floor() as i32;
-                    let y_i32 = (this.y()/this.unit).floor() as i32;
-                    let (xp_i32,yp_i32) = match this.direction {
-                        Direction::Up => (x, y + 1),
-                        Direction::Down => (x, y - 1),
-                        Direction::Left => (x - 1, y),
-                        Direction::Right => (x + 1, y),
-                    };
-                    crushing(x_i32,y_i32,xp_i32,yp_i32,&*self,batch);
-                }
 
                 let mut next_dir = if free_dir.len() > 0 {
                     let free_opposite = free_dir.contains(&this.direction.opposite());
@@ -224,6 +213,15 @@ impl BodyTrait for MovingWall {
             mask() -> u32,
             group() -> u32,
             collision_behavior() -> CollisionBehavior,
-            mut on_collision(other: &mut BodyTrait) -> (),
+    }
+
+    fn on_collision(&mut self, other: &mut BodyTrait) {
+        //match other.body_type() {
+        //    BodyType::Wall | BodyType::MovingWall => {
+        //        //TODO crushing
+        //        self.crushing = Some((1.,1.,1.,1.));
+        //    },
+        //    _ => (),
+        //}
     }
 }
