@@ -20,10 +20,11 @@ const FRAMES_PER_BUFFER: u32 = 64;
 const BUFFER_SIZE: usize = (CHANNELS as usize) * (FRAMES_PER_BUFFER as usize);
 
 pub mod sounds {
-    pub const RIFLE: u32 =      0;
-    pub const SNIPER: u32 =     1;
-    pub const SHOTGUN: u32 =    2;
-    pub const SWORD: u32 =      3;
+    pub const RIFLE: u32 =       0;
+    pub const SNIPER: u32 =      1;
+    pub const SHOTGUN: u32 =     2;
+    pub const SWORD: u32 =       3;
+    pub const MOVING_WALL: u32 = 4;
 }
 
 struct Sound {
@@ -158,7 +159,8 @@ impl SoundManager {
                 Sound::new("rifle.ogg",40),
                 Sound::new("sniper.ogg",20),
                 Sound::new("shotgun.ogg",20),
-                Sound::new("shotgun.ogg",20)
+                Sound::new("shotgun.ogg",20),
+                Sound::new("crash.ogg",20)
             ];
 
             let mut buffers: Vec<[f32;(BUFFER_SIZE) as usize]> = Vec::with_capacity(10);

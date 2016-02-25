@@ -416,10 +416,8 @@ impl CharacterManager for RefCell<Character> {
     fn update(&self, dt: f64, batch: &Batch) {
         self.borrow_mut().sword.update(dt);
         self.gun_update(dt,batch);
-        {
-            let mut this = self.borrow_mut();
-            this.body.update(dt);
-        }
+        let mut this = self.borrow_mut();
+        this.body.update(dt);
     }
 }
 

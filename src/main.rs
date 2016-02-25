@@ -15,6 +15,7 @@ pub mod app;
 pub mod maze;
 pub mod sound_manager;
 pub mod frame_manager;
+pub mod effect_manager;
 
 mod event_loop;
 

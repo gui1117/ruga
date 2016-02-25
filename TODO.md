@@ -61,3 +61,4 @@ maybe for the first verstion:
 the library can be sndfile + portaudio.
 and information are given to audio through a channel
 
+#effects manager

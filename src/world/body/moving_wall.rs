@@ -11,6 +11,7 @@ use frame_manager::{
     FrameManager,
 };
 use sound_manager::SoundManager;
+use sound_manager::sounds;
 use rand::distributions::{IndependentSample, Range};
 use rand;
 
@@ -62,6 +63,7 @@ impl MovingWall {
 
     pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
         self.body.render(color::RED,frame_manager);
+        //sound_manager.play(self.x(),self.y(),sounds::MOVING_WALL);
     }
 }
 
