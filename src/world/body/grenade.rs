@@ -12,6 +12,7 @@ use frame_manager::{
     color,
     FrameManager,
 };
+use effect_manager::{EffectManager, Line, Effect};
 
 pub const VELOCITY: f64 = 10.;
 pub const TIME_TO_STOP: f64 = 0.8;
@@ -25,18 +26,10 @@ pub const MASK: u32 = !0;
 pub const NUMBER_OF_SPATTERS: u32 = 32;
 pub const SPATTER_MAX_RADIUS: f64 = 10.;
 
-struct Spatter {
-    x: f64,
-    y: f64,
-    angle: f64,
-    length: f64,
-}
-
 pub struct Grenade {
     body: Body,
     timer: f64,
     alive: bool,
-    spatters: Vec<Spatter>,
 }
 
 impl Grenade {
@@ -58,28 +51,20 @@ impl Grenade {
             },
             alive: true,
             timer: 0.,
-            spatters: Vec::new(),
         }
     }
 
     pub fn render(&mut self, frame_manager: &mut FrameManager) {
         self.body.render(color::RED,frame_manager);
-        while let Some(spatter) = self.spatters.pop() {
-            let x = spatter.x;
-            let y = spatter.y;
-            let length = spatter.length;
-            let angle = spatter.angle;
-            frame_manager.draw_line(color::RED,x,y,angle,length);
-        }
     }
 }
 
 pub trait GrenadeManager {
-    fn update(&self, dt: f64, batch: &Batch); 
+    fn update(&self, dt: f64, batch: &Batch, effect_manager: &mut EffectManager); 
 }
 
 impl GrenadeManager for RefCell<Grenade> {
-    fn update(&self, dt: f64, batch: &Batch) {
+    fn update(&self, dt: f64, batch: &Batch, effect_manager: &mut EffectManager) {
         use std::f64::consts::PI;
 
         self.borrow_mut().timer += dt;
@@ -94,6 +79,7 @@ impl GrenadeManager for RefCell<Grenade> {
                 let mut rng = rand::thread_rng();
                 let id = self.borrow().id();
 
+                let mut splatters = vec!();
                 for _ in 0..NUMBER_OF_SPATTERS {
                     let angle = angle_range.ind_sample(&mut rng);
                     let mut length = length_range.ind_sample(&mut rng);
@@ -106,13 +92,9 @@ impl GrenadeManager for RefCell<Grenade> {
                             false
                         }
                     });
-                    self.borrow_mut().spatters.push(Spatter {
-                        x: x,
-                        y: y,
-                        angle: angle,
-                        length: length,
-                    })
+                    splatters.push(Line::new(x,y,angle,length));
                 }
+                effect_manager.add(Effect::GrenadeExplosion(splatters));
 
 
                 self.borrow_mut().alive = false;

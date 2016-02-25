@@ -151,7 +151,7 @@ impl World {
 
     pub fn update(&mut self, dt: f64, effect_manager: &mut EffectManager) {
         for g in &self.grenades {
-            g.update(dt,&self.batch);
+            g.update(dt,&self.batch,effect_manager);
         }
         let character_pos = [self.characters[0].borrow().x(),self.characters[0].borrow().y()];
         let to_create = boid_generator(self.boids.len(),character_pos,&self.wall_map,self.unit);

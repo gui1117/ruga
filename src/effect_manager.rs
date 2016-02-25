@@ -38,7 +38,8 @@ pub enum Effect {
     SniperShoot(Line),
     ShotgunShoot(Vec<Line>),
     RifleShoot(Line),
-    WallDecision(Position),
+    MovingWallDecision(Position),
+    GrenadeExplosion(Vec<Line>),
 }
 
 pub struct EffectManager {
@@ -63,7 +64,8 @@ impl EffectManager {
                 Effect::SniperShoot(line) => render_sniper_shoot(&line,frame_manager,sound_manager),
                 Effect::ShotgunShoot(lines) => render_shotgun_shoot(&lines,frame_manager,sound_manager),
                 Effect::RifleShoot(line) => render_rifle_shoot(&line,frame_manager,sound_manager),
-                Effect::WallDecision(position) => sound_manager.play(position.x,position.y,sounds::MOVING_WALL),
+                Effect::MovingWallDecision(position) => sound_manager.play(position.x,position.y,sounds::MOVING_WALL),
+                Effect::GrenadeExplosion(lines) => render_grenade_explosion(&lines,frame_manager,sound_manager),
             }
         }
     }
@@ -99,4 +101,13 @@ fn render_shotgun_shoot(lines: &Vec<Line>, frame_manager: &mut FrameManager, sou
 fn render_rifle_shoot(line: &Line, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
     sound_manager.play(line.x,line.y,sounds::RIFLE);
     frame_manager.draw_line(color::RED,line.x,line.y,line.angle,line.length);
+}
+
+fn render_grenade_explosion(lines: &Vec<Line>, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
+    if let Some(line) = lines.get(0) {
+        sound_manager.play(line.x,line.y,sounds::GRENADE_EXPLOSION);
+    }
+    for line in lines {
+        frame_manager.draw_line(color::RED,line.x,line.y,line.angle,line.length);
+    }
 }
