@@ -13,13 +13,7 @@ use std::cell::RefCell;
 use std::f64;
 use util::minus_pi_pi;
 use frame_manager::{color, FrameManager};
-use sound_manager::{SoundManager, sounds};
-
-struct SwordAttack {
-    x: f64,
-    y: f64,
-    aim: f64,
-}
+use effect_manager::{EffectManager, Line, Effect};
 
 pub const SWORD_RECOVER: f64 = 0.8;
 pub const SWORD_LENGTH: f64 = 5.;
@@ -27,14 +21,12 @@ pub const SWORD_DAMAGE: f64 = 5.;
 
 struct Sword {
     recover: f64,
-    attacks: Vec<SwordAttack>,
 }
 
 impl Sword {
     fn new() -> Sword {
         Sword {
             recover: 0.,
-            attacks: Vec::new(),
         }
     }
 
@@ -43,31 +35,14 @@ impl Sword {
             self.recover = (self.recover - dt).max(0.);
         }
     }
-
-    fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
-        use std::f64::consts::{PI, FRAC_PI_2};
-
-        if let Some(a) = self.attacks.get(0) {
-            sound_manager.play(a.x,a.y,sounds::SWORD);
-        }
-
-        let n = 16;
-        let da = PI/(n as f64);
-        while let Some(a) = self.attacks.pop() {
-            for i in 0..n+1 {
-                let angle = a.aim - FRAC_PI_2 + (i as f64)*da;
-                frame_manager.draw_line(color::RED,a.x,a.y,angle,SWORD_LENGTH);
-            }
-        }
-    }
 }
 
 trait SwordManager {
-    fn sword_attack(&self, batch: &Batch);
+    fn sword_attack(&self, batch: &Batch, effect_manager: &mut EffectManager);
 }
 
 impl SwordManager for RefCell<Character> {
-    fn sword_attack(&self,batch: &Batch) {
+    fn sword_attack(&self,batch: &Batch,effect_manager: &mut EffectManager) {
         use std::f64::consts::{PI, FRAC_PI_2};
 
         if self.borrow().sword.recover <= 0. {
@@ -123,11 +98,7 @@ impl SwordManager for RefCell<Character> {
                 }
             });
 
-            self.borrow_mut().sword.attacks.push(SwordAttack {
-                x: x,
-                y: y,
-                aim: aim,
-            });
+            effect_manager.add(Effect::SwordAttack(Line::new(x,y,aim,SWORD_LENGTH)));
         }
     }
 }
@@ -140,19 +111,12 @@ pub enum GunType {
     Sniper,
 }
 
-pub enum GunShoot {
-    Rifle(f64,f64,f64,f64),
-    Sniper(f64,f64,f64,f64),
-    Shotgun(f64,f64,f64,f64),
-}
-
 struct Gun {
     gun_type: GunType,
     next_type: GunType,
     reloading: f64,
     shooting: bool,
     ammo: u32,
-    shoots: Vec<GunShoot>,
 }
 
 pub const RIFLE_RELOADING_TIME: f64 = 0.1;
@@ -179,7 +143,6 @@ impl Gun {
             shooting: false,
             reloading: 0.,
             ammo: 10000000,
-            shoots: Vec::new(),
         }
     }
 
@@ -191,35 +154,15 @@ impl Gun {
             GunType::None => 0.,
         }
     }
-
-    fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
-        if let Some(shoot) = self.shoots.get(0) {
-            match shoot {
-                &GunShoot::Sniper(x,y,_,_) => sound_manager.play(x,y,sounds::SNIPER),
-                &GunShoot::Shotgun(x,y,_,_) => sound_manager.play(x,y,sounds::SHOTGUN),
-                &GunShoot::Rifle(x,y,_,_) => sound_manager.play(x,y,sounds::RIFLE),
-            }
-        }
-
-        while let Some(shoot) = self.shoots.pop() {
-            match shoot {
-                GunShoot::Sniper(x,y,aim,length)
-                    | GunShoot::Shotgun(x,y,aim,length)
-                    | GunShoot::Rifle(x,y,aim,length) => {
-                        frame_manager.draw_line(color::RED,x,y,aim,length);
-                    },
-            }
-        }
-    }
 }
 
 trait GunManager {
-    fn gun_shoot(&self, batch: &Batch);
-    fn gun_update(&self, dt: f64, batch: &Batch);
+    fn gun_shoot(&self, batch: &Batch, effect_manager: &mut EffectManager);
+    fn gun_update(&self, dt: f64, batch: &Batch, effect_manager: &mut EffectManager);
 }
 
 impl GunManager for RefCell<Character> {
-    fn gun_shoot(&self,batch: &Batch) {
+    fn gun_shoot(&self,batch: &Batch, effect_manager: &mut EffectManager) {
         let (id,x,y,aim,gun_type) = {
             let this = self.borrow();
             (this.body.id,this.body.x,this.body.y,this.aim,this.gun.gun_type)
@@ -228,23 +171,27 @@ impl GunManager for RefCell<Character> {
             GunType::Sniper => {
                 let mut length = SNIPER_LENGTH;
                 batch.raycast(x,y,aim,SNIPER_LENGTH, &mut |body,min,_| {
-                    if body.id() != id && body.body_type() != BodyType::Armory {
-                        if let BodyType::Wall = body.body_type() {
-                            length = min;
-                            true
-                        } else {
-                            body.damage(SNIPER_DAMAGE);
-                            false
+                    if body.id() != id {
+                        match body.body_type() {
+                            BodyType::Wall | BodyType::MovingWall => {
+                                length = min;
+                                true
+                            },
+                            _ => {
+                                body.damage(SNIPER_DAMAGE);
+                                false
+                            }
                         }
                     } else {
                         false
                     }
                 });
-                self.borrow_mut().gun.shoots.push(GunShoot::Sniper(x,y,aim,length));
+                effect_manager.add(Effect::SniperShoot(Line::new(x,y,aim,length)));
             },
             GunType::Shotgun => {
                 let range = Range::new(-SHOTGUN_MAX_DELTA_ANGLE,SHOTGUN_MAX_DELTA_ANGLE);
                 let mut rng = rand::thread_rng();
+                let mut shoots = vec!();
                 for _ in 0..SHOTGUN_SHOOT_NUMBER {
                     let aim = aim + range.ind_sample(&mut rng);
                     let mut length = SHOTGUN_LENGTH;
@@ -257,8 +204,9 @@ impl GunManager for RefCell<Character> {
                             false
                         }
                     });
-                    self.borrow_mut().gun.shoots.push(GunShoot::Shotgun(x,y,aim,length));
+                    shoots.push(Line::new(x,y,aim,length));
                 }
+                effect_manager.add(Effect::ShotgunShoot(shoots));
             },
             GunType::Rifle => {
                 let range = Range::new(-RIFLE_MAX_DELTA_ANGLE,RIFLE_MAX_DELTA_ANGLE);
@@ -274,13 +222,13 @@ impl GunManager for RefCell<Character> {
                         false
                     }
                 });
-                self.borrow_mut().gun.shoots.push(GunShoot::Rifle(x,y,aim,length));
+                effect_manager.add(Effect::RifleShoot(Line::new(x,y,aim,length)));
             },
             GunType::None => (),
         }
     }
 
-    fn gun_update(&self, dt: f64, batch: &Batch) {
+    fn gun_update(&self, dt: f64, batch: &Batch, effect_manager: &mut EffectManager) {
         {
             let current_type = self.borrow().gun.gun_type;
             let next_type = self.borrow().gun.next_type;
@@ -317,7 +265,7 @@ impl GunManager for RefCell<Character> {
             }
         }
         if shoot {
-            self.gun_shoot(batch);
+            self.gun_shoot(batch,effect_manager);
         }
     }
 }
@@ -362,9 +310,7 @@ impl Character {
         }
     }
 
-    pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
-        self.gun.render(frame_manager,sound_manager);
-        self.sword.render(frame_manager,sound_manager);
+    pub fn render(&mut self, frame_manager: &mut FrameManager) {
         self.body.render(color::RED,frame_manager);
     }
 }
@@ -374,7 +320,7 @@ pub trait CharacterTrait {
     fn aim(&self) -> f64;
     fn set_aim(&self, a: f64);
     fn set_gun_shoot(&self,bool);
-    fn do_sword_attack(&self, batch: &Batch);
+    fn do_sword_attack(&self, batch: &Batch, effect_manager: &mut EffectManager);
     fn set_next_gun_type(&self, next_type: GunType);
     fn launch_grenade(&self,&mut World);
 }
@@ -396,8 +342,8 @@ impl CharacterTrait for RefCell<Character> {
         self.borrow_mut().gun.next_type = next_type;
     }
 
-    fn do_sword_attack(&self, batch: &Batch) {
-        self.sword_attack(batch);
+    fn do_sword_attack(&self, batch: &Batch, effect_manager: &mut EffectManager) {
+        self.sword_attack(batch,effect_manager);
     }
 
     fn launch_grenade(&self,world: &mut World) {
@@ -409,13 +355,13 @@ impl CharacterTrait for RefCell<Character> {
 }
 
 pub trait CharacterManager {
-    fn update(&self, dt: f64, batch: &Batch);
+    fn update(&self, dt: f64, batch: &Batch, effect_manager: &mut EffectManager);
 }
 
 impl CharacterManager for RefCell<Character> {
-    fn update(&self, dt: f64, batch: &Batch) {
+    fn update(&self, dt: f64, batch: &Batch, effect_manager: &mut EffectManager) {
         self.borrow_mut().sword.update(dt);
-        self.gun_update(dt,batch);
+        self.gun_update(dt,batch,effect_manager);
         let mut this = self.borrow_mut();
         this.body.update(dt);
     }

@@ -7,7 +7,6 @@ use frame_manager::{
     color,
     FrameManager,
 };
-use sound_manager::SoundManager;
 use rand::distributions::{IndependentSample, Range};
 use rand;
 
@@ -115,7 +114,7 @@ impl Boid {
         }
     }
 
-    pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
+    pub fn render(&mut self, frame_manager: &mut FrameManager) {
         self.body.render(color::RED,frame_manager);
     }
 }

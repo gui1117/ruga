@@ -5,6 +5,7 @@ use world::body::character::GunType;
 use world::body::character;
 use maze::generate_kruskal;
 use sound_manager::SoundManager;
+use effect_manager::EffectManager;
 use frame_manager::{
     FrameManager,
     Assets,
@@ -21,6 +22,7 @@ pub struct App {
     pub player_dir: Vec<Direction>,
     pub window_size: [u32;2],
     pub sound_manager: SoundManager,
+    pub effect_manager: EffectManager,
     pub zoom: f64,
     pub frame_assets: Assets,
 }
@@ -40,6 +42,7 @@ impl App {
             sound_manager: SoundManager::new(),
             zoom: ZOOM,
             frame_assets: Assets::new(facade),
+            effect_manager: EffectManager::new(),
         }
     }
 
@@ -53,12 +56,13 @@ impl App {
         self.sound_manager.set_listener([x,y]);
 
         frame_manager.clear();
-        self.world.render(&mut frame_manager, &mut self.sound_manager);
+        self.effect_manager.render(&mut frame_manager, &mut self.sound_manager);
+        self.world.render(&mut frame_manager);
         frame_manager.finish();
     }
 
     pub fn update(&mut self, args: UpdateArgs) {
-        self.world.update(args.dt);
+        self.world.update(args.dt,&mut self.effect_manager);
     }
 
     pub fn player_aim(&self) -> f64 {
@@ -88,7 +92,7 @@ impl App {
 
     pub fn set_player_attack_sword(&mut self) {
         let character = &*self.world.characters[0];
-        character.do_sword_attack(&self.world.batch);
+        character.do_sword_attack(&self.world.batch,&mut self.effect_manager);
     }
 
     pub fn set_player_shoot(&mut self, shoot: bool) {

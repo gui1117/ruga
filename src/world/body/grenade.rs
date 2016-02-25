@@ -12,7 +12,6 @@ use frame_manager::{
     color,
     FrameManager,
 };
-use sound_manager::SoundManager;
 
 pub const VELOCITY: f64 = 10.;
 pub const TIME_TO_STOP: f64 = 0.8;
@@ -63,7 +62,7 @@ impl Grenade {
         }
     }
 
-    pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
+    pub fn render(&mut self, frame_manager: &mut FrameManager) {
         self.body.render(color::RED,frame_manager);
         while let Some(spatter) = self.spatters.pop() {
             let x = spatter.x;

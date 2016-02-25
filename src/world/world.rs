@@ -16,8 +16,8 @@ use super::body::boids::BoidManager;
 use super::body::boids::boid_generator;
 use super::batch::Batch;
 use util::direction::Direction;
-use sound_manager::SoundManager;
 use frame_manager::FrameManager;
+use effect_manager::EffectManager;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -128,7 +128,7 @@ impl World {
     //pub fn render(&mut self, _viewport: &Viewport, _camera: &Camera, _gl: &mut GlGraphics) {
     //}
 
-    pub fn render(&mut self, frame_manager: &mut FrameManager, sound_manager: &mut SoundManager) {
+    pub fn render(&mut self, frame_manager: &mut FrameManager) {
         for w in &self.walls {
             w.borrow().render(frame_manager);
         }
@@ -136,20 +136,20 @@ impl World {
             a.borrow().render(frame_manager);
         }
         for mw in &self.moving_walls {
-            mw.borrow_mut().render(frame_manager, sound_manager);
+            mw.borrow_mut().render(frame_manager);
         }
         for b in &self.boids {
-            b.borrow_mut().render(frame_manager, sound_manager);
+            b.borrow_mut().render(frame_manager);
         }
         for g in &self.grenades {
-            g.borrow_mut().render(frame_manager, sound_manager);
+            g.borrow_mut().render(frame_manager);
         }
         for c in &self.characters {
-            c.borrow_mut().render(frame_manager, sound_manager);
+            c.borrow_mut().render(frame_manager);
         }
     }
 
-    pub fn update(&mut self, dt: f64) {
+    pub fn update(&mut self, dt: f64, effect_manager: &mut EffectManager) {
         for g in &self.grenades {
             g.update(dt,&self.batch);
         }
@@ -162,7 +162,7 @@ impl World {
             b.update(dt,character_pos,&self.boids);
         }
         for c in &self.characters {
-            c.update(dt,&self.batch);
+            c.update(dt,&self.batch,effect_manager);
         }
         for mw in &self.moving_walls {
             mw.update(dt,&self.batch,&self.moving_walls,&self.wall_map);
