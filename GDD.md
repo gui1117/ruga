@@ -173,3 +173,8 @@ heros dans les case a une distance 3 ou 4
 une classe output interne a world qui est envoyé lors des update des monstres
 le rendu de world fera appel au render des bodies et aussi de output
 le sound_manager est envoyé a world update et celui ci ne fait que output.play(sound_manager)
+
+#LASER
+
+on presse un touche pour afficher un laser entre les deux joueurs.
+mieux on tire sur son allier avec une armespéciale
