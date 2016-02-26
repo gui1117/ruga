@@ -158,7 +158,8 @@ impl Batch {
         }
     }
 
-    pub fn get_on_segment(&self) {
+    pub fn get_on_segment<F: FnMut(&mut BodyTrait, f64, f64) -> bool>(&self, _x: f64, _y: f64, _angle: f64, _length: f64, _callback: &mut F) {
+        assert!(false);
     }
 
     pub fn get_on_index(&self, index: &[i32;2]) -> Vec<Rc<RefCell<BodyTrait>>> {

@@ -24,3 +24,4 @@
 
 * think about the const so we can change them at runtime(maybe use an unsafe)
 
+* the application throw event to the world, so it's only role is to manage input, interface, AI? not AI.
