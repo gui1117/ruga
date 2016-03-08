@@ -190,7 +190,7 @@ pub trait BodyTrait {
                     min = d;
                     index = p
                 }
-            } 
+            }
 
             trans[index][1].atan2(trans[index][0])
         };
