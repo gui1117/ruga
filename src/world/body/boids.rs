@@ -10,9 +10,9 @@ use frame_manager::{
 use rand::distributions::{IndependentSample, Range};
 use rand;
 
-use super::{ 
-    Body, 
-    BodyTrait, 
+use super::{
+    Body,
+    BodyTrait,
     CollisionBehavior,
     BodyType,
 };
@@ -44,7 +44,7 @@ pub fn boid_generator(n: usize, character_pos: [f64;2], wall_map: &HashSet<[i32;
             let bound_right = ((character_pos[1]+BORNING_RADIUS)/unit).floor() as i32;
             let mut vec = Vec::new();
             for i in bound_up..bound_down+1 {
-                // if not ! then boid comes from wall 
+                // if not ! then boid comes from wall
                 // it may be cool...
                 if !wall_map.contains(&[i,bound_left]) {
                     vec.push([i,bound_left]);

@@ -1,4 +1,4 @@
-use super::{ 
+use super::{
     BodyTrait,
     CollisionBehavior,
     BodyType,
@@ -41,7 +41,7 @@ impl BodyTrait for Body {
     fn dead(&self) -> bool {
         false
     }
-    
+
     fn body_type(&self) -> BodyType {
         self.body_type.clone()
     }

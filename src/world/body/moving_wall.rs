@@ -122,16 +122,16 @@ impl MovingWallManager for RefCell<MovingWall> {
 
             match this.direction {
                 Direction::Up => {
-                    this.last_position[1] + this.unit < this.body.y() 
+                    this.last_position[1] + this.unit < this.body.y()
                 },
                 Direction::Down => {
-                    this.last_position[1] - this.unit > this.body.y() 
+                    this.last_position[1] - this.unit > this.body.y()
                 },
                 Direction::Left => {
-                    this.last_position[0] - this.unit > this.body.x() 
+                    this.last_position[0] - this.unit > this.body.x()
                 },
                 Direction::Right => {
-                    this.last_position[0] + this.unit < this.body.x() 
+                    this.last_position[0] + this.unit < this.body.x()
                 },
             }
         };

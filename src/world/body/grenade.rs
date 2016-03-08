@@ -2,9 +2,9 @@ use rand;
 use rand::distributions::{IndependentSample, Range};
 use world::batch::Batch;
 use std::cell::RefCell;
-use super::{ 
-    Body, 
-    BodyTrait, 
+use super::{
+    Body,
+    BodyTrait,
     CollisionBehavior,
     BodyType,
 };
@@ -60,7 +60,7 @@ impl Grenade {
 }
 
 pub trait GrenadeManager {
-    fn update(&self, dt: f64, batch: &Batch, effect_manager: &mut EffectManager); 
+    fn update(&self, dt: f64, batch: &Batch, effect_manager: &mut EffectManager);
 }
 
 impl GrenadeManager for RefCell<Grenade> {

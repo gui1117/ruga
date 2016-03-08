@@ -3,9 +3,9 @@ use rand::distributions::{IndependentSample, Range};
 use world::spatial_hashing::Location;
 use world::batch::Batch;
 use world::World;
-use super::{ 
-    Body, 
-    BodyTrait, 
+use super::{
+    Body,
+    BodyTrait,
     BodyType,
     CollisionBehavior,
 };

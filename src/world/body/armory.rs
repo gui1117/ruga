@@ -1,5 +1,5 @@
-use super::{ 
-    Body, 
+use super::{
+    Body,
     CollisionBehavior,
     BodyType,
     BodyTrait,
