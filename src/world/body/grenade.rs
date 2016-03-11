@@ -7,6 +7,8 @@ use super::{
     BodyTrait,
     CollisionBehavior,
     BodyType,
+    PhysicType,
+    group,
 };
 use frame_manager::{
     color,
@@ -21,7 +23,7 @@ pub const WIDTH: f64 = 1.;
 pub const HEIGHT: f64 = 1.;
 pub const DAMAGE: f64 = 10.;
 pub const WEIGHT: f64 = 1.;
-pub const GROUP: u32 = super::GRENADE_GROUP;
+pub const GROUP: u32 = super::group::GRENADE;
 pub const MASK: u32 = !0;
 pub const NUMBER_OF_SPATTERS: u32 = 32;
 pub const SPATTER_MAX_RADIUS: f64 = 10.;
@@ -48,6 +50,7 @@ impl Grenade {
                 group: GROUP,
                 collision_behavior: CollisionBehavior::Random,
                 body_type: BodyType::Grenade,
+                physic_type: PhysicType::Dynamic,
             },
             alive: true,
             timer: 0.,
@@ -83,8 +86,8 @@ impl GrenadeManager for RefCell<Grenade> {
                 for _ in 0..NUMBER_OF_SPATTERS {
                     let angle = angle_range.ind_sample(&mut rng);
                     let mut length = length_range.ind_sample(&mut rng);
-                    batch.raycast(x,y,angle,length, &mut |body,min,_| {
-                        if body.id() != id && body.body_type() != BodyType::Armory {
+                    batch.raycast(!group::ARMORY,x,y,angle,length, &mut |body,min,_| {
+                        if body.id() != id {
                             body.damage(DAMAGE);
                             length = min;
                             true
@@ -125,6 +128,7 @@ impl BodyTrait for Grenade {
             mask() -> u32,
             group() -> u32,
             collision_behavior() -> CollisionBehavior,
+            physic_type() -> PhysicType,
     }
 
     fn dead(&self) -> bool {

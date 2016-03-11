@@ -26,14 +26,19 @@ pub enum CollisionBehavior {
     Random,
 }
 
-//GROUP
-pub const GRENADE_GROUP: u32 =      0b00000000000000000000000000000001;
-pub const ARMORY_GROUP: u32 =       0b00000000000000000000000000000010;
-pub const MOVING_WALL_GROUP: u32 =  0b00000000000000000000000000000100;
-pub const CHARACTER_GROUP: u32 =    0b00000000000000000000000000001000;
-pub const WALL_GROUP: u32 =         0b00000000000000000000000000010000;
-pub const BOID_GROUP: u32 =         0b00000000000000000000000000100000;
-pub const SNAKE_GROUP: u32 =        0b00000000000000000000000001000000;
+pub mod group {
+    pub const GRENADE: u32 =      0b00000000000000000000000000000001;
+    pub const ARMORY: u32 =       0b00000000000000000000000000000010;
+    pub const MOVING_WALL: u32 =  0b00000000000000000000000000000100;
+    pub const CHARACTER: u32 =    0b00000000000000000000000000001000;
+    pub const WALL: u32 =         0b00000000000000000000000000010000;
+    pub const BOID: u32 =         0b00000000000000000000000000100000;
+    //pub const SNAKE: u32 =        0b00000000000000000000000001000000;
+
+    pub const WALL_KIND: u32 =    MOVING_WALL | WALL;
+    pub const LIVING: u32 =       CHARACTER | BOID;
+    pub const TRIGGER: u32 =      ARMORY;
+}
 
 #[derive(Clone,PartialEq)]
 pub enum BodyType {
@@ -44,6 +49,13 @@ pub enum BodyType {
     //Snake,
     Grenade,
     Armory,
+}
+
+#[derive(Clone,PartialEq)]
+pub enum PhysicType {
+    Kinetic,
+    Dynamic,
+    Static,
 }
 
 //pub struct BodySnapshot;

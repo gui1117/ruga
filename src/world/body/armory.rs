@@ -3,6 +3,7 @@ use super::{
     CollisionBehavior,
     BodyType,
     BodyTrait,
+    PhysicType,
 };
 use frame_manager::{FrameManager, color};
 use std::f64;
@@ -23,10 +24,11 @@ impl Armory {
                 weight: f64::MAX,
                 velocity: 0.,
                 angle: 0.,
-                mask: 0,
-                group: super::ARMORY_GROUP,
+                mask: super::group::CHARACTER,
+                group: super::group::ARMORY,
                 collision_behavior: CollisionBehavior::Stop,
                 body_type: BodyType::Armory,
+                physic_type: PhysicType::Kinetic,
             }
         }
     }
@@ -56,6 +58,10 @@ impl BodyTrait for Armory {
             mask() -> u32,
             group() -> u32,
             collision_behavior() -> CollisionBehavior,
-            mut on_collision(other: &mut BodyTrait) -> (),
+            physic_type() -> PhysicType,
+    }
+
+    fn on_collision(&mut self, other: &mut BodyTrait) {
+        //TODO
     }
 }

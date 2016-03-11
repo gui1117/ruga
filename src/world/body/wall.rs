@@ -3,6 +3,7 @@ use super::{
     CollisionBehavior,
     BodyType,
     BodyTrait,
+    PhysicType,
 };
 use frame_manager::{FrameManager, color};
 use std::f64;
@@ -24,9 +25,10 @@ impl Wall {
                 velocity: 0.,
                 angle: 0.,
                 mask: !0,
-                group: super::WALL_GROUP,
+                group: super::group::WALL,
                 collision_behavior: CollisionBehavior::Stop,
                 body_type: BodyType::Wall,
+                physic_type: PhysicType::Dynamic,
             }
         }
     }
@@ -58,5 +60,6 @@ impl BodyTrait for Wall {
             group() -> u32,
             collision_behavior() -> CollisionBehavior,
             mut on_collision(other: &mut BodyTrait) -> (),
+            physic_type() -> PhysicType,
     }
 }

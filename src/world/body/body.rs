@@ -2,6 +2,7 @@ use super::{
     BodyTrait,
     CollisionBehavior,
     BodyType,
+    PhysicType,
 };
 use frame_manager::FrameManager;
 
@@ -18,6 +19,7 @@ pub struct Body {
     pub group: u32,
     pub collision_behavior: CollisionBehavior,
     pub body_type: BodyType,
+    pub physic_type: PhysicType,
 }
 
 impl Body {
@@ -36,6 +38,10 @@ impl Body {
 impl BodyTrait for Body {
     fn id(&self) -> usize {
         self.id
+    }
+
+    fn physic_type(&self) -> PhysicType {
+        self.physic_type.clone()
     }
 
     fn dead(&self) -> bool {

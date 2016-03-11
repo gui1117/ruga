@@ -8,6 +8,8 @@ use super::{
     BodyTrait,
     BodyType,
     CollisionBehavior,
+    PhysicType,
+    group,
 };
 use std::cell::RefCell;
 use std::f64;
@@ -60,7 +62,7 @@ impl SwordManager for RefCell<Character> {
             };
 
 
-            batch.apply_locally(&loc, &mut |body: &mut BodyTrait| {
+            batch.apply_locally(!group::ARMORY, &loc, &mut |body: &mut BodyTrait| {
                 if body.id() != id && body.in_circle([x,y],SWORD_LENGTH) {
                     let in_part = if aim == PI {
                         body.left() <= x
@@ -170,7 +172,7 @@ impl GunManager for RefCell<Character> {
         match gun_type {
             GunType::Sniper => {
                 let mut length = SNIPER_LENGTH;
-                batch.raycast(x,y,aim,SNIPER_LENGTH, &mut |body,min,_| {
+                batch.raycast(!group::ARMORY,x,y,aim,SNIPER_LENGTH, &mut |body,min,_| {
                     if body.id() != id {
                         match body.body_type() {
                             BodyType::Wall | BodyType::MovingWall => {
@@ -195,8 +197,8 @@ impl GunManager for RefCell<Character> {
                 for _ in 0..SHOTGUN_SHOOT_NUMBER {
                     let aim = aim + range.ind_sample(&mut rng);
                     let mut length = SHOTGUN_LENGTH;
-                    batch.raycast(x,y,aim,SHOTGUN_LENGTH, &mut |body,min,_| {
-                        if body.id() != id && body.body_type() != BodyType::Armory {
+                    batch.raycast(!group::ARMORY,x,y,aim,SHOTGUN_LENGTH, &mut |body,min,_| {
+                        if body.id() != id {
                             body.damage(SHOTGUN_DAMAGE);
                             length = min;
                             true
@@ -213,8 +215,8 @@ impl GunManager for RefCell<Character> {
                 let mut rng = rand::thread_rng();
                 let aim = aim + range.ind_sample(&mut rng);
                 let mut length = RIFLE_LENGTH;
-                batch.raycast(x,y,aim,RIFLE_LENGTH, &mut |body,min,_| {
-                    if body.id() != id && body.body_type() != BodyType::Armory {
+                batch.raycast(!group::ARMORY,x,y,aim,RIFLE_LENGTH, &mut |body,min,_| {
+                    if body.id() != id {
                         body.damage(RIFLE_DAMAGE);
                         length = min;
                         true
@@ -235,10 +237,8 @@ impl GunManager for RefCell<Character> {
             if next_type != current_type {
                 let loc = self.borrow().location();
                 let mut on_armory = false;
-                batch.apply_locally(&loc, &mut |body: &mut BodyTrait| {
-                    if body.body_type() == BodyType::Armory {
-                        on_armory = true;
-                    }
+                batch.apply_locally(group::ARMORY,&loc, &mut |body: &mut BodyTrait| {
+                    on_armory = true;
                 });
                 if on_armory {
                     self.borrow_mut().gun.gun_type = next_type;
@@ -284,7 +284,7 @@ pub const VELOCITY: f64 = 65.;
 pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
-pub const GROUP: u32 = super::CHARACTER_GROUP;
+pub const GROUP: u32 = super::group::CHARACTER;
 
 
 impl Character {
@@ -303,6 +303,7 @@ impl Character {
                 group: GROUP,
                 collision_behavior: CollisionBehavior::Persist,
                 body_type: BodyType::Character,
+                physic_type: PhysicType::Dynamic,
             },
             aim: angle,
             gun: Gun::new(),
@@ -389,6 +390,7 @@ impl BodyTrait for Character {
             group() -> u32,
             collision_behavior() -> CollisionBehavior,
             mut on_collision(other: &mut BodyTrait) -> (),
+            physic_type() -> PhysicType,
     }
 }
 

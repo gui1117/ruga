@@ -15,6 +15,7 @@ use super::{
     BodyTrait,
     CollisionBehavior,
     BodyType,
+    PhysicType,
 };
 
 pub const NUMBER_OF_BOID: usize = 30;
@@ -24,7 +25,7 @@ pub const WIDTH: f64 = 1.;
 pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;
 pub const MASK: u32 = !0;
-pub const GROUP: u32 = super::BOID_GROUP;
+pub const GROUP: u32 = super::group::BOID;
 pub const DAMAGE: f64 = 0.4;
 pub const VELOCITY: f64 = 20.;
 
@@ -109,6 +110,7 @@ impl Boid {
                 group: GROUP,
                 collision_behavior: CollisionBehavior::Random,
                 body_type: BodyType::Boid,
+                physic_type: PhysicType::Dynamic,
             },
             life: LIFE,
         }
@@ -182,6 +184,7 @@ impl BodyTrait for Boid {
             mask() -> u32,
             group() -> u32,
             collision_behavior() -> CollisionBehavior,
+            physic_type() -> PhysicType,
     }
 
     fn dead(&self) -> bool {

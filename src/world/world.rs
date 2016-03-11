@@ -1,13 +1,13 @@
-use super::body::{ 
-    Wall, 
-    MovingWall, 
+use super::body::{
+    Wall,
+    MovingWall,
     Armory,
-    Character, 
+    Character,
     Grenade,
     //Snake,
     Boid,
     BodyType,
-    BodyTrait, 
+    BodyTrait,
 };
 use super::body::character::CharacterManager;
 use super::body::moving_wall::MovingWallManager;
@@ -70,7 +70,7 @@ impl World {
     pub fn insert_armory(&mut self, x: i32, y: i32) {
         let armory = Rc::new(RefCell::new(Armory::new(self.next_id(),x,y,self.unit)));
         let a_armory = armory.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert_static(&a_armory);
+        self.batch.insert(&a_armory);
         self.static_vec.push(a_armory);
         self.armories.push(armory);
     }
@@ -80,7 +80,7 @@ impl World {
 
         let wall = Rc::new(RefCell::new(Wall::new(self.next_id(),x,y,self.unit)));
         let a_wall = wall.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert_static(&a_wall);
+        self.batch.insert(&a_wall);
         self.static_vec.push(a_wall);
         self.walls.push(wall);
     }
@@ -88,7 +88,7 @@ impl World {
     pub fn insert_grenade(&mut self, x: f64, y: f64, angle: f64) {
         let grenade = Rc::new(RefCell::new(Grenade::new(self.next_id(),x,y,angle)));
         let a_grenade = grenade.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert_dynamic(&a_grenade);
+        self.batch.insert(&a_grenade);
         self.dynamic_vec.push(a_grenade);
         self.grenades.push(grenade);
     }
@@ -96,7 +96,7 @@ impl World {
     pub fn insert_character(&mut self, x: f64, y: f64, angle: f64) {
         let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle)));
         let a_character = character.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert_dynamic(&a_character);
+        self.batch.insert(&a_character);
         self.dynamic_vec.push(a_character);
         self.characters.push(character);
     }
@@ -104,7 +104,7 @@ impl World {
     pub fn insert_boid(&mut self, x: f64, y: f64, angle: f64) {
         let boid = Rc::new(RefCell::new(Boid::new(self.next_id(),x,y,angle)));
         let a_boid = boid.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert_dynamic(&a_boid);
+        self.batch.insert(&a_boid);
         self.dynamic_vec.push(a_boid);
         self.boids.push(boid);
     }
@@ -112,7 +112,7 @@ impl World {
     pub fn insert_moving_wall(&mut self, x: i32, y: i32, angle: Direction) {
         let moving_wall = Rc::new(RefCell::new(MovingWall::new(self.next_id(),x,y,angle,self.unit)));
         let a_moving_wall = moving_wall.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert_dynamic(&a_moving_wall);
+        self.batch.insert(&a_moving_wall);
         self.dynamic_vec.push(a_moving_wall);
         self.moving_walls.push(moving_wall);
     }
@@ -120,7 +120,7 @@ impl World {
     //pub fn insert_snake(&mut self, x: i32, y: i32, angle: Direction) {
     //    let snake = Rc::new(RefCell::new(Snake::new(self.next_id(),x,y,angle,self.unit,self.wall_map.clone(),self.batch.clone())));
     //    let a_snake = snake.clone() as Rc<BodyTrait>;
-    //    self.batch.borrow_mut().insert_dynamic(&a_snake);
+    //    self.batch.borrow_mut().insert(&a_snake);
     //    self.dynamic_vec.push(a_snake);
     //    self.snakes.push(snake);
     //}
@@ -197,6 +197,7 @@ impl World {
                 {
                     let body = &mut *body.borrow_mut();
                     let location = body.location();
+                    let mask = body.mask();
                     let mut callback = |other: &mut BodyTrait| {
                         if body.collide(other) {
                             body.resolve_collision(other);
@@ -205,9 +206,9 @@ impl World {
                             other.on_collision(body);
                         }
                     };
-                    self.batch.apply_locally(&location,&mut callback);
+                    self.batch.apply_locally(mask,&location,&mut callback);
                 }
-                self.batch.insert_dynamic(&(body.clone() as Rc<RefCell<BodyTrait>>));
+                self.batch.insert(&(body.clone() as Rc<RefCell<BodyTrait>>));
             }
         }
     }

@@ -3,6 +3,7 @@ use super::{
     BodyTrait,
     BodyType,
     CollisionBehavior,
+    PhysicType,
 };
 use world::batch::Batch;
 use util::direction::Direction;
@@ -31,7 +32,7 @@ pub const SIZE_RATIO: f64 = 0.999;
 pub const WEIGHT: f64 = 1000.;
 pub const VELOCITY: f64 = 35.;
 pub const MASK: u32 = !0;
-pub const GROUP: u32 = super::MOVING_WALL_GROUP;
+pub const GROUP: u32 = super::group::MOVING_WALL;
 pub const VIEW_RANGE: i32 = 4;
 pub const TIMEOUT: f64 = 1.;
 
@@ -51,6 +52,7 @@ impl MovingWall {
                 group: GROUP,
                 collision_behavior: CollisionBehavior::Persist,
                 body_type: BodyType::MovingWall,
+                physic_type: PhysicType::Dynamic,
             },
             unit: unit,
             no_decision_time: 0.,
@@ -213,6 +215,7 @@ impl BodyTrait for MovingWall {
             mask() -> u32,
             group() -> u32,
             collision_behavior() -> CollisionBehavior,
+            physic_type() -> PhysicType,
     }
 
     fn on_collision(&mut self, other: &mut BodyTrait) {

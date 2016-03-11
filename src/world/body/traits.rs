@@ -1,6 +1,7 @@
 use super::{
     CollisionBehavior,
     BodyType,
+    PhysicType,
     //BodySnapshot
 };
 use util::bounding_box_raycast;
@@ -13,6 +14,8 @@ pub trait BodyTrait {
     fn id(&self) -> usize;
 
     fn dead(&self) -> bool;
+
+    fn physic_type(&self) -> PhysicType;
 
     fn damage(&mut self, d: f64);
 
@@ -85,6 +88,10 @@ pub trait BodyTrait {
     }
 
     fn resolve_collision(&mut self, other: &BodyTrait) {
+        if self.physic_type() != PhysicType::Dynamic {
+            return;
+        }
+
         let a = self;
         let b = other;
 
