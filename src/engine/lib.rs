@@ -2,9 +2,9 @@ mod utils;
 mod world;
 mod spatial_hashing;
 
-pub use world::World;
-
 pub mod body;
+
+pub use world::World;
 
 use body::Body;
 
