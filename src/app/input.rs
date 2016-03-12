@@ -1,8 +1,6 @@
-use world::body::character::GunType;
-use util::direction::Direction;
+use utils::Direction;
 use super::point::Point;
 use super::app::App;
-use world::BodyTrait;
 use glium::glutin::MouseButton;
 
 use std::f64::consts::PI;
@@ -24,7 +22,7 @@ impl App {
 		let mut velocity = 0.;
 		let mut angle = 0.;
 		if let Some(dir) = self.player_dir.last() {
-			
+
 			velocity = 1.;
 			let mut last_perpendicular: Option<&Direction> = None;
 			for d in &self.player_dir {
@@ -36,7 +34,7 @@ impl App {
 			match dir {
 				&Direction::Up => {
 					match last_perpendicular {
-						Some(&Direction::Left) => angle = 3.*PI/4.,						
+						Some(&Direction::Left) => angle = 3.*PI/4.,
 						Some(&Direction::Right) => angle = PI/4.,
 						_ => angle = PI/2.,
 					}
@@ -64,9 +62,9 @@ impl App {
 				},
 			}
 		}
-		self.set_player_velocity(velocity);
+		self.player.borrow_mut().set_velocity(velocity);
 		if velocity != 0. {
-			self.set_player_angle(angle);
+			self.player.borrow_mut().set_angle(angle);
 		}
 
 	}
@@ -102,20 +100,17 @@ impl App {
                     update_direction = true;
                 }
             },
-            key::ESCAPE => { 
-                self.quit = true; 
+            key::ESCAPE => {
+                self.quit = true;
             },
             key::E => {
-                self.set_player_launch_grenade();
             }
             key::R => {
-                self.set_player_next_gun(GunType::Rifle);
+                self.player.borrow_mut().pickup_gun();
             }
             key::T => {
-                self.set_player_next_gun(GunType::Shotgun);
             }
             key::Y => {
-                self.set_player_next_gun(GunType::Sniper);
             }
             _ => (),
         }
@@ -164,8 +159,8 @@ impl App {
                 });
                 update_direction = true;
             },
-            key::ESCAPE => { 
-                self.quit = true; 
+            key::ESCAPE => {
+                self.quit = true;
             },
             _ => (),
         }
@@ -177,15 +172,15 @@ impl App {
 
     pub fn mouse_pressed(&mut self, button: MouseButton) {
         match button {
-            MouseButton::Left => self.set_player_shoot(true),
-            MouseButton::Right => self.set_player_attack_sword(),
+            MouseButton::Left => self.player.borrow_mut().set_shoot(true),
+            MouseButton::Right => self.player.borrow_mut().set_attack_sword(),
             _ => (),
         }
     }
 
     pub fn mouse_released(&mut self, button: MouseButton) {
         match button {
-            MouseButton::Left => self.set_player_shoot(false),
+            MouseButton::Left => self.player.borrow_mut().set_shoot(false),
             _ => (),
         }
     }
@@ -201,7 +196,7 @@ impl App {
             y: y as f64 - center.y,
         };
 
-        self.set_player_aim(-cursor.angle_0x());
+        self.player.borrow_mut().set_aim(-cursor.angle_0x());
     }
 }
 

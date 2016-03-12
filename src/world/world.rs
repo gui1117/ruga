@@ -1,44 +1,29 @@
-use super::body::{
-    Wall,
-    MovingWall,
-    Armory,
-    Character,
-    Grenade,
-    //Snake,
-    Boid,
-    BodyType,
-    BodyTrait,
-};
-use super::body::character::CharacterManager;
-use super::body::moving_wall::MovingWallManager;
-use super::body::grenade::GrenadeManager;
-use super::body::boids::BoidManager;
-use super::body::boids::boid_generator;
-use super::batch::Batch;
-use util::direction::Direction;
-use frame_manager::FrameManager;
-use effect_manager::EffectManager;
+use super::spatial_hashing::{SpatialHashing, Identifiable};
+use super::{EntityCell, Entity};
+use super::body::{PhysicType, Flags, Location};
+use super::utils::grid_raycast;
+use super::utils::minus_pi_pi;
+use super::FrameManager;
+use super::EffectManager;
 
 use std::rc::Rc;
-use std::cell::RefCell;
 use std::collections::HashSet;
+use std::cmp::Ordering;
 
 pub struct World {
-    pub time: f64,
     pub unit: f64,
+    pub time: f64,
     next_id: usize,
-    /// whether there is a wall or not
-    pub wall_map: HashSet<[i32;2]>,
-    pub walls: Vec<Rc<RefCell<Wall>>>,
-    pub armories: Vec<Rc<RefCell<Armory>>>,
-    pub boids: Vec<Rc<RefCell<Boid>>>,
-    pub grenades: Vec<Rc<RefCell<Grenade>>>,
-    pub moving_walls: Vec<Rc<RefCell<MovingWall>>>,
-    //pub snakes: Vec<Rc<RefCell<Snake>>>,
-    pub characters: Vec<Rc<RefCell<Character>>>,
-    pub static_vec: Vec<Rc<RefCell<BodyTrait>>>,
-    pub dynamic_vec: Vec<Rc<RefCell<BodyTrait>>>,
-    pub batch: Batch,
+
+    entity_cells: Vec<Rc<EntityCell>>,
+    static_hashmap: SpatialHashing<Rc<EntityCell>>,
+    dynamic_hashmap: SpatialHashing<Rc<EntityCell>>,
+}
+
+impl Identifiable for Rc<EntityCell> {
+    fn id(&self) -> usize {
+        self.borrow().body().id
+    }
 }
 
 impl World {
@@ -47,171 +32,242 @@ impl World {
             unit: unit,
             time: 0.,
             next_id: 1,
-            characters: Vec::new(),
-            moving_walls: Vec::new(),
-            armories: Vec::new(),
-            //snakes: Vec::new(),
-            boids: Vec::new(),
-            grenades: Vec::new(),
-            walls: Vec::new(),
-            static_vec: Vec::new(),
-            dynamic_vec: Vec::new(),
-            batch: Batch::new(unit),
-            wall_map: HashSet::new(),
+            entity_cells: Vec::new(),
+            static_hashmap: SpatialHashing::new(unit),
+            dynamic_hashmap: SpatialHashing::new(unit),
         }
     }
 
-    pub fn next_id(&mut self) -> usize {
-        let id = self.next_id;
-        self.next_id += 1;
-        id
+    pub fn unit(&self) -> f64 {
+        self.unit
     }
 
-    pub fn insert_armory(&mut self, x: i32, y: i32) {
-        let armory = Rc::new(RefCell::new(Armory::new(self.next_id(),x,y,self.unit)));
-        let a_armory = armory.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert(&a_armory);
-        self.static_vec.push(a_armory);
-        self.armories.push(armory);
+    pub fn time(&self) -> f64 {
+        self.time
     }
-
-    pub fn insert_wall(&mut self, x: i32, y: i32) {
-        self.wall_map.insert([x,y]);
-
-        let wall = Rc::new(RefCell::new(Wall::new(self.next_id(),x,y,self.unit)));
-        let a_wall = wall.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert(&a_wall);
-        self.static_vec.push(a_wall);
-        self.walls.push(wall);
-    }
-
-    pub fn insert_grenade(&mut self, x: f64, y: f64, angle: f64) {
-        let grenade = Rc::new(RefCell::new(Grenade::new(self.next_id(),x,y,angle)));
-        let a_grenade = grenade.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert(&a_grenade);
-        self.dynamic_vec.push(a_grenade);
-        self.grenades.push(grenade);
-    }
-
-    pub fn insert_character(&mut self, x: f64, y: f64, angle: f64) {
-        let character = Rc::new(RefCell::new(Character::new(self.next_id(),x,y,angle)));
-        let a_character = character.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert(&a_character);
-        self.dynamic_vec.push(a_character);
-        self.characters.push(character);
-    }
-
-    pub fn insert_boid(&mut self, x: f64, y: f64, angle: f64) {
-        let boid = Rc::new(RefCell::new(Boid::new(self.next_id(),x,y,angle)));
-        let a_boid = boid.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert(&a_boid);
-        self.dynamic_vec.push(a_boid);
-        self.boids.push(boid);
-    }
-
-    pub fn insert_moving_wall(&mut self, x: i32, y: i32, angle: Direction) {
-        let moving_wall = Rc::new(RefCell::new(MovingWall::new(self.next_id(),x,y,angle,self.unit)));
-        let a_moving_wall = moving_wall.clone() as Rc<RefCell<BodyTrait>>;
-        self.batch.insert(&a_moving_wall);
-        self.dynamic_vec.push(a_moving_wall);
-        self.moving_walls.push(moving_wall);
-    }
-
-    //pub fn insert_snake(&mut self, x: i32, y: i32, angle: Direction) {
-    //    let snake = Rc::new(RefCell::new(Snake::new(self.next_id(),x,y,angle,self.unit,self.wall_map.clone(),self.batch.clone())));
-    //    let a_snake = snake.clone() as Rc<BodyTrait>;
-    //    self.batch.borrow_mut().insert(&a_snake);
-    //    self.dynamic_vec.push(a_snake);
-    //    self.snakes.push(snake);
-    //}
-
-    //pub fn render(&mut self, _viewport: &Viewport, _camera: &Camera, _gl: &mut GlGraphics) {
-    //}
 
     pub fn render(&mut self, frame_manager: &mut FrameManager) {
-        for w in &self.walls {
-            w.borrow().render(frame_manager);
-        }
-        for a in &self.armories {
-            a.borrow().render(frame_manager);
-        }
-        for mw in &self.moving_walls {
-            mw.borrow_mut().render(frame_manager);
-        }
-        for b in &self.boids {
-            b.borrow_mut().render(frame_manager);
-        }
-        for g in &self.grenades {
-            g.borrow_mut().render(frame_manager);
-        }
-        for c in &self.characters {
-            c.borrow_mut().render(frame_manager);
+        for entity_cell in &self.entity_cells {
+            entity_cell.borrow().render(frame_manager);
         }
     }
 
     pub fn update(&mut self, dt: f64, effect_manager: &mut EffectManager) {
-        for g in &self.grenades {
-            g.update(dt,&self.batch,effect_manager);
-        }
-        let character_pos = [self.characters[0].borrow().x(),self.characters[0].borrow().y()];
-        let to_create = boid_generator(self.boids.len(),character_pos,&self.wall_map,self.unit);
-        for (x,y,a) in to_create {
-            self.insert_boid(x,y,a);
-        }
-        for b in &self.boids {
-            b.update(dt,character_pos,&self.boids);
-        }
-        for c in &self.characters {
-            c.update(dt,&self.batch,effect_manager);
-        }
-        for mw in &self.moving_walls {
-            mw.update(dt,&self.batch,&self.moving_walls,&self.wall_map);
+        for entity_cell in &self.entity_cells {
+            entity_cell.update(dt,&self,effect_manager);
         }
 
-        // destroy dead bodies
         let mut i = 0;
-        while i < self.dynamic_vec.len() {
-            let b = self.dynamic_vec[i].borrow().dead();
+        while i < self.entity_cells.len() {
+            let b = self.entity_cells[i].borrow().body().dead();
             if b {
-                let id = self.dynamic_vec[i].borrow().id();
-                let body_type = self.dynamic_vec[i].borrow().body_type();
-                match body_type {
-                    BodyType::Boid => self.boids.retain(|b| {
-                        b.borrow().id() != id
-                    }),
-                    BodyType::Grenade => self.grenades.retain(|b| {
-                        b.borrow().id() != id
-                    }),
-                    _ => Err("detroy undetroyable body").unwrap(),
-                }
-                self.dynamic_vec.swap_remove(i);
+                self.entity_cells.swap_remove(i);
             } else {
                 i += 1;
             }
         }
 
-        // resolve collisions
-        {
-            self.batch.clear_dynamic();
-            for body in self.dynamic_vec.iter() {
-                {
-                    let body = &mut *body.borrow_mut();
-                    let location = body.location();
-                    let mask = body.mask();
-                    let mut callback = |other: &mut BodyTrait| {
-                        if body.collide(other) {
-                            body.resolve_collision(other);
-                            other.resolve_collision(body);
-                            body.on_collision(other);
-                            other.on_collision(body);
-                        }
-                    };
-                    self.batch.apply_locally(mask,&location,&mut callback);
-                }
-                self.batch.insert(&(body.clone() as Rc<RefCell<BodyTrait>>));
+        self.clear_dynamic();
+        for entity_cell in &self.entity_cells {
+            {
+                let entity = &mut *entity_cell.borrow_mut();
+                let location = entity.body().location();
+                let mask = entity.body().mask;
+                let mut callback = |other: &mut Entity| {
+                    if entity.body().collide(other.body()) {
+                        entity.mut_body().resolve_collision(other.body());
+                        other.mut_body().resolve_collision(entity.body());
+                        entity.on_collision(other);
+                        other.on_collision(entity);
+                    }
+                };
+                self.apply_locally(mask,&location,&mut callback);
+            }
+            self.dynamic_hashmap.insert_locally(&entity_cell.borrow().body().location(),entity_cell);
+        }
+    }
+
+    pub fn entity_cells(&self) -> &Vec<Rc<EntityCell>> {
+        &self.entity_cells
+    }
+
+    pub fn insert(&mut self, entity: &Rc<EntityCell>) {
+        entity.borrow_mut().mut_body().id = self.next_id;
+        self.next_id += 1;
+        match entity.borrow().body().physic_type {
+            PhysicType::Static => self.static_hashmap.insert_locally(&entity.borrow().body().location(),entity),
+            _ => self.dynamic_hashmap.insert_locally(&entity.borrow().body().location(),entity),
+        }
+        self.entity_cells.push(entity.clone());
+    }
+
+    pub fn apply_on_group<F: FnMut(&mut Entity)>(&self, mask: Flags, callback: &mut F) {
+        for entity_cell in &self.entity_cells {
+            let mut entity = entity_cell.borrow_mut();
+            if entity.body().group & mask != 0 {
+                callback(&mut *entity);
             }
         }
     }
 
+    pub fn apply_locally<F: FnMut(&mut Entity)>(&self, mask: Flags, loc: &Location, callback: &mut F) {
+        self.static_hashmap.apply_locally(loc, &mut |entity_cell: &Rc<EntityCell>| {
+            let mut entity = entity_cell.borrow_mut();
+            if (entity.body().group & mask != 0) && entity.body().in_location(loc) {
+                callback(&mut *entity);
+            }
+        });
+        self.dynamic_hashmap.apply_locally(loc, &mut |entity_cell: &Rc<EntityCell>| {
+            let mut entity = entity_cell.borrow_mut();
+            if (entity.body().group & mask != 0) && entity.body().in_location(loc) {
+                callback(&mut *entity);
+            }
+        });
+    }
+
+    pub fn apply_on_index<F: FnMut(&mut Entity)>(&self, mask: Flags, index: &[i32;2], callback: &mut F) {
+        let c = &mut |entity_cell: &Rc<EntityCell>| {
+            let mut entity = entity_cell.borrow_mut();
+            if entity.body().group & mask != 0 {
+                callback(&mut *entity);
+            }
+        };
+        self.static_hashmap.apply_on_index(index,c);
+        self.dynamic_hashmap.apply_on_index(index,c);
+    }
+
+    /// callback return true when stop
+    pub fn raycast<F: FnMut(&mut Entity, f64, f64) -> bool>(&self, mask: Flags, x: f64, y: f64, angle: f64, length: f64, callback: &mut F) {
+        use std::f64::consts::PI;
+
+        //println!("");
+        //println!("raycast");
+
+        let angle = minus_pi_pi(angle);
+
+        let unit = self.static_hashmap.unit();
+        let x0 = x;
+        let y0 = y;
+        let x1 = x+length*angle.cos();
+        let y1 = y+length*angle.sin();
+        let index_vec = grid_raycast(x0/unit, y0/unit, x1/unit, y1/unit);
+
+        // equation ax + by + c = 0
+        let (a,b,c) = if angle.abs() == PI || angle == 0. {
+            (0.,1.,-y)
+        } else {
+            let b = -1./angle.tan();
+            (1.,b,-x-b*y)
+        };
+
+        let line_start = x0.min(x1);
+        let line_end = x0.max(x1);
+
+        let mut bodies: Vec<(Rc<EntityCell>,f64,f64)>;
+        let mut visited = HashSet::new();
+        for i in &index_vec {
+            //println!("index:{:?}",i);
+            // abscisse of start and end the segment of
+            // the line that is in the current square
+            let segment_start = ((i[0] as f64)*unit).max(line_start);
+            let segment_end = (((i[0]+1) as f64)*unit).min(line_end);
+
+            bodies = Vec::new();
+
+            let mut res = self.static_hashmap.get_on_index(i);
+            res.append(&mut self.dynamic_hashmap.get_on_index(i));
+            res.retain(|entity| {
+                (entity.borrow().body().group & mask != 0) && !visited.contains(&entity.borrow().body().id)
+            });
+            while let Some(entity) = res.pop() {
+                let intersections = entity.borrow().body().raycast(a,b,c);
+                if let Some((x_min,y_min,x_max,y_max)) = intersections {
+                    //println!("intersection");
+                    //println!("start:{},end:{},min:{},max:{}",segment_start,segment_end,x_min,x_max);
+
+                    if angle.abs() > PI/2. {
+                        if segment_start <= x_max && x_min <= segment_end {
+                            visited.insert(entity.borrow().body().id);
+                            //println!("intersection in segment");
+                            let max = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
+                            let mut min = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
+                            if x_max > segment_end {
+                                min = -min;
+                            }
+                            bodies.push((entity,min,max));
+                        }
+                    } else {
+                        if segment_start <= x_max && x_min <= segment_end {
+                            visited.insert(entity.borrow().body().id);
+                            //println!("intersection in segment");
+                            let mut min = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
+                            let max = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
+                            if x_min < segment_start {
+                                min = -min;
+                            }
+                            bodies.push((entity,min,max));
+                        }
+                    }
+                }
+            }
+
+            bodies.sort_by(|&(_,min_a,_),&(_,min_b,_)| {
+                if min_a > min_b {
+                    Ordering::Greater
+                } else if min_a == min_b {
+                    Ordering::Equal
+                } else {
+                    Ordering::Less
+                }
+            });
+
+            for (entity,min,max) in bodies {
+                visited.insert(entity.borrow().body().id);
+                if callback(&mut *entity.borrow_mut(),min,max) {
+                    return;
+                }
+            }
+        }
+    }
+
+    pub fn get_on_segment<F: FnMut(&mut EntityCell, f64, f64) -> bool>(&self, _mask: Flags, _x: f64, _y: f64, _angle: f64, _length: f64, _callback: &mut F) {
+        assert!(false);
+    }
+
+    pub fn get_on_index(&self, mask: Flags, index: &[i32;2]) -> Vec<Rc<EntityCell>> {
+        let mut vec = Vec::new();
+        vec.append(&mut self.static_hashmap.get_on_index(index));
+        vec.append(&mut self.dynamic_hashmap.get_on_index(index));
+        vec.retain(&mut |entity: &Rc<EntityCell>| {
+            entity.borrow().body().group & mask != 0
+        });
+        vec
+    }
+
+    pub fn get_locally(&self, mask: Flags, loc: &Location) -> Vec<Rc<EntityCell>> {
+        let mut vec = Vec::new();
+        vec.append(&mut self.static_hashmap.get_locally(loc));
+        vec.append(&mut self.dynamic_hashmap.get_locally(loc));
+        vec.retain(&mut |entity: &Rc<EntityCell>| {
+            let entity = entity.borrow();
+            let entity = entity.body();
+            (entity.group & mask != 0) && (entity.in_location(loc))
+        });
+        vec
+    }
+
+    pub fn get_on_group(&self, mask: Flags) -> Vec<Rc<EntityCell>> {
+        let mut vec = Vec::new();
+        for entity in &self.entity_cells {
+            if entity.borrow().body().group & mask != 0 {
+                vec.push(entity.clone());
+            }
+        }
+        vec
+    }
+
+    pub fn clear_dynamic(&mut self) {
+        self.dynamic_hashmap.clear();
+    }
 }
 

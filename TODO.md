@@ -17,6 +17,10 @@
 * maze -> mazes
 * entities independant from world
 
+* api world : entity instead of entity\_cell for apply etc..
+* update entity cell return a vec of entity
+* body have items
+
 #graphics manager
 
 the graphics are inspired by m6502 screensaver, it must have:

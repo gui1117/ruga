@@ -5,7 +5,6 @@ use sndfile::{
     OpenMode,
     SeekMode,
 };
-use portaudio::PortAudio;
 use portaudio as pa;
 use std::i32;
 use std::sync::mpsc::{
@@ -111,7 +110,7 @@ impl Music {
 
         Music {
             snd_file: SndFile::new(path,OpenMode::Read).unwrap(),
-            volume: 0.5,
+            volume: 0.,
         }
     }
 
@@ -221,7 +220,7 @@ impl SoundManager {
             pa_tx: pa_tx,
         }
     }
-    
+
     pub fn set_decrease_bounds(&mut self, start: f64, end: f64) {
         self.start_decrease = start;
         self.end_decrease = end;

@@ -2,13 +2,7 @@ use std::collections::{
     HashMap,
     HashSet,
 };
-
-pub struct Location {
-    pub up: f64,
-    pub down: f64,
-    pub left: f64,
-    pub right: f64,
-}
+use super::body::Location;
 
 pub trait Identifiable {
     fn id(&self) -> usize;

@@ -2,14 +2,18 @@
 
 extern crate rand;
 
-use util::direction::Direction;
+// use util::direction::Direction;
 use self::rand::distributions::{IndependentSample, Range};
-use world::World;
+use world::{World, EntityCell};
+use world::body::Item;
+use entities::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 const AVERAGE_MOVING_WALL_PER_UNIT: f32 = 0.1;
 
 #[derive(Debug)]
-enum Wall {
+enum WallPos {
     Vertical(usize,usize),
     Horizontal(usize,usize),
 }
@@ -44,10 +48,10 @@ fn generate_partial_reverse_randomized_kruskal(width: usize, height: usize, perc
 
     let mut walls = Vec::with_capacity(horizontal_wall+vertical_wall);
     for i in 0..vertical_wall {
-        walls.push(Wall::Vertical(i.wrapping_rem(vertical_wall_width)*2+2, (i/vertical_wall_width)*2+3));
+        walls.push(WallPos::Vertical(i.wrapping_rem(vertical_wall_width)*2+2, (i/vertical_wall_width)*2+3));
     }
     for i in 0..horizontal_wall {
-        walls.push(Wall::Horizontal(i.wrapping_rem(horizontal_wall_width)*2+3, (i/horizontal_wall_width)*2+2));
+        walls.push(WallPos::Horizontal(i.wrapping_rem(horizontal_wall_width)*2+3, (i/horizontal_wall_width)*2+2));
     }
 
     let mut rng = rand::thread_rng();
@@ -58,10 +62,10 @@ fn generate_partial_reverse_randomized_kruskal(width: usize, height: usize, perc
         let i = Range::new(0,walls.len()).ind_sample(&mut rng);
         assert!(i<walls.len());
         let (c1,c2,c3) = match walls.swap_remove(i) {
-            Wall::Vertical(x,y) => {
+            WallPos::Vertical(x,y) => {
                 (index(x,y-1), index(x,y), index(x,y+1))
             },
-            Wall::Horizontal(x,y) => {
+            WallPos::Horizontal(x,y) => {
                 (index(x-1,y), index(x,y), index(x+1,y))
             },
         };
@@ -83,7 +87,7 @@ fn generate_partial_reverse_randomized_kruskal(width: usize, height: usize, perc
     grid.iter().map(|&(b,_)| b).collect::<Vec<bool>>()
 }
 
-pub fn generate() -> World {
+pub fn generate() -> (World,Rc<RefCell<Character>>) {
     let width = 17;
     let height = 17;
     let unit = 16.;
@@ -103,22 +107,25 @@ pub fn generate() -> World {
         let y = (i/width) as i32;
 
         if maze[i] {
-            world.insert_wall(x,y);
+            world.insert(&(Rc::new(RefCell::new(Wall::new(x,y,unit))) as Rc<EntityCell>));
         } else {
             if zero_un_range.ind_sample(&mut rng) < AVERAGE_MOVING_WALL_PER_UNIT {
-                let direction = match direction_range.ind_sample(&mut rng) {
-                    0 => Direction::Left,
-                    1 => Direction::Right,
-                    2 => Direction::Up,
-                    _ => Direction::Down,
-                };
-                world.insert_moving_wall(x,y,direction);
-            } 
+                // let direction = match direction_range.ind_sample(&mut rng) {
+                //     0 => Direction::Left,
+                //     1 => Direction::Right,
+                //     2 => Direction::Up,
+                //     _ => Direction::Down,
+                // };
+                // world.insert_moving_wall(x,y,direction);
+            }
         }
     }
 
-    world.insert_armory(1,1);
-    world.insert_character(unit*1.5,unit*1.5,0.);
+    let character = Rc::new(RefCell::new(Character::new(unit*1.5,unit*1.5,0.)));
+    world.insert(&(Rc::new(RefCell::new(Armory::new(unit*1.5,unit*1.5,Item::Rifle(10)))) as Rc<EntityCell>));
+    world.insert(&(Rc::new(RefCell::new(Armory::new(unit*2.5,unit*1.5,Item::Shotgun(10)))) as Rc<EntityCell>));
+    world.insert(&(Rc::new(RefCell::new(Armory::new(unit*3.5,unit*1.5,Item::Sniper(10)))) as Rc<EntityCell>));
+    world.insert(&(character.clone() as Rc<EntityCell>));
 
-    world
+    (world,character)
 }

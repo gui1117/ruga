@@ -6,16 +6,14 @@ extern crate time;
 extern crate sndfile;
 extern crate portaudio;
 
-
-#[macro_use]
-pub mod util;
-
 pub mod world;
 pub mod app;
-pub mod maze;
+pub mod mazes;
 pub mod sound_manager;
 pub mod frame_manager;
 pub mod effect_manager;
+pub mod utils;
+pub mod entities;
 
 mod event_loop;
 
@@ -23,10 +21,9 @@ use app::App;
 use glium::DisplayBuild;
 use glium::glutin::Event as InputEvent;
 use glium::glutin::ElementState;
-use event_loop::{
-    Events,
-    Event,
-};
+use event_loop::{ Events, Event};
+use std::thread;
+use std::time::Duration;
 
 fn main() {
     let mut window = glium::glutin::WindowBuilder::new()
@@ -60,7 +57,7 @@ fn main() {
                 app.mouse_moved(x,y);
             },
             Event::Input(_) => (),
-            Event::Idle(_) => (),
+            Event::Idle(args) => thread::sleep(Duration::from_millis(args.dt as u64)),
         }
         if app.quit { break; }
     }

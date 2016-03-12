@@ -1,18 +1,49 @@
+//! inspired by m6502 Xscreensaver
+
+// palette :
+// Black ($0) "#000000",
+// White ($1) "#ffffff",
+// Red ($2) "#880000",
+// Cyan ($3) "#aaffee",
+// Purple ($4) "#cc44cc",
+// Green ($5) "#00cc55",
+// Blue ($6) "#0000aa",
+// Yellow ($7) "#eeee77",
+// Orange ($8) "#dd8855",
+// Brown ($9) "#664400",
+// Light red ($a) "#ff7777",
+// Dark gray ($b) "#333333",
+// Gray ($c) "#777777",
+// Light green ($d) "#aaff66",
+// Light blue ($e) "#0088ff",
+// Light gray ($f) "#bbbbbb"
+
 use glium::{
     Frame,
     Surface,
     VertexBuffer,
     index,
     Program,
-    uniforms,
 };
 use glium::backend::glutin_backend::GlutinFacade;
 
 pub mod color {
-    pub const BLACK: [f64;4] = [0.,0.,0.,1.];
-    pub const RED:   [f64;4] = [1.,0.,0.,1.];
-    pub const BLUE:  [f64;4] = [0.,0.,1.,1.];
-    pub const GREEN: [f64;4] = [0.,1.,0.,1.];
+    pub const BLACK:      [f32;4] = [0.00,0.00,0.00,0.50];
+    pub const WHITE:      [f32;4] = [1.00,1.00,1.00,0.50];
+    pub const RED:        [f32;4] = [0.50,0.00,0.00,0.50];
+    pub const CYAN:       [f32;4] = [0.66,1.00,0.93,0.50];
+    pub const PURPLE:     [f32;4] = [0.80,0.27,0.80,0.50];
+    pub const GREEN:      [f32;4] = [0.00,0.80,0.33,0.50];
+    pub const BLUE:       [f32;4] = [0.00,0.80,0.66,0.50];
+    pub const YELLOW:     [f32;4] = [0.93,0.93,0.46,0.50];
+    pub const ORANGE:     [f32;4] = [0.86,0.53,0.33,0.50];
+    pub const BROWN :     [f32;4] = [0.40,0.27,0.00,0.50];
+    pub const LIGHT_RED:  [f32;4] = [1.00,0.46,0.46,0.50];
+    pub const DARK_GRAY:  [f32;4] = [0.20,0.20,0.20,0.50];
+    pub const GRAY:       [f32;4] = [0.46,0.46,0.46,0.50];
+    pub const LIGHT_GREEN:[f32;4] = [0.66,1.00,0.40,0.50];
+    pub const LIGHT_BLUE: [f32;4] = [0.00,0.53,1.00,0.50];
+    pub const LIGHT_GRAY: [f32;4] = [0.73,0.73,0.73,0.50];
 }
 
 #[derive(Clone,Copy)]
@@ -91,16 +122,16 @@ impl Assets {
 
 pub struct FrameManager<'l> {
     frame: Frame,
-    ext_dt: f64,
-    x: f64,
-    y: f64,
-    zoom: f64,
+    // ext_dt: f64,
+    // x: f64,
+    // y: f64,
+    // zoom: f64,
     assets: &'l Assets,
     camera: [[f32;4];4],
 }
 
 impl<'l> FrameManager<'l> {
-    pub fn new(assets: &'l Assets, frame: Frame, ext_dt: f64, x: f64, y: f64, zoom: f64) -> FrameManager<'l> {
+    pub fn new(assets: &'l Assets, frame: Frame, _ext_dt: f64, x: f64, y: f64, zoom: f64) -> FrameManager<'l> {
         let camera = {
             let k = zoom as f32;
             let dx = -x as f32;
@@ -115,63 +146,63 @@ impl<'l> FrameManager<'l> {
 
         FrameManager {
             frame: frame,
-            ext_dt: ext_dt,
-            x: x,
-            y: y,
-            zoom: zoom,
+            // ext_dt: ext_dt,
+            // x: x,
+            // y: y,
+            // zoom: zoom,
             assets: assets,
             camera: camera,
         }
     }
 
-    pub fn draw_square(&mut self, color: [f64;4], x: f64, y: f64, width: f64, height: f64) {
+    pub fn draw_square(&mut self, color: [f32;4], x: f64, y: f64, width: f64, height: f64) {
         let trans = {
             let kx = width as f32;
             let ky = height as f32;
             let dx = x as f32;
             let dy = y as f32;
             [
-                [   kx,    0., 0., 0.],
-                [   0.,    ky, 0., 0.],
-                [   0.,    0., 1., 0.],
-                [dx, dy, 0., 1.]
+                [ kx, 0., 0., 0.],
+                [ 0., ky, 0., 0.],
+                [ 0., 0., 1., 0.],
+                [ dx, dy, 0., 1.]
             ]
         };
         let uniform = uniform!{
             trans: trans,
             camera: self.camera,
-            color: [1.,0.,0.,1.0f32],
+            color: color,
         };
         self.frame.draw(
-            &self.assets.square_vertex_buffer, 
-            &self.assets.square_indices, 
-            &self.assets.program, 
+            &self.assets.square_vertex_buffer,
+            &self.assets.square_indices,
+            &self.assets.program,
             &uniform,
             &Default::default()).unwrap();
     }
 
-    pub fn draw_line(&mut self, color: [f64;4], x: f64, y: f64, angle: f64, length: f64) {
+    pub fn draw_line(&mut self, color: [f32;4], x: f64, y: f64, angle: f64, length: f64) {
         let trans = {
             let kx = (length*angle.cos()) as f32;
             let ky = (length*angle.sin()) as f32;
             let dx = x as f32;
             let dy = y as f32;
             [
-                [   kx,    0., 0., 0.],
-                [   0.,    ky, 0., 0.],
-                [   0.,    0., 1., 0.],
-                [dx, dy, 0., 1.]
+                [ kx, 0., 0., 0.],
+                [ 0., ky, 0., 0.],
+                [ 0., 0., 1., 0.],
+                [ dx, dy, 0., 1.]
             ]
         };
         let uniform = uniform!{
             trans: trans,
             camera: self.camera,
-            color: [1.,0.,0.,1.0f32],
+            color: color,
         };
         self.frame.draw(
-            &self.assets.line_vertex_buffer, 
-            &self.assets.line_indices, 
-            &self.assets.program, 
+            &self.assets.line_vertex_buffer,
+            &self.assets.line_indices,
+            &self.assets.program,
             &uniform,
             &Default::default()).unwrap();
     }

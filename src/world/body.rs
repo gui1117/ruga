@@ -1,4 +1,12 @@
-use utils;
+use super::utils;
+use super::FrameManager;
+
+#[derive(Clone,Debug)]
+pub enum Item {
+    Rifle(u64),
+    Shotgun(u64),
+    Sniper(u64),
+}
 
 #[derive(Clone,Copy,Debug,PartialEq,Eq)]
 pub enum PhysicType {
@@ -33,6 +41,7 @@ pub struct Body {
     pub weight: f64,
     pub velocity: f64,
     pub angle: f64,
+    pub items: Vec<Item>,
     pub mask: Flags,
     pub group: Flags,
     pub collision_behavior: CollisionBehavior,
@@ -40,8 +49,22 @@ pub struct Body {
 }
 
 impl Body {
+    pub fn render(&self, color: [f32;4], frame_manager: &mut FrameManager) {
+        frame_manager.draw_square(color,self.x,self.y,self.width,self.height);
+    }
+
+    pub fn update(&mut self, dt: f64) {
+        if self.velocity != 0. {
+            self.x += dt*self.velocity*self.angle.cos();
+            self.y += dt*self.velocity*self.angle.sin();
+        }
+    }
+
     pub fn damage(&mut self, d: f64) {
         self.life -= d;
+    }
+    pub fn dead(&self) -> bool {
+        self.life <= 0.
     }
 
     pub fn up (&self) -> f64 {
@@ -83,7 +106,7 @@ impl Body {
     pub fn resolve_collision(&mut self, other: &Body) {
         use std::f64::consts::PI;
 
-        if self.physic_type != PhysicType::Dynamic {
+        if self.physic_type != PhysicType::Dynamic || other.physic_type != PhysicType::Dynamic {
             return;
         }
 

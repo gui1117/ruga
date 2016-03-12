@@ -9,9 +9,7 @@ name = "ruga"
 [dependencies]
 rand = "0.3.0"
 time = "0.1.0"
-
 portaudio = "0.6.0"
-sndfile = { git = "https://github.com/thiolliere/rust-sndfile.git" }
-
 glium = "0.13.0"
+sndfile = { git = "https://github.com/thiolliere/rust-sndfile.git" }
 
