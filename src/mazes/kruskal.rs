@@ -107,6 +107,8 @@ pub fn generate() -> (World,Rc<RefCell<Character>>) {
         }
     }
 
+    world.insert(&(Rc::new(RefCell::new(Spider::new(unit*1.5,unit*1.5,0.))) as Rc<EntityCell>));
+
     let character = Rc::new(RefCell::new(Character::new(unit*1.5,unit*1.5,0.)));
     world.insert(&(Rc::new(RefCell::new(Armory::new(unit*1.5,unit*1.5,Item::Rifle(10)))) as Rc<EntityCell>));
     world.insert(&(Rc::new(RefCell::new(Armory::new(unit*2.5,unit*1.5,Item::Shotgun(10)))) as Rc<EntityCell>));

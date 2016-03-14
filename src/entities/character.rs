@@ -9,7 +9,7 @@ use utils::minus_pi_pi;
 use frame_manager::{color, FrameManager};
 use effect_manager::{EffectManager, Line, Effect};
 
-pub const LIFE: f64 = 1.;
+pub const LIFE: f64 = 10000000.;
 pub const WIDTH: f64 = 1.;
 pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;

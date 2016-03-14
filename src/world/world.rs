@@ -15,7 +15,7 @@ pub struct World {
     pub time: f64,
     next_id: usize,
 
-    wall_map: HashSet<(i32,i32)>,
+    pub wall_map: HashSet<(i32,i32)>,
     entity_cells: Vec<Rc<EntityCell>>,
     static_hashmap: SpatialHashing<Rc<EntityCell>>,
     dynamic_hashmap: SpatialHashing<Rc<EntityCell>>,

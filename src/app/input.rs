@@ -1,5 +1,4 @@
-use utils::Direction;
-use super::point::Point;
+use utils::{Direction, Point};
 use super::app::App;
 use glium::glutin::MouseButton;
 
