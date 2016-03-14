@@ -29,7 +29,7 @@ pub struct App {
     pub frame_assets: Assets,
 }
 
-const ZOOM: f64 = 0.05;//0.01;//0.05;
+const ZOOM: f64 = 0.01;//0.05;
 
 impl App {
     pub fn new(facade: &GlutinFacade) -> App {

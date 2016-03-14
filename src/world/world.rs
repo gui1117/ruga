@@ -15,6 +15,7 @@ pub struct World {
     pub time: f64,
     next_id: usize,
 
+    wall_map: HashSet<(i32,i32)>,
     entity_cells: Vec<Rc<EntityCell>>,
     static_hashmap: SpatialHashing<Rc<EntityCell>>,
     dynamic_hashmap: SpatialHashing<Rc<EntityCell>>,
@@ -32,6 +33,7 @@ impl World {
             unit: unit,
             time: 0.,
             next_id: 1,
+            wall_map: HashSet::new(),
             entity_cells: Vec::new(),
             static_hashmap: SpatialHashing::new(unit),
             dynamic_hashmap: SpatialHashing::new(unit),
@@ -94,6 +96,9 @@ impl World {
     pub fn insert(&mut self, entity: &Rc<EntityCell>) {
         entity.borrow_mut().mut_body().id = self.next_id;
         self.next_id += 1;
+
+        entity.borrow().modify_wall_map(&mut self.wall_map);
+
         match entity.borrow().body().physic_type {
             PhysicType::Static => self.static_hashmap.insert_locally(&entity.borrow().body().location(),entity),
             _ => self.dynamic_hashmap.insert_locally(&entity.borrow().body().location(),entity),
@@ -266,7 +271,7 @@ impl World {
         vec
     }
 
-    pub fn clear_dynamic(&mut self) {
+    fn clear_dynamic(&mut self) {
         self.dynamic_hashmap.clear();
     }
 }

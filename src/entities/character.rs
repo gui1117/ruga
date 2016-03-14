@@ -3,13 +3,11 @@ use super::group;
 use rand::distributions::{IndependentSample, Range};
 use world::body::{Location, CollisionBehavior, PhysicType, Body, Item};
 use world::{World, Entity, EntityCell};
-use std::cell::RefCell;
+use std::cell::{RefCell, Ref, RefMut};
 use std::f64;
 use utils::minus_pi_pi;
 use frame_manager::{color, FrameManager};
 use effect_manager::{EffectManager, Line, Effect};
-
-use std::cell::{Ref, RefMut};
 
 pub const LIFE: f64 = 1.;
 pub const WIDTH: f64 = 1.;

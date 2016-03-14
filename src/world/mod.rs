@@ -11,12 +11,14 @@ pub use effect_manager::EffectManager;
 use self::body::Body;
 
 use std::cell::{Ref, RefMut};
+use std::collections::HashSet;
 
 pub trait Entity {
     fn body(&self) -> &Body;
     fn mut_body(&mut self) -> &mut Body;
     fn on_collision(&mut self, _other: &mut Entity) {}
     fn render(&self, _render_args: &mut FrameManager) {}
+    fn modify_wall_map(&self, &mut HashSet<(i32,i32)>) {}
     //fn render_ai(&self, _frame_manager: &mut Management::IAFrameManager) {}
 }
 

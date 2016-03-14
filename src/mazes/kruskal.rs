@@ -10,8 +10,6 @@ use entities::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const AVERAGE_MOVING_WALL_PER_UNIT: f32 = 0.1;
-
 #[derive(Debug)]
 enum WallPos {
     Vertical(usize,usize),
@@ -97,10 +95,8 @@ pub fn generate() -> (World,Rc<RefCell<Character>>) {
 
     let mut world = World::new(unit);
 
-    let mut rng = rand::thread_rng();
-
-    let zero_un_range = Range::new(0.,1.);
-    let direction_range = Range::new(0,4);
+    // let mut rng = rand::thread_rng();
+    // let zero_un_range = Range::new(0.,1.);
 
     for i in 0..maze.len() {
         let x = (i.wrapping_rem(width)) as i32;
@@ -108,16 +104,6 @@ pub fn generate() -> (World,Rc<RefCell<Character>>) {
 
         if maze[i] {
             world.insert(&(Rc::new(RefCell::new(Wall::new(x,y,unit))) as Rc<EntityCell>));
-        } else {
-            if zero_un_range.ind_sample(&mut rng) < AVERAGE_MOVING_WALL_PER_UNIT {
-                // let direction = match direction_range.ind_sample(&mut rng) {
-                //     0 => Direction::Left,
-                //     1 => Direction::Right,
-                //     2 => Direction::Up,
-                //     _ => Direction::Down,
-                // };
-                // world.insert_moving_wall(x,y,direction);
-            }
         }
     }
 

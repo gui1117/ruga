@@ -3,14 +3,19 @@ use world::body::{Body, CollisionBehavior, PhysicType};
 use world::{Entity, EntityCell};
 use std::f64;
 use std::cell::{RefCell, Ref, RefMut};
+use std::collections::HashSet;
 
 pub struct Wall {
     body: Body,
+    x_i32: i32,
+    y_i32: i32,
 }
 
 impl Wall {
     pub fn new(x: i32, y: i32, unit: f64) -> Wall {
         Wall {
+            x_i32: x,
+            y_i32: y,
             body : Body {
                 id: 0,
                 x: (x as f64 + 0.5)*unit,
@@ -41,6 +46,9 @@ impl EntityCell for RefCell<Wall> {
 }
 
 impl Entity for Wall {
+    fn modify_wall_map(&self, wall_map: &mut HashSet<(i32,i32)>) {
+        wall_map.insert((self.x_i32,self.y_i32));
+    }
     fn body(&self) -> &Body {
         &self.body
     }
