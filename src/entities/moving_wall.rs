@@ -1,4 +1,4 @@
-// NOT COMPLET
+// NOT COMPLETE
 
 use utils::Direction;
 use super::group;
