@@ -1,5 +1,7 @@
 use rand;
 use super::group;
+use super::Grenade;
+use std::rc::Rc;
 use rand::distributions::{IndependentSample, Range};
 use world::body::{Location, CollisionBehavior, PhysicType, Body, Item};
 use world::{World, Entity, EntityCell};
@@ -38,7 +40,7 @@ pub const SNIPER_DAMAGE: f64 = 100.;
 pub const RIFLE_MAX_DELTA_ANGLE: f64 = f64::consts::PI/16.;
 pub const SHOTGUN_MAX_DELTA_ANGLE: f64 = f64::consts::PI/6.;
 pub const SHOTGUN_SHOOT_NUMBER: u64 = 4;
-
+pub const GRENADE_DISTANCE: f64 = 5.;
 
 pub struct Character {
     body: Body,
@@ -71,52 +73,64 @@ impl Character {
             sword: Sword::new(),
         }
     }
+}
 
-    pub fn position(&self) -> (f64,f64) {
-        (self.body.x,self.body.y)
+pub trait CharacterManager {
+    fn position(&self) -> (f64,f64);
+    fn aim(&self) -> f64;
+    fn set_aim(&self, aim: f64);
+    fn velocity(&self) -> f64;
+    fn set_velocity(&self, v: f64);
+    fn angle(&self) -> f64;
+    fn set_angle(&self, a: f64);
+    fn set_attack_sword(&self);
+    fn set_shoot(&self, shoot: bool);
+    fn set_launch_grenade(&self, world: &mut World);
+}
+
+impl CharacterManager for RefCell<Character> {
+    fn position(&self) -> (f64,f64) {
+        (self.borrow().body.x,self.borrow().body.y)
     }
 
-    pub fn aim(&self) -> f64 {
-        self.aim
+    fn aim(&self) -> f64 {
+        self.borrow().aim
     }
 
-    pub fn set_aim(&mut self, aim: f64) {
-        self.aim = aim;
+    fn set_aim(&self, aim: f64) {
+        self.borrow_mut().aim = aim;
     }
 
-    pub fn velocity(&self) -> f64 {
-        self.body.velocity
+    fn velocity(&self) -> f64 {
+        self.borrow().body.velocity
     }
 
-    pub fn set_velocity(&mut self, v: f64) {
+    fn set_velocity(&self, v: f64) {
         let v = v.min(1.0);
-        self.body.velocity = v*VELOCITY;
+        self.borrow_mut().body.velocity = v*VELOCITY;
     }
 
-    pub fn angle(&self) -> f64 {
-        self.body.angle
+    fn angle(&self) -> f64 {
+        self.borrow().body.angle
     }
 
-    pub fn set_angle(&mut self, a: f64) {
-        self.body.angle = a;
+    fn set_angle(&self, a: f64) {
+        self.borrow_mut().body.angle = a;
     }
 
-    pub fn set_attack_sword(&mut self) {
-        self.sword.do_attack = true;
+    fn set_attack_sword(&self) {
+        self.borrow_mut().sword.do_attack = true;
     }
 
-    pub fn set_shoot(&mut self, shoot: bool) {
-        self.gun.shooting = shoot;
+    fn set_shoot(&self, shoot: bool) {
+        self.borrow_mut().gun.shooting = shoot;
     }
 
-    pub fn pickup_gun(&mut self) {
-        self.gun.pickup = true;
-    }
-
-    pub fn set_launch_grenade(&mut self) {
-        // TODO
-        // let character = &*self..clone();
-        // character.launch_grenade(&mut self.world);
+    fn set_launch_grenade(&self, world: &mut World) {
+        let aim = self.aim();
+        let x = self.borrow().body.x + GRENADE_DISTANCE*aim.cos();
+        let y = self.borrow().body.y + GRENADE_DISTANCE*aim.sin();
+        world.insert(&(Rc::new(RefCell::new(Grenade::new(x,y,aim))) as Rc<EntityCell>));
     }
 }
 
@@ -181,7 +195,7 @@ impl SwordManager for RefCell<Character> {
             let (id,x,y,aim) = {
                 let this = self.borrow();
                 let body = this.body();
-                (body.id, body.x, body.y, minus_pi_pi(self.borrow().aim()))
+                (body.id, body.x, body.y, minus_pi_pi(self.aim()))
             };
             let loc = Location {
                 up: y + SWORD_LENGTH,
@@ -252,7 +266,6 @@ struct Gun {
     gun_type: GunType,
     reloading: f64,
     shooting: bool,
-    pickup: bool,
     ammo: u64,
 }
 
@@ -261,7 +274,6 @@ impl Gun {
         Gun {
             gun_type: GunType::Rifle,
             shooting: false,
-            pickup: false,
             reloading: 0.,
             ammo: 10000000,
         }
@@ -351,37 +363,40 @@ impl GunManager for RefCell<Character> {
 
     fn gun_update(&self, dt: f64, world: &World, effect_manager: &mut EffectManager) {
         // pickup gun
-        let pickup = self.borrow().gun.pickup;
+        // let pickup = self.borrow().gun.pickup;
+        // if pickup {
+        //     let mut item = None;
+        //     let location = self.borrow().body.location();
+        //     world.apply_locally(super::group::ARMORY,&location,&mut |entity: &mut Entity| {
+        //         if let None = item {
+        //             let body = entity.mut_body();
+        //             if  body.items.len() > 0 {
+        //                 item = Some(body.items.remove(0));
+        //             }
+        //         }
+        //     });
+        //     let mut this = self.borrow_mut();
+        //     this.gun.pickup = false;
+        let pickup = self.borrow().body.items.len() != 0;
         if pickup {
-            let mut item = None;
-            let location = self.borrow().body.location();
-            world.apply_locally(super::group::ARMORY,&location,&mut |entity: &mut Entity| {
-                if let None = item {
-                    let body = entity.mut_body();
-                    if  body.items.len() > 0 {
-                        item = Some(body.items.remove(0));
-                    }
-                }
-            });
             let mut this = self.borrow_mut();
-            this.gun.pickup = false;
-            if let Some(item) = item {
-                match item {
-                    Item::Rifle(ammo) => {
-                        this.gun.ammo = ammo;
-                        this.gun.gun_type = GunType::Rifle;
-                    },
-                    Item::Shotgun(ammo) => {
-                        this.gun.ammo = ammo;
-                        this.gun.gun_type = GunType::Shotgun;
-                    },
-                    Item::Sniper(ammo) => {
-                        this.gun.ammo = ammo;
-                        this.gun.gun_type = GunType::Sniper;
-                    },
-                }
-                this.gun.reloading = this.gun.time_to_reload();
+            let item = this.body.items.pop().unwrap();
+            this.body.items = Vec::new();
+            match item {
+                Item::Rifle(ammo) => {
+                    this.gun.ammo = ammo;
+                    this.gun.gun_type = GunType::Rifle;
+                },
+                Item::Shotgun(ammo) => {
+                    this.gun.ammo = ammo;
+                    this.gun.gun_type = GunType::Shotgun;
+                },
+                Item::Sniper(ammo) => {
+                    this.gun.ammo = ammo;
+                    this.gun.gun_type = GunType::Sniper;
+                },
             }
+            this.gun.reloading = this.gun.time_to_reload();
         }
 
         // shoot
@@ -412,14 +427,4 @@ impl GunManager for RefCell<Character> {
         }
     }
 }
-
-// const GRENADE_DISTANCE: f64 = 5.;
-
-//     fn launch_grenade(&self,world: &mut World) {
-//         let aim = self.aim();
-//         let x = self.borrow().x() + GRENADE_DISTANCE*aim.cos();
-//         let y = self.borrow().y() + GRENADE_DISTANCE*aim.sin();
-//         world.insert_grenade(x,y,aim);
-//     }
-// }
 

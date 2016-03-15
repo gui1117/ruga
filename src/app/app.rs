@@ -10,7 +10,7 @@ use event_loop::{
     RenderArgs,
     UpdateArgs,
 };
-use entities::Character;
+use entities::{Character,CharacterManager};
 use world::World;
 use glium::backend::glutin_backend::GlutinFacade;
 
@@ -52,7 +52,7 @@ impl App {
     }
 
     pub fn render(&mut self, args: RenderArgs) {
-        let (x,y) = self.player.borrow().position();
+        let (x,y) = self.player.position();
         let mut frame_manager = FrameManager::new(&self.frame_assets,args.frame,args.ext_dt,x,y,self.zoom);
 
         self.sound_manager.set_listener([x,y]);

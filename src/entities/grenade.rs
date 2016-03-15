@@ -28,7 +28,6 @@ pub const PHYSIC_TYPE: PhysicType = PhysicType::Dynamic;
 pub struct Grenade {
     body: Body,
     timer: f64,
-    alive: bool,
 }
 
 impl Grenade {
@@ -50,7 +49,6 @@ impl Grenade {
                 collision_behavior: COLLISION_BEHAVIOR,
                 physic_type: PHYSIC_TYPE,
             },
-            alive: true,
             timer: 0.,
         }
     }
@@ -71,7 +69,7 @@ impl EntityCell for RefCell<Grenade> {
         use std::f64::consts::PI;
 
         self.borrow_mut().timer += dt;
-        let alive = self.borrow().alive;
+        let alive = self.borrow().body.life > 0.;
         let timer = self.borrow().timer;
         if alive {
             if timer >= TIME_TO_EXPLODE {
@@ -100,7 +98,7 @@ impl EntityCell for RefCell<Grenade> {
                 }
                 effect_manager.add(Effect::GrenadeExplosion(splatters));
 
-                self.borrow_mut().alive = false;
+                self.borrow_mut().body.life = 0.;
             } else if timer >= TIME_TO_STOP {
                 self.borrow_mut().body.velocity = 0.;
             }

@@ -1,6 +1,7 @@
 use utils::{Direction, Point};
 use super::app::App;
 use glium::glutin::MouseButton;
+use entities::CharacterManager;
 
 use std::f64::consts::PI;
 
@@ -61,9 +62,9 @@ impl App {
 				},
 			}
 		}
-		self.player.borrow_mut().set_velocity(velocity);
+		self.player.set_velocity(velocity);
 		if velocity != 0. {
-			self.player.borrow_mut().set_angle(angle);
+			self.player.set_angle(angle);
 		}
 
 	}
@@ -105,7 +106,6 @@ impl App {
             key::E => {
             }
             key::R => {
-                self.player.borrow_mut().pickup_gun();
             }
             key::T => {
             }
@@ -171,15 +171,15 @@ impl App {
 
     pub fn mouse_pressed(&mut self, button: MouseButton) {
         match button {
-            MouseButton::Left => self.player.borrow_mut().set_shoot(true),
-            MouseButton::Right => self.player.borrow_mut().set_attack_sword(),
-            _ => (),
+            MouseButton::Left => self.player.set_shoot(true),
+            MouseButton::Right => self.player.set_attack_sword(),
+            _ => self.player.set_launch_grenade(&mut self.world),
         }
     }
 
     pub fn mouse_released(&mut self, button: MouseButton) {
         match button {
-            MouseButton::Left => self.player.borrow_mut().set_shoot(false),
+            MouseButton::Left => self.player.set_shoot(false),
             _ => (),
         }
     }
@@ -195,7 +195,7 @@ impl App {
             y: y as f64 - center.y,
         };
 
-        self.player.borrow_mut().set_aim(-cursor.angle_0x());
+        self.player.set_aim(-cursor.angle_0x());
     }
 }
 
