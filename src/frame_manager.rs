@@ -305,10 +305,11 @@ pub struct FrameManager<'l> {
     // zoom: f64,
     assets: &'l Assets,
     camera: [[f32;4];4],
+    state: usize,
 }
 
 impl<'l> FrameManager<'l> {
-    pub fn new(assets: &'l Assets, mut frame: Frame, _ext_dt: f64, x: f64, y: f64, zoom: f64) -> FrameManager<'l> {
+    pub fn new(assets: &'l Assets, mut frame: Frame, _ext_dt: f64, x: f64, y: f64, zoom: f64, state: usize) -> FrameManager<'l> {
         let camera = {
             let k = zoom as f32;
             let dx = -x as f32;
@@ -331,6 +332,7 @@ impl<'l> FrameManager<'l> {
             // zoom: zoom,
             assets: assets,
             camera: camera,
+            state: state,
         }
     }
 
@@ -364,7 +366,7 @@ impl<'l> FrameManager<'l> {
             rot: rot,
             trans: trans,
             camera: self.camera,
-            tex_trans: animation.tex_trans(0),
+            tex_trans: animation.tex_trans(self.state),
             tex: &self.assets.tileset,
         };
         let draw_parameters = DrawParameters {

@@ -156,13 +156,26 @@ impl Entity for Character {
         &mut self.body
     }
     fn render(&self, frame_manager: &mut FrameManager) {
+        use std::f64::consts::*;
         match self.gun.gun_type {
             GunType::Rifle => frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterRifle),
             GunType::Shotgun => frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterShotgun),
             GunType::Sniper => frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterSniper),
             GunType::None => (),
         }
-        // TODO cape
+        let delta = (self.body.angle - self.aim).abs();
+        if delta <= FRAC_PI_4 {
+            frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterCloakUnfold);
+        } else if delta <= 3.*FRAC_PI_4 {
+            if self.body.angle > self.aim {
+                frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterCloakLeft);
+            } else {
+                frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterCloakRight);
+
+            }
+        } else {
+            frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterCloakFold);
+        }
         // self.body.render(color::RED,frame_manager);
     }
 }
