@@ -57,7 +57,6 @@ impl App {
 
         self.sound_manager.set_listener([x,y]);
 
-        frame_manager.clear();
         self.effect_manager.render(&mut frame_manager, &mut self.sound_manager);
         self.world.render(&mut frame_manager);
         frame_manager.finish();

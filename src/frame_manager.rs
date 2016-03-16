@@ -31,9 +31,11 @@ use glium::backend::glutin_backend::GlutinFacade;
 use image;
 use std::io::Cursor;
 
+pub const TILESET_WIDTH: f32 = 1920.;
+pub const TILESET_HEIGHT: f32 = 1920.;
+
 #[derive(Clone,Copy,Eq,PartialEq)]
 pub enum Animation {
-    Boid,
     CharacterRifle,
     CharacterSniper,
     CharacterShotgun,
@@ -50,6 +52,7 @@ pub enum Animation {
     SwordAttack1,
     SwordAttack2,
     SwordAttack3,
+    Boid,
     Grenade,
     BurningWall,
     Wall,
@@ -58,23 +61,75 @@ pub enum Animation {
 impl Animation {
     pub fn tex_trans(&self, state: usize) -> [[f32;3];3] {
         let (x,y,width,height) = self.tex_coords(state);
+        let x = 3.*64.;
         [
-            [width,0.,0.],
-            [0.,height,0.],
-            [x,y,0.],
+            [width/TILESET_WIDTH,0.,0.],
+            [0.,height/TILESET_HEIGHT,0.],
+            [x/TILESET_WIDTH,y/TILESET_HEIGHT,0.],
         ]
     }
 
     fn size(&self) -> f32 {
-        match self {
-            _ => 1.
+        match *self {
+            Animation::CharacterRifle
+            | Animation::CharacterSniper
+            | Animation::CharacterShotgun
+            | Animation::CharacterCloakUnfold
+            | Animation::CharacterCloakFold
+            | Animation::CharacterCloakLeft
+            | Animation::CharacterCloakRight
+            | Animation::Wasp
+            | Animation::WaspAttack0
+            | Animation::WaspAttack1
+            | Animation::WaspAttack2
+            | Animation::WaspAttack3
+            | Animation::SwordAttack0
+            | Animation::SwordAttack1
+            | Animation::SwordAttack2
+            | Animation::SwordAttack3
+            => (64*3) as f32,
+            Animation::Boid
+            | Animation::Grenade
+            => (64) as f32,
+            Animation::BurningWall
+            | Animation::Wall
+            => (64*3*3) as f32,
         }
     }
 
     fn tex_coords(&self, state: usize) -> (f32,f32,f32,f32) {
-        match self {
-            _ => (0.,0.,self.size(),self.size())
-        }
+        let state = state as f32;
+        let (dx,dy) = match *self {
+            Animation::CharacterRifle => (3.*64.,0.),
+            Animation::CharacterSniper => (0.,0.),
+            Animation::CharacterShotgun => (6.*64.,0.),
+            Animation::CharacterCloakUnfold => (state*3.*64.,3.*64.*1.),
+            Animation::CharacterCloakFold => (state*3.*64.,3.*64.*4.),
+            Animation::CharacterCloakLeft => (state*3.*64.,3.*64.*2.),
+            Animation::CharacterCloakRight => (state*3.*64.,3.*64.*3.),
+            Animation::Wasp => (state*3.*64.,3.*64.*8.),
+            Animation::WaspAttack0 => (0.*3.*64.,3.*64.*7.),
+            Animation::WaspAttack1 => (1.*3.*64.,3.*64.*7.),
+            Animation::WaspAttack2 => (2.*64.,3.*64.*7.),
+            Animation::WaspAttack3 => (3.*3.*64.,3.*64.*7.),
+            Animation::SwordAttack0 => (0.*3.*64.,3.*64.*6.),
+            Animation::SwordAttack1 => (1.*3.*64.,3.*64.*6.),
+            Animation::SwordAttack2 => (2.*3.*64.,3.*64.*6.),
+            Animation::SwordAttack3 => (3.*3.*64.,3.*64.*6.),
+            Animation::Boid => (state*64.,3.*64.*5.),
+            Animation::Grenade => (state*64.,3.*64.*5.+64.),
+            Animation::BurningWall => {
+                match state as usize {
+                    0 => (4.*3.*64.,3.*3.*64.),
+                    1 => (4.*3.*64.,6.*3.*64.),
+                    2 => (7.*3.*64.,6.*3.*64.),
+                    3 => (7.*3.*64.,3.*3.*64.),
+                    _ => (0.,0.),
+                }
+            },
+            Animation::Wall => (4.*3.*64.,0.),
+        };
+        (dx,dy,self.size(),self.size())
     }
 }
 
@@ -143,7 +198,7 @@ impl Assets {
             TextureVertex { position: [-0.5, -0.5], tex_coords: [0.0, 0.0,] },
             TextureVertex { position: [ 0.5, -0.5], tex_coords: [1.0, 0.0,] },
             TextureVertex { position: [-0.5,  0.5], tex_coords: [0.0, 1.0,] },
-            TextureVertex { position: [ 0.5,  0.5], tex_coords: [0.0, 1.0,] }
+            TextureVertex { position: [ 0.5,  0.5], tex_coords: [1.0, 1.0,] }
         ];
         let texture_square_vertex_buffer = VertexBuffer::new(facade, &texture_square_vertex).unwrap();
         let texture_square_indices = index::NoIndices(index::PrimitiveType::TriangleStrip);
@@ -242,7 +297,7 @@ pub struct FrameManager<'l> {
 }
 
 impl<'l> FrameManager<'l> {
-    pub fn new(assets: &'l Assets, frame: Frame, _ext_dt: f64, x: f64, y: f64, zoom: f64) -> FrameManager<'l> {
+    pub fn new(assets: &'l Assets, mut frame: Frame, _ext_dt: f64, x: f64, y: f64, zoom: f64) -> FrameManager<'l> {
         let camera = {
             let k = zoom as f32;
             let dx = -x as f32;
@@ -254,6 +309,8 @@ impl<'l> FrameManager<'l> {
                 [k*dx, k*dy, 0., 1.]
             ]
         };
+
+        frame.clear_color(1.,1.,1.,1.);
 
         FrameManager {
             frame: frame,
@@ -268,7 +325,7 @@ impl<'l> FrameManager<'l> {
 
     pub fn draw_animation(&mut self, x: f64, y: f64, angle: f64, animation: Animation) {
         let trans = {
-            let k = animation.size();
+            let k = animation.size()/32.;
             let dx = x as f32;
             let dy = y as f32;
             [
