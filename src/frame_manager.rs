@@ -26,6 +26,19 @@ use glium::{
     Program,
 };
 use glium::backend::glutin_backend::GlutinFacade;
+use image;
+use std::io::Cursor;
+
+#[derive(Clone,Copy,Eq,PartialEq)]
+pub enum Animation {
+    Boid,
+    CharacterRifle,
+    CharacterSniper,
+    CharacterShotgun,
+    Spider,
+    BurningWall,
+    Wall,
+}
 
 pub mod color {
     pub const BLACK:      [f32;4] = [0.00,0.00,0.00,0.50];
@@ -58,11 +71,17 @@ pub struct Assets {
     square_indices: index::NoIndices,
     line_vertex_buffer: VertexBuffer<Vertex>,
     line_indices: index::NoIndices,
+    tileset: glium::texture::RawImage2d,
     program: Program,
 }
 
 impl Assets {
     pub fn new(facade: &GlutinFacade) -> Assets {
+        let tileset = image::load(Cursor::new(&include_bytes!("/path/to/image.png")[..]),
+                                image::PNG).unwrap().to_rgba();
+        let tileset_dimensions = tileset.dimensions();
+        let tileset = glium::texture::RawImage2d::from_raw_rgba_reversed(tileset.into_raw(), tileset_dimensions);
+
         let square_vertex = vec![
             Vertex { position: [-0.5, -0.5] },
             Vertex { position: [ 0.5, -0.5] },
@@ -153,6 +172,9 @@ impl<'l> FrameManager<'l> {
             assets: assets,
             camera: camera,
         }
+    }
+
+    pub fn draw_animation(&mut self, animation: Animation) {
     }
 
     pub fn draw_square(&mut self, color: [f32;4], x: f64, y: f64, width: f64, height: f64) {

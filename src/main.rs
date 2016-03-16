@@ -5,6 +5,7 @@ extern crate rand;
 extern crate time;
 extern crate sndfile;
 extern crate portaudio;
+extern crate image;
 
 pub mod world;
 pub mod app;
