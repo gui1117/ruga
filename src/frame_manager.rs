@@ -24,6 +24,7 @@ use glium::{
     VertexBuffer,
     index,
     Program,
+    texture,
 };
 use glium::backend::glutin_backend::GlutinFacade;
 use image;
@@ -71,16 +72,17 @@ pub struct Assets {
     square_indices: index::NoIndices,
     line_vertex_buffer: VertexBuffer<Vertex>,
     line_indices: index::NoIndices,
-    tileset: glium::texture::RawImage2d,
+    tileset: texture::Texture2d,
     program: Program,
 }
 
 impl Assets {
     pub fn new(facade: &GlutinFacade) -> Assets {
-        let tileset = image::load(Cursor::new(&include_bytes!("assets/graphics/tileset.png")[..]),
+        let tileset = image::load(Cursor::new(&include_bytes!("../assets/graphics/tileset.png")[..]),
                                 image::PNG).unwrap().to_rgba();
         let tileset_dimensions = tileset.dimensions();
-        let tileset = glium::texture::RawImage2d::from_raw_rgba_reversed(tileset.into_raw(), tileset_dimensions);
+        let tileset = texture::RawImage2d::from_raw_rgba_reversed(tileset.into_raw(), tileset_dimensions);
+        let tileset = texture::Texture2d::new(facade,tileset).unwrap();
 
         let square_vertex = vec![
             Vertex { position: [-0.5, -0.5] },
@@ -135,6 +137,7 @@ impl Assets {
             line_vertex_buffer: line_vertex_buffer,
             line_indices: line_indices,
             program: program,
+            tileset: tileset,
         }
     }
 }
@@ -151,6 +154,7 @@ pub struct FrameManager<'l> {
 
 impl<'l> FrameManager<'l> {
     pub fn new(assets: &'l Assets, frame: Frame, _ext_dt: f64, x: f64, y: f64, zoom: f64) -> FrameManager<'l> {
+        println!("ext_dt = {}",_ext_dt);
         let camera = {
             let k = zoom as f32;
             let dx = -x as f32;
