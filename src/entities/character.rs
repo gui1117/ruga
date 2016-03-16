@@ -8,7 +8,7 @@ use world::{World, Entity, EntityCell};
 use std::cell::{RefCell, Ref, RefMut};
 use std::f64;
 use utils::minus_pi_pi;
-use frame_manager::{color, FrameManager};
+use frame_manager::{color, FrameManager, Animation};
 use effect_manager::{EffectManager, Line, Effect};
 
 pub const LIFE: f64 = 10000000.;
@@ -156,7 +156,14 @@ impl Entity for Character {
         &mut self.body
     }
     fn render(&self, frame_manager: &mut FrameManager) {
-        self.body.render(color::RED,frame_manager);
+        match self.gun.gun_type {
+            GunType::Rifle => frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterRifle),
+            GunType::Shotgun => frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterShotgun),
+            GunType::Sniper => frame_manager.draw_animation(self.body.x,self.body.y,self.aim,Animation::CharacterSniper),
+            GunType::None => (),
+        }
+        // TODO cape
+        // self.body.render(color::RED,frame_manager);
     }
 }
 
