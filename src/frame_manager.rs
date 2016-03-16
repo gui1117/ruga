@@ -1,5 +1,4 @@
-//! inspired by m6502 Xscreensaver
-
+// got from m6502 Xscreensaver
 // palette :
 // Black ($0) "#000000",
 // White ($1) "#ffffff",
@@ -38,7 +37,11 @@ pub enum Animation {
     CharacterRifle,
     CharacterSniper,
     CharacterShotgun,
-    Spider,
+    CharacterCloakUnfold,
+    CharacterCloakFold,
+    CharacterCloakLeft,
+    CharacterCloakRight,
+    Wasp,
     BurningWall,
     Wall,
 }
