@@ -51,6 +51,12 @@ impl Entity for Armory {
     fn body(&self) -> &Body {
         &self.body
     }
+    fn on_collision(&mut self, other: &mut Entity) {
+        if other.body().group & super::group::CHARACTER != 0 {
+            other.mut_body().items.append(&mut self.body.items);
+            self.body.life = 0.;
+        }
+    }
     fn mut_body(&mut self) -> &mut Body {
         &mut self.body
     }

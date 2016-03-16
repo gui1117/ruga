@@ -9,7 +9,7 @@ use std::f64::consts::PI;
 use utils::minus_pi_pi;
 use super::group;
 use frame_manager::{FrameManager, Animation};
-use effect_manager::EffectManager;
+use effect_manager::{EffectManager, Position, Effect};
 // use rand::distributions::{IndependentSample, Range};
 // use rand;
 
@@ -66,7 +66,7 @@ impl EntityCell for RefCell<Boid> {
     fn borrow_mut(&self) -> RefMut<Entity> {
         (self as &RefCell<Entity>).borrow_mut()
     }
-    fn update(&self, dt: f64, world: &World, _effect_manager: &mut EffectManager) {
+    fn update(&self, dt: f64, world: &World, effect_manager: &mut EffectManager) {
         let mut counter = 0;
         let mut sum = 0.;
         let mut character = false;
@@ -108,6 +108,10 @@ impl EntityCell for RefCell<Boid> {
             body.angle -= dt*COHESION_FACTOR*sum/(counter as f64);
         }
         body.update(dt);
+
+        if body.life <= 0. {
+            effect_manager.add(Effect::BoidExplosion(Position::new(body.x,body.y)));
+        }
     }
 }
 

@@ -19,9 +19,21 @@ pub const VISIBLE_RADIUS: f64 = 50.;
 pub const DAMAGE: f64 = 1.;
 pub const DECISION_TIME: f64 = 0.2;
 
+const DELTA_TIME_ANIMATION: f64 = 0.1;
+
+enum State {
+    Moving,
+    Attacking0,
+    Attacking1,
+    Attacking2,
+    Attacking3,
+}
+
 pub struct Spider {
     body: Body,
     last_decision: f64,
+    state: State,
+    animation_counter: f64,
 }
 
 impl Spider {
@@ -44,6 +56,8 @@ impl Spider {
                 physic_type: PHYSIC_TYPE,
             },
             last_decision: 0.,
+            state: State::Moving,
+            animation_counter: 0.,
         }
     }
 }
@@ -55,7 +69,7 @@ impl EntityCell for RefCell<Spider> {
     fn borrow_mut(&self) -> RefMut<Entity> {
         (self as &RefCell<Entity>).borrow_mut()
     }
-    fn update(&self, dt: f64, world: &World, effect_manager: &mut EffectManager) {
+    fn update(&self, dt: f64, world: &World, _effect_manager: &mut EffectManager) {
         let take_decision = self.borrow().last_decision >= DECISION_TIME;
         if take_decision {
             self.borrow_mut().last_decision = 0.;
@@ -91,7 +105,49 @@ impl EntityCell for RefCell<Spider> {
         } else {
             self.borrow_mut().last_decision += dt;
         }
-        self.borrow_mut().body.update(dt);
+
+        let mut this = self.borrow_mut();
+        this.state = match this.state {
+            State::Moving => State::Moving,
+            State::Attacking0 => {
+                this.animation_counter += dt;
+                if this.animation_counter >= DELTA_TIME_ANIMATION {
+                    this.animation_counter = 0.;
+                    State::Attacking1
+                } else {
+                    State::Attacking0
+                }
+            }
+            State::Attacking1 => {
+                this.animation_counter += dt;
+                if this.animation_counter >= DELTA_TIME_ANIMATION {
+                    this.animation_counter = 0.;
+                    State::Attacking2
+                } else {
+                    State::Attacking1
+                }
+            }
+            State::Attacking2 => {
+                this.animation_counter += dt;
+                if this.animation_counter >= DELTA_TIME_ANIMATION {
+                    this.animation_counter = 0.;
+                    State::Attacking3
+                } else {
+                    State::Attacking2
+                }
+            }
+            State::Attacking3 => {
+                this.animation_counter += dt;
+                if this.animation_counter >= DELTA_TIME_ANIMATION {
+                    this.animation_counter = 0.;
+                    State::Moving
+                } else {
+                    State::Attacking3
+                }
+            }
+        };
+
+        this.body.update(dt);
     }
 }
 
@@ -103,11 +159,20 @@ impl Entity for Spider {
         &mut self.body
     }
     fn render(&self, frame_manager: &mut FrameManager) {
-        frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::Wasp);
+        match self.state {
+            State::Moving => frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::Wasp),
+            State::Attacking0 => frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::WaspAttack0),
+            State::Attacking1 => frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::WaspAttack1),
+            State::Attacking2 => frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::WaspAttack2),
+            State::Attacking3 => frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::WaspAttack3),
+        }
         // self.body.render(color::RED,frame_manager);
     }
     fn on_collision(&mut self, other: &mut Entity) {
-        other.mut_body().damage(DAMAGE);
+        if let State::Moving = self.state  {
+            other.mut_body().damage(DAMAGE);
+            self.state = State::Attacking0;
+        }
     }
 }
 

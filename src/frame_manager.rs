@@ -53,6 +53,10 @@ pub enum Animation {
     SwordAttack2,
     SwordAttack3,
     Boid,
+    BoidExplosion0,
+    BoidExplosion1,
+    BoidExplosion2,
+    BoidExplosion3,
     Grenade,
     BurningWall,
     Wall,
@@ -88,6 +92,10 @@ impl Animation {
             | Animation::SwordAttack3
             => (64*3) as f32,
             Animation::Boid
+            | Animation::BoidExplosion0
+            | Animation::BoidExplosion1
+            | Animation::BoidExplosion2
+            | Animation::BoidExplosion3
             | Animation::Grenade
             => (64) as f32,
             Animation::BurningWall
@@ -116,6 +124,10 @@ impl Animation {
             Animation::SwordAttack2 => (2.*3.*64.,3.*64.*6.),
             Animation::SwordAttack3 => (3.*3.*64.,3.*64.*6.),
             Animation::Boid => (state*64.,3.*64.*5.),
+            Animation::BoidExplosion0 => (4.*64.,3.*64.*5.),
+            Animation::BoidExplosion1 => (5.*64.,3.*64.*5.),
+            Animation::BoidExplosion2 => (5.*64.,3.*64.*5.),
+            Animation::BoidExplosion3 => (7.*64.,3.*64.*5.),
             Animation::Grenade => (state*64.,3.*64.*5.+64.),
             Animation::BurningWall => {
                 match state as usize {
@@ -133,7 +145,7 @@ impl Animation {
 }
 
 pub mod color {
-    pub const BLACK:      [f32;4] = [0.00,0.00,0.00,0.50];
+    pub const BLACK:      [f32;4] = [0.00,0.00,0.00,1.00];
     pub const WHITE:      [f32;4] = [1.00,1.00,1.00,0.50];
     pub const RED:        [f32;4] = [0.50,0.00,0.00,0.50];
     pub const CYAN:       [f32;4] = [0.66,1.00,0.93,0.50];
@@ -412,12 +424,17 @@ impl<'l> FrameManager<'l> {
             camera: self.camera,
             color: color,
         };
+        let draw_parameters = DrawParameters {
+            line_width: Some(10.),
+            .. Default::default()
+        };
+
         self.frame.draw(
             &self.assets.line_vertex_buffer,
             &self.assets.line_indices,
             &self.assets.program,
             &uniform,
-            &Default::default()).unwrap();
+            &draw_parameters).unwrap()
     }
 
     pub fn clear(&mut self) {

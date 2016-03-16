@@ -117,7 +117,7 @@ impl Entity for Grenade {
         &mut self.body
     }
     fn render(&self, frame_manager: &mut FrameManager) {
-        self.body.render(color::RED,frame_manager);
+        self.body.render(color::BLACK,frame_manager);
     }
     fn on_collision(&mut self, _: &mut Entity) {
         self.timer = TIME_TO_EXPLODE;

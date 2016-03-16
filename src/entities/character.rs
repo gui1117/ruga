@@ -9,7 +9,7 @@ use std::cell::{RefCell, Ref, RefMut};
 use std::f64;
 use utils::minus_pi_pi;
 use frame_manager::{FrameManager, Animation};
-use effect_manager::{EffectManager, Line, Effect};
+use effect_manager::{EffectManager, Position, Line, Effect};
 
 pub const LIFE: f64 = 10000000.;
 pub const WIDTH: f64 = 1.;
@@ -255,7 +255,7 @@ impl SwordManager for RefCell<Character> {
                 }
             });
 
-            effect_manager.add(Effect::SwordAttack(Line::new(x,y,aim,SWORD_LENGTH)));
+            effect_manager.add(Effect::SwordAttack(Position::new(x,y),self.borrow().aim));
         }
         self.borrow_mut().sword.do_attack = false;
     }
