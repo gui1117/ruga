@@ -1,7 +1,7 @@
 // NOT COMPLETE
 
 use utils::Direction;
-use frame_manager::{color, FrameManager};
+use frame_manager::{FrameManager, Animation};
 use effect_manager::EffectManager;
 use rand::distributions::{IndependentSample, Range};
 use world::{World, Entity, EntityCell};
@@ -150,7 +150,8 @@ impl Entity for BurningWall {
         &mut self.body
     }
     fn render(&self, frame_manager: &mut FrameManager) {
-        self.body.render(color::RED,frame_manager);
+         frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::BurningWall);
+        //self.body.render(color::RED,frame_manager);
     }
     fn on_collision(&mut self, other: &mut Entity) {
         other.mut_body().damage(DAMAGE);

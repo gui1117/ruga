@@ -6,6 +6,7 @@ use world::{World, Entity, EntityCell};
 use frame_manager::{
     color,
     FrameManager,
+    Animation,
 };
 use effect_manager::{EffectManager, Line, Effect};
 use super::group;
@@ -54,7 +55,8 @@ impl Grenade {
     }
 
     pub fn render(&mut self, frame_manager: &mut FrameManager) {
-        self.body.render(color::RED,frame_manager);
+        frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::Grenade);
+        // self.body.render(color::RED,frame_manager);
     }
 }
 

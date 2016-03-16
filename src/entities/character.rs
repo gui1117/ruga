@@ -8,7 +8,7 @@ use world::{World, Entity, EntityCell};
 use std::cell::{RefCell, Ref, RefMut};
 use std::f64;
 use utils::minus_pi_pi;
-use frame_manager::{color, FrameManager, Animation};
+use frame_manager::{FrameManager, Animation};
 use effect_manager::{EffectManager, Line, Effect};
 
 pub const LIFE: f64 = 10000000.;

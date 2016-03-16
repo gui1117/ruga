@@ -61,7 +61,6 @@ pub enum Animation {
 impl Animation {
     pub fn tex_trans(&self, state: usize) -> [[f32;3];3] {
         let (x,y,width,height) = self.tex_coords(state);
-        let x = 3.*64.;
         [
             [width/TILESET_WIDTH,0.,0.],
             [0.,height/TILESET_HEIGHT,0.],
@@ -325,7 +324,10 @@ impl<'l> FrameManager<'l> {
 
     pub fn draw_animation(&mut self, x: f64, y: f64, angle: f64, animation: Animation) {
         let trans = {
-            let k = animation.size()/32.;
+            let k = match animation {
+                Animation::Wall | Animation::BurningWall => animation.size()/32.*9./5.,
+                _ => animation.size()/32.,
+            };
             let dx = x as f32;
             let dy = y as f32;
             [

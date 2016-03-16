@@ -1,4 +1,4 @@
-use frame_manager::{FrameManager, color};
+use frame_manager::{FrameManager, Animation};
 use world::body::{Body, CollisionBehavior, PhysicType};
 use world::{Entity, EntityCell};
 use std::f64;
@@ -56,7 +56,8 @@ impl Entity for Wall {
         &mut self.body
     }
     fn render(&self, frame_manager: &mut FrameManager) {
-        self.body.render(color::RED, frame_manager);
+        frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::Wall);
+        // self.body.render(color::RED, frame_manager);
     }
 }
 

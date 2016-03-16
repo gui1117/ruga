@@ -8,7 +8,7 @@ use std::cell::{RefCell, Ref, RefMut};
 use std::f64::consts::PI;
 use utils::minus_pi_pi;
 use super::group;
-use frame_manager::{color, FrameManager};
+use frame_manager::{FrameManager, Animation};
 use effect_manager::EffectManager;
 // use rand::distributions::{IndependentSample, Range};
 // use rand;
@@ -119,7 +119,8 @@ impl Entity for Boid {
         &mut self.body
     }
     fn render(&self, frame_manager: &mut FrameManager) {
-        self.body.render(color::RED, frame_manager);
+        frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::Boid);
+        // self.body.render(color::RED, frame_manager);
     }
     fn on_collision(&mut self, other: &mut Entity) {
         other.mut_body().damage(DAMAGE);
