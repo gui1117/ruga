@@ -77,7 +77,7 @@ pub struct Assets {
 
 impl Assets {
     pub fn new(facade: &GlutinFacade) -> Assets {
-        let tileset = image::load(Cursor::new(&include_bytes!("/assets/graphics/tileset.png")[..]),
+        let tileset = image::load(Cursor::new(&include_bytes!("assets/graphics/tileset.png")[..]),
                                 image::PNG).unwrap().to_rgba();
         let tileset_dimensions = tileset.dimensions();
         let tileset = glium::texture::RawImage2d::from_raw_rgba_reversed(tileset.into_raw(), tileset_dimensions);
