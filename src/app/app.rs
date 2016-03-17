@@ -1,5 +1,5 @@
 use utils::Direction;
-use mazes::generate_kruskal;
+use mazes::kruskal;
 use sound_manager::SoundManager;
 use effect_manager::EffectManager;
 use frame_manager::{
@@ -11,7 +11,7 @@ use event_loop::{
     UpdateArgs,
 };
 use entities::{Character,CharacterManager};
-use world::World;
+use world::{World, EntityCell};
 use glium::backend::glutin_backend::GlutinFacade;
 
 use std::rc::Rc;
@@ -40,7 +40,7 @@ impl App {
         let window = facade.get_window().unwrap();
         let (width,height) = window.get_inner_size_pixels().unwrap();
 
-        let (world,player) = generate_kruskal();
+        let (world,player) = kruskal::generate();
 
         App {
             world: world,
@@ -74,6 +74,8 @@ impl App {
             self.animation_state_counter = 0.;
             self.animation_state = (self.animation_state+1).rem(4)
         }
+        let player = self.player.clone() as Rc<EntityCell>;
+        kruskal::update(&*player, &mut self.world);
         self.world.update(args.dt,&mut self.effect_manager);
     }
 }

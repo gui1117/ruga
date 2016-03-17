@@ -10,7 +10,11 @@ use entities::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const AVERAGE_MOVING_WALL_PER_UNIT: f32 = 0.1;
+const AVERAGE_MOVING_WALL_PER_UNIT: f64 = 0.1;
+const WEAPON_COEF: f64 = 0.1;
+const SPIDER_COEF: f64 = 0.1;
+const BOID_COEF: f64 = 0.1;
+const SPAWN_DISTANCE: i32 = 3;
 
 #[derive(Debug)]
 enum WallPos {
@@ -122,4 +126,23 @@ pub fn generate() -> (World,Rc<RefCell<Character>>) {
     world.insert(&(character.clone() as Rc<EntityCell>));
 
     (world,character)
+}
+
+pub fn update(character: &EntityCell, world: &mut World) {
+    let mut rng = rand::thread_rng();
+    let zero_un_range = Range::new(0.,1.);
+    let char_x = character.borrow().body().x;
+    let char_y = character.borrow().body().y;
+
+    if zero_un_range.ind_sample(&mut rng) < AVERAGE_MOVING_WALL_PER_UNIT {
+        if let Some((x,y)) = random_position(char_x,char_y,world) {
+            // TODO
+            // world.insert(&(Rc::new(RefCell::new(BurningWall::new(x,y,unit))) as Rc<EntityCell>));
+        }
+    }
+}
+
+fn random_position(x: f64, y: f64, world: &World) -> Option<(f64,f64)> {
+    //TODO
+    None
 }
