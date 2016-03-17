@@ -46,10 +46,13 @@ pub enum Effect {
     BoidExplosion2(Position,usize),
     BoidExplosion3(Position,usize),
 
+    WaspAttack(Position),
+    WaspDeath(Position),
+
     SniperShoot(Line),
     ShotgunShoot(Vec<Line>),
     RifleShoot(Line),
-    MovingWallDecision(Position),
+    BurningWallDecision(Position),
     GrenadeExplosion(Vec<Line>),
 }
 
@@ -112,7 +115,7 @@ impl EffectManager {
                 },
 
                 Effect::BoidExplosion(position) => {
-                    //TODO sound_manager.play(position.x,position.y,sounds::SWORD);
+                    sound_manager.play(position.x,position.y,sounds::BOID_EXPLOSION);
                     render_boid_explosion(position.x,position.y,0,frame_manager);
                     vec.push(Effect::BoidExplosion0(position,1));
                 },
@@ -148,10 +151,12 @@ impl EffectManager {
                     }
                 },
 
+                Effect::WaspAttack(position) => sound_manager.play(position.x,position.y,sounds::WASP_ATTACK),
+                Effect::WaspDeath(position) => sound_manager.play(position.x,position.y,sounds::WASP_DEATH),
                 Effect::SniperShoot(line) => render_sniper_shoot(&line,frame_manager,sound_manager),
                 Effect::ShotgunShoot(lines) => render_shotgun_shoot(&lines,frame_manager,sound_manager),
                 Effect::RifleShoot(line) => render_rifle_shoot(&line,frame_manager,sound_manager),
-                Effect::MovingWallDecision(position) => sound_manager.play(position.x,position.y,sounds::MOVING_WALL),
+                Effect::BurningWallDecision(position) => sound_manager.play(position.x,position.y,sounds::BURNING_WALL),
                 Effect::GrenadeExplosion(lines) => render_grenade_explosion(&lines,frame_manager,sound_manager),
             }
         }

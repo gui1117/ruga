@@ -19,12 +19,18 @@ const FRAMES_PER_BUFFER: u32 = 64;
 const BUFFER_SIZE: usize = (CHANNELS as usize) * (FRAMES_PER_BUFFER as usize);
 
 pub mod sounds {
-    pub const RIFLE: u32 =                 0;
-    pub const SNIPER: u32 =                1;
-    pub const SHOTGUN: u32 =               2;
-    pub const SWORD: u32 =                 3;
-    pub const MOVING_WALL: u32 =           4;
-    pub const GRENADE_EXPLOSION: u32 =     5;
+    pub const RIFLE: u32 =             0;
+    pub const SNIPER: u32 =            1;
+    pub const SHOTGUN: u32 =           2;
+    pub const SWORD: u32 =             3;
+    pub const BURNING_WALL: u32 =      4;
+    pub const GRENADE_EXPLOSION: u32 = 5;
+    pub const BOID_EXPLOSION: u32 =    6;
+    pub const WASP_ATTACK: u32 =       7;
+    pub const WASP_DEATH: u32 =        8;
+    pub const CLICK: u32 =             9;
+    pub const END: u32 =              10;
+    pub const START: u32 =            11;
 }
 
 struct Sound {
@@ -156,12 +162,18 @@ impl SoundManager {
         thread::spawn(move || {
             let mut music = Music::new("cylindric.ogg");
             let mut sounds = vec![
-                Sound::new("rifle.ogg",40),
-                Sound::new("sniper.ogg",20),
-                Sound::new("shotgun.ogg",20),
-                Sound::new("shotgun.ogg",20),
-                Sound::new("crash.ogg",20),
-                Sound::new("bomb.ogg",20)
+                Sound::new("rifle.ogg",40), //RIFLE
+                Sound::new("sniper.ogg",20), //SNIPER
+                Sound::new("shotgun.ogg",20), //SHOTGUN
+                Sound::new("shotgun.ogg",20), //SWORD TODO
+                Sound::new("explosion01.ogg",20), //BURNING_WALL
+                Sound::new("bomb.ogg",20), //GRENADE_EXPLOSION
+                Sound::new("bomb.ogg",20), //BOID_EXPLOSION TODO
+                Sound::new("bomb.ogg",20), //WASP_ATTACK TODO
+                Sound::new("bomb.ogg",20), //WASP_DEATH TODO
+                Sound::new("bomb.ogg",20), //CLICK TODO
+                Sound::new("bomb.ogg",20), //END TODO
+                Sound::new("bomb.ogg",20), //START TODO
             ];
 
             let mut buffers: Vec<[f32;(BUFFER_SIZE) as usize]> = Vec::with_capacity(10);

@@ -2,7 +2,7 @@
 
 use utils::Direction;
 use frame_manager::{FrameManager, Animation};
-use effect_manager::EffectManager;
+use effect_manager::{EffectManager, Position, Effect};
 use rand::distributions::{IndependentSample, Range};
 use world::{World, Entity, EntityCell};
 use world::body::{CollisionBehavior, PhysicType, Body};
@@ -68,7 +68,7 @@ impl EntityCell for RefCell<BurningWall> {
     fn borrow_mut(&self) -> RefMut<Entity> {
         (self as &RefCell<Entity>).borrow_mut()
     }
-    fn update(&self, dt: f64, world: &World, _effect_manager: &mut EffectManager) {
+    fn update(&self, dt: f64, world: &World, effect_manager: &mut EffectManager) {
         let velocity = self.borrow_mut().body.velocity;
         if velocity == 0. {
             let (x,y) = self.borrow().coordinate();
@@ -123,6 +123,7 @@ impl EntityCell for RefCell<BurningWall> {
                 let y = ((this.body.y/this.unit).floor() + 0.5)*this.unit;
                 this.last_position = [x,y];
                 this.no_decision_time = 0.;
+                effect_manager.add(Effect::BurningWallDecision(Position::new(this.body.x,this.body.y)));
             }
         }
 

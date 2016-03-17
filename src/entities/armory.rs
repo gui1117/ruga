@@ -1,6 +1,6 @@
 use world::{World, Entity, EntityCell};
 use world::body::{CollisionBehavior, PhysicType, Body, Item};
-use frame_manager::{FrameManager, color};
+use frame_manager::{FrameManager, Animation};
 use effect_manager::EffectManager;
 use std::f64;
 use std::cell::{RefCell, Ref, RefMut};
@@ -16,8 +16,8 @@ impl Armory {
                 id: 0,
                 x: x,
                 y: y,
-                width: 4.,
-                height: 4.,
+                width: 2.,
+                height: 2.,
                 weight: f64::MAX,
                 life: f64::MAX,
                 velocity: 0.,
@@ -61,8 +61,14 @@ impl Entity for Armory {
         &mut self.body
     }
     fn render(&self, frame_manager: &mut FrameManager) {
-        if self.body.items.len() > 0 {
-            self.body.render(color::RED, frame_manager);
+        match self.body.items.last() {
+            Some(&Item::Rifle(_)) => frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::Rifle),
+            Some(&Item::Shotgun(_)) => frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::Shotgun),
+            Some(&Item::Sniper(_)) => frame_manager.draw_animation(self.body.x,self.body.y,self.body.angle,Animation::Sniper),
+            None => (),
         }
+        // if self.body.items.len() > 0 {
+        //     self.body.render(color::RED, frame_manager);
+        // }
     }
 }

@@ -52,6 +52,9 @@ pub enum Animation {
     SwordAttack1,
     SwordAttack2,
     SwordAttack3,
+    Sniper,
+    Shotgun,
+    Rifle,
     Boid,
     BoidExplosion0,
     BoidExplosion1,
@@ -90,6 +93,9 @@ impl Animation {
             | Animation::SwordAttack1
             | Animation::SwordAttack2
             | Animation::SwordAttack3
+            | Animation::Rifle
+            | Animation::Sniper
+            | Animation::Shotgun
             => (64*3) as f32,
             Animation::Boid
             | Animation::BoidExplosion0
@@ -123,6 +129,9 @@ impl Animation {
             Animation::SwordAttack1 => (1.*3.*64.,3.*64.*6.),
             Animation::SwordAttack2 => (2.*3.*64.,3.*64.*6.),
             Animation::SwordAttack3 => (3.*3.*64.,3.*64.*6.),
+            Animation::Sniper => (0.*3.*64.,3.*64.*9.),
+            Animation::Rifle => (1.*3.*64.,3.*64.*9.),
+            Animation::Shotgun => (2.*3.*64.,3.*64.*9.),
             Animation::Boid => (state*64.,3.*64.*5.),
             Animation::BoidExplosion0 => (4.*64.,3.*64.*5.),
             Animation::BoidExplosion1 => (5.*64.,3.*64.*5.),
@@ -339,7 +348,7 @@ impl<'l> FrameManager<'l> {
     pub fn draw_animation(&mut self, x: f64, y: f64, angle: f64, animation: Animation) {
         let trans = {
             let k = match animation {
-                Animation::Wall | Animation::BurningWall => animation.size()/32.*9./5.,
+                Animation::Wall | Animation::BurningWall => animation.size()/32.*1.6,
                 _ => animation.size()/32.,
             };
             let dx = x as f32;

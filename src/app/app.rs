@@ -33,7 +33,7 @@ pub struct App {
 }
 
 const ZOOM: f64 = 0.05;
-const ANIMATION_RATE: f64 = 0.2;
+const ANIMATION_RATE: f64 = 0.1;
 
 impl App {
     pub fn new(facade: &GlutinFacade) -> App {
