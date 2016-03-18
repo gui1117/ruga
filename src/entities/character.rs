@@ -11,7 +11,7 @@ use utils::minus_pi_pi;
 use frame_manager::{FrameManager, Animation};
 use effect_manager::{EffectManager, Position, Line, Effect};
 
-pub const LIFE: f64 = 10000000.;
+pub const LIFE: f64 = 20.;
 pub const WIDTH: f64 = 1.;
 pub const HEIGHT: f64 = 1.;
 pub const WEIGHT: f64 = 1.;
@@ -22,12 +22,12 @@ pub const COLLISION_BEHAVIOR: CollisionBehavior = CollisionBehavior::Persist;
 pub const PHYSIC_TYPE: PhysicType = PhysicType::Dynamic;
 
 pub const SWORD_RECOVER: f64 = 0.8;
-pub const SWORD_LENGTH: f64 = 5.;
+pub const SWORD_LENGTH: f64 = 10.;
 pub const SWORD_DAMAGE: f64 = 5.;
 
 pub const RIFLE_RELOADING_TIME: f64 = 0.1;
 pub const SHOTGUN_RELOADING_TIME: f64 = 0.8;
-pub const SNIPER_RELOADING_TIME: f64 = 1.5;
+pub const SNIPER_RELOADING_TIME: f64 = 1.2;
 
 pub const RIFLE_LENGTH: f64 = 30.;
 pub const SHOTGUN_LENGTH: f64 = 30.;
@@ -37,8 +37,8 @@ pub const RIFLE_DAMAGE: f64 = 10.;
 pub const SHOTGUN_DAMAGE: f64 = 10.;
 pub const SNIPER_DAMAGE: f64 = 100.;
 
-pub const RIFLE_MAX_DELTA_ANGLE: f64 = f64::consts::PI/16.;
-pub const SHOTGUN_MAX_DELTA_ANGLE: f64 = f64::consts::PI/6.;
+pub const RIFLE_MAX_DELTA_ANGLE: f64 = f64::consts::PI/17.;
+pub const SHOTGUN_MAX_DELTA_ANGLE: f64 = f64::consts::PI/12.;
 pub const SHOTGUN_SHOOT_NUMBER: u64 = 4;
 pub const GRENADE_DISTANCE: f64 = 5.;
 

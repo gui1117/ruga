@@ -11,10 +11,20 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 const AVERAGE_MOVING_WALL_PER_UNIT: f64 = 0.1;
-const WEAPON_COEF: f64 = 0.1;
-const SPIDER_COEF: f64 = 0.1;
-const BOID_COEF: f64 = 0.1;
-const SPAWN_DISTANCE: i32 = 3;
+
+const WEAPON_COEF: f64 = 0.005;
+const SPIDER_ALPHA: f64 = 0.00001;
+const SPIDER_BETA: f64 = 0.005;
+const BOID_ALPHA: f64 = 0.;
+const BOID_BETA: f64 = 0.05;
+const RIFLE_AMMO: u64 = 100;
+const SHOTGUN_AMMO: u64 = 20;
+const SNIPER_AMMO: u64 = 20;
+
+const SPAWN_DISTANCE: f64 = 20.;
+
+const WIDTH: usize = 17;
+const HEIGHT: usize = 17;
 
 #[derive(Debug)]
 enum WallPos {
@@ -92,12 +102,10 @@ fn generate_partial_reverse_randomized_kruskal(width: usize, height: usize, perc
 }
 
 pub fn generate() -> (World,Rc<RefCell<Character>>) {
-    let width = 17;
-    let height = 17;
     let unit = 16.;
     let percent = 30.;
 
-    let maze = generate_partial_reverse_randomized_kruskal(width,height,percent);
+    let maze = generate_partial_reverse_randomized_kruskal(WIDTH,HEIGHT,percent);
 
     let mut world = World::new(unit);
 
@@ -105,8 +113,8 @@ pub fn generate() -> (World,Rc<RefCell<Character>>) {
     let zero_un_range = Range::new(0.,1.);
 
     for i in 0..maze.len() {
-        let x = (i.wrapping_rem(width)) as i32;
-        let y = (i/width) as i32;
+        let x = (i.wrapping_rem(WIDTH)) as i32;
+        let y = (i/WIDTH) as i32;
 
         if maze[i] {
             world.insert(&(Rc::new(RefCell::new(Wall::new(x,y,unit))) as Rc<EntityCell>));
@@ -120,29 +128,100 @@ pub fn generate() -> (World,Rc<RefCell<Character>>) {
     world.insert(&(Rc::new(RefCell::new(Spider::new(unit*1.5,unit*1.5,0.))) as Rc<EntityCell>));
 
     let character = Rc::new(RefCell::new(Character::new(unit*1.5,unit*1.5,0.)));
-    world.insert(&(Rc::new(RefCell::new(Armory::new(unit*1.5,unit*1.5,Item::Rifle(10)))) as Rc<EntityCell>));
-    world.insert(&(Rc::new(RefCell::new(Armory::new(unit*2.5,unit*1.5,Item::Shotgun(10)))) as Rc<EntityCell>));
-    world.insert(&(Rc::new(RefCell::new(Armory::new(unit*3.5,unit*1.5,Item::Sniper(10)))) as Rc<EntityCell>));
     world.insert(&(character.clone() as Rc<EntityCell>));
 
     (world,character)
 }
 
 pub fn update(character: &EntityCell, world: &mut World) {
+    use std::f64::consts::PI;
+
     let mut rng = rand::thread_rng();
     let zero_un_range = Range::new(0.,1.);
     let char_x = character.borrow().body().x;
     let char_y = character.borrow().body().y;
 
-    if zero_un_range.ind_sample(&mut rng) < AVERAGE_MOVING_WALL_PER_UNIT {
+    if zero_un_range.ind_sample(&mut rng) < BOID_ALPHA*world.time+BOID_BETA {
         if let Some((x,y)) = random_position(char_x,char_y,world) {
-            // TODO
-            // world.insert(&(Rc::new(RefCell::new(BurningWall::new(x,y,unit))) as Rc<EntityCell>));
+            let angle = zero_un_range.ind_sample((&mut rng)) * 2. * PI;
+            world.insert(&(Rc::new(RefCell::new(Boid::new(x,y,angle))) as Rc<EntityCell>));
+        }
+    }
+    if zero_un_range.ind_sample(&mut rng) < WEAPON_COEF {
+        if let Some((x,y)) = random_position(char_x,char_y,world) {
+            let rand = zero_un_range.ind_sample((&mut rng)) * 3.;
+            let item =  if rand < 1. {
+                Item::Rifle(RIFLE_AMMO)
+            } else if rand < 2. {
+                Item::Shotgun(SHOTGUN_AMMO)
+            } else {
+                Item::Sniper(SNIPER_AMMO)
+            };
+
+            world.insert(&(Rc::new(RefCell::new(Armory::new(x,y,item))) as Rc<EntityCell>));
+        }
+    }
+    if zero_un_range.ind_sample(&mut rng) < SPIDER_ALPHA*world.time+SPIDER_BETA {
+        if let Some((x,y)) = random_position(char_x,char_y,world) {
+            let angle = zero_un_range.ind_sample((&mut rng)) * 2. * PI;
+            world.insert(&(Rc::new(RefCell::new(Spider::new(x,y,angle))) as Rc<EntityCell>));
         }
     }
 }
 
+fn max(a: i32, b: i32) -> i32 {
+    if a > b {
+        a
+    } else {
+        b
+    }
+}
+
+fn min(a: i32, b: i32) -> i32 {
+    if a > b {
+        b
+    } else {
+        a
+    }
+}
+
 fn random_position(x: f64, y: f64, world: &World) -> Option<(f64,f64)> {
-    //TODO
-    None
+    let free = {
+        let bound_up = max(((x-SPAWN_DISTANCE)/world.unit).floor() as i32,0);
+        let bound_down = min(((x+SPAWN_DISTANCE)/world.unit).floor() as i32,HEIGHT as i32);
+        let bound_left = max(((y-SPAWN_DISTANCE)/world.unit).floor() as i32,0);
+        let bound_right = min(((y+SPAWN_DISTANCE)/world.unit).floor() as i32,HEIGHT as i32);
+        let mut vec = Vec::new();
+        for i in bound_up..bound_down+1 {
+            // if not ! then boid comes from wall
+            // it may be cool...
+            if !world.wall_map.contains(&(i,bound_left)) {
+                vec.push((i,bound_left));
+            }
+            if !world.wall_map.contains(&(i,bound_right)) {
+                vec.push((i,bound_right));
+            }
+        }
+        for j in bound_left+1..bound_right {
+            if !world.wall_map.contains(&(bound_up,j)) {
+                vec.push((bound_up,j));
+            }
+            if !world.wall_map.contains(&(bound_down,j)) {
+                vec.push((bound_down,j));
+            }
+        }
+
+        vec
+    };
+    if free.len() > 0 {
+        let mut rng = rand::thread_rng();
+        let index = Range::new(0,free.len()).ind_sample(&mut rng);
+        let zero_un_range = Range::new(0.,1.);
+        let (x,y) = free[index];
+        let x = (x as f64 + zero_un_range.ind_sample(&mut rng))*world.unit;
+        let y = (y as f64 + zero_un_range.ind_sample(&mut rng))*world.unit;
+        Some((x,y))
+    } else {
+        None
+    }
 }

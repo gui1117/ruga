@@ -7,10 +7,10 @@ use super::group;
 use utils;
 
 pub const LIFE: f64 = 1.;
-pub const WIDTH: f64 = 1.;
-pub const HEIGHT: f64 = 1.;
+pub const WIDTH: f64 = 2.;
+pub const HEIGHT: f64 = 2.;
 pub const WEIGHT: f64 = 1.;
-pub const VELOCITY: f64 = 55.;
+pub const VELOCITY: f64 = 35.;
 pub const MASK: u64 = !0;
 pub const GROUP: u64 = super::group::SPIDER;
 pub const COLLISION_BEHAVIOR: CollisionBehavior = CollisionBehavior::Persist;
@@ -184,9 +184,11 @@ impl Entity for Spider {
         // self.body.render(color::RED,frame_manager);
     }
     fn on_collision(&mut self, other: &mut Entity) {
-        if let State::Moving = self.state  {
-            other.mut_body().damage(DAMAGE);
-            self.state = State::Attacking;
+        if other.body().group & super::group::SPIDER == 0 {
+            if let State::Moving = self.state  {
+                other.mut_body().damage(DAMAGE);
+                self.state = State::Attacking;
+            }
         }
     }
 }

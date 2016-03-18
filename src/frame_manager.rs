@@ -391,6 +391,40 @@ impl<'l> FrameManager<'l> {
             &draw_parameters).unwrap()
     }
 
+    pub fn draw_interface_rectangle(&mut self, color: [f32;4], x: f64, y: f64, width: f64, height: f64) {
+        let trans = {
+            let kx = width as f32;
+            let ky = height as f32;
+            let dx = x as f32;
+            let dy = y as f32;
+            [
+                [ kx, 0., 0., 0.],
+                [ 0., ky, 0., 0.],
+                [ 0., 0., 1., 0.],
+                [ dx, dy, 0., 1.]
+            ]
+        };
+        let camera = {
+            [
+                [ 1., 0., 0., 0.],
+                [ 0., 1., 0., 0.],
+                [ 0., 0., 1., 0.],
+                [ 0., 0., 0., 1.0f32]
+            ]
+        };
+        let uniform = uniform!{
+            trans: trans,
+            camera: camera,
+            color: color,
+        };
+        self.frame.draw(
+            &self.assets.square_vertex_buffer,
+            &self.assets.square_indices,
+            &self.assets.program,
+            &uniform,
+            &Default::default()).unwrap();
+    }
+
     pub fn draw_square(&mut self, color: [f32;4], x: f64, y: f64, width: f64, height: f64) {
         let trans = {
             let kx = width as f32;

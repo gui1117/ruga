@@ -29,6 +29,7 @@ use std::time::Duration;
 fn main() {
     let mut window = glium::glutin::WindowBuilder::new()
         .with_depth_buffer(24)
+        .with_dimensions(640*2,480*2)
         .build_glium()
         .unwrap();
 

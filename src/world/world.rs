@@ -87,6 +87,7 @@ impl World {
             }
             self.dynamic_hashmap.insert_locally(&entity_cell.borrow().body().location(),entity_cell);
         }
+        self.time += dt;
     }
 
     pub fn entity_cells(&self) -> &Vec<Rc<EntityCell>> {

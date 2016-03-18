@@ -11,9 +11,9 @@ use frame_manager::{
 use effect_manager::{EffectManager, Line, Effect};
 use super::group;
 
-pub const VELOCITY: f64 = 10.;
+pub const VELOCITY: f64 = 40.;
 pub const TIME_TO_STOP: f64 = 0.8;
-pub const TIME_TO_EXPLODE: f64 = TIME_TO_STOP + 1.;
+pub const TIME_TO_EXPLODE: f64 = TIME_TO_STOP + 0.3;
 pub const LIFE: f64 = 1.;
 pub const WIDTH: f64 = 1.;
 pub const HEIGHT: f64 = 1.;

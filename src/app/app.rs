@@ -5,6 +5,7 @@ use effect_manager::EffectManager;
 use frame_manager::{
     FrameManager,
     Assets,
+    color,
 };
 use event_loop::{
     RenderArgs,
@@ -65,6 +66,12 @@ impl App {
 
         self.effect_manager.render(&mut frame_manager, &mut self.sound_manager);
         self.world.render(&mut frame_manager);
+        let player = self.player.clone() as Rc<EntityCell>;
+        let life = player.borrow().body().life as i32;
+        let dl = 1./15.;
+        for i in 0..life {
+            frame_manager.draw_interface_rectangle(color::BLACK,dl*(i as f64+1.)-1.,0.95,0.01,0.03);
+        }
         frame_manager.finish();
     }
 

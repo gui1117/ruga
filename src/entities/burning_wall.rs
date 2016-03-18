@@ -21,12 +21,12 @@ pub struct BurningWall {
 
 pub const SIZE_RATIO: f64 = 1.;
 pub const WEIGHT: f64 = 1000.;
-pub const VELOCITY: f64 = 35.;
+pub const VELOCITY: f64 = 15.;
 pub const MASK: u64 = !super::group::WALL_KIND;
 pub const GROUP: u64 = super::group::BURNING_WALL;
 pub const COLLISION_BEHAVIOR: CollisionBehavior = CollisionBehavior::Persist;
 pub const PHYSIC_TYPE: PhysicType = PhysicType::Dynamic;
-pub const DAMAGE: f64 = 1000.;
+pub const DAMAGE: f64 = 5.;
 
 impl BurningWall {
     pub fn new(x: i32, y: i32, unit: f64) -> BurningWall {
