@@ -1,0 +1,33 @@
+fire_weapon_type:
+    - sniper:
+        - ammo: 12
+        - rate: 1.
+        - projectile: 1
+        - aperture: 0.
+        - range: 20.
+        - damage: 12.
+
+    - shotgun:
+        - ammo: 64
+        - rate: 0.5
+        - projectile: 5
+        - aperture: 1.
+        - range: 10.
+        - damage: 2.
+
+    - submachine_gun:
+        - ammo: 64
+        - rate: 0.1
+        - projectile: 1
+        - aperture: 0.5
+        - range: 10.
+        - damage: 2.
+
+bladed_weapon_type:
+    - katana:
+        - stamina: 5.
+        - rate: 0.2
+        - aperture: 2.
+        - range: 1.5
+        - damage: 4.
+

@@ -1,16 +1,8 @@
 [package]
 name = "ruga"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 
 [[bin]]
 name = "ruga"
-
-[dependencies]
-rand = "0.3.0"
-time = "0.1.0"
-portaudio = "0.6.0"
-glium = "0.13.0"
-sndfile = { git = "https://github.com/thiolliere/rust-sndfile.git" }
-image = "0.7.0"
 
