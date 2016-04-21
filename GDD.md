@@ -68,34 +68,85 @@ BULLET vs BULLET -> détécté ? ou pas ? plutôt pas
 
 ###physiques
 
-- `physic_state`: position, vitesse, acceleration
-- `physic_type`: shape, comportement en collision, damping, intensité de force directrice maximale
-- `forces`: forces appliquées: direction, intensité (pourcentage)
+TODO think of dynamic/kinetic/static
+
+- `static_physic`:
+  - position: [f64;2]
+  - shape: Shape
+
+- `dynamic_state`:
+  - position: [f64;2]
+  - velocity: [f64;2]
+  - acceleration: [f64;2]
+
+- `dynamic_type`:
+  - shape: Shape
+  - collision\_behavior: CollisionBehavior // can be nothing -> simulate kinetic object or move it into a specific component, may be better
+  - damping: f64
+  - force: f64 // intensité max pour la force de direction
+
+- `dynamic_forces`: // forces appliquées
+  - direction: f64
+  - intensité: f64 // pourcentage
 <!-- - `impulses`: impulsions appliquées sur une itération seulement (par exemple coup d'un zombie): -->
-- `collision`: dégats, ou autre info lié à une collision, reset à chaque itération
+
+- `dynamic_collisions`: identifier of all entity it collide with
 
 ###armes
 
-- `fire_weapon`:
-  - mut: nombre de munition
-  - mut: angle de visée
-  - mut: tirer
-  - cadence
-  - nombre de projectile
-  - aléa de la précision
-  - angle d'ouverture
-  - portée du tir
+- `fire_weapon_type`:
+  - ammo: u64,
+  - rate: f64,
+  - projectile: u64,
+  - apeture: f64,
+  - range: f64,
+  - damage: f64,
 
-- `bladed_weapon`:
-  - mut: angle de visée
-  - mut: attaquer
-  - portée
-  - angle
+- `fire_weapon_state`:
+  - recovery: f64,
+  - stamina: f64,
+  - attack: bool,
+
+- `bladed_weapon_type`:
+  - stamina: f64,
+  - stamina\_rate: f64,
+  - range: f64,
+  - aperture: f64,
+  - damage: f64,
+  - rate: f64,
+
+- `bladed_weapon_state`:
+  - ammo: u64,
+  - aim: f64,
+  - shoot: bool,
+  - recovery: f64,
 
 ###autres
 
-- `life`
-- +accès `navigation_mesh`
+- `life`: f64
+
+- `navigation_mesh`: // implement some pathfinding etc...
+  - hashmap: HashMap<[i32;2],enum>,
+  - unit: f64,
+
+- `world`: enregistre la position des entités dommageable pour raycast et location
+- `trigger`:
+  - status: bool,
+  - mask: Vec<TypeId>,
+  - id: u64,
+  - sender: Sender<bool>
+
+- `controller`:
+  - status: bool,
+  - id: u64,
+  - sender: Sender<bool>
+
+- `door`:
+  - receiver: Receiver<bool>
+  - TODO
+
+- `director`
+  - TODO
 
 ##systèmes
 
@@ -103,11 +154,15 @@ BULLET vs BULLET -> détécté ? ou pas ? plutôt pas
   - mut: `damage`,`physic_state`
   - `force`,`physic_type`
 
+- `world_update`:
+  - mut: `world`
+  - `life`,`physic_state`
+
 - `fire_weapons`:
-  - mut: `fire_weapon`
+  - mut: `fire_weapon`, `life`
   - `physic_state`
 - `bladed_weapons`:
-  - mut: `bladed_weapon`
+  - mut: `bladed_weapon`, `life`
   - `physic_state`
 
 - `input`
@@ -117,8 +172,19 @@ BULLET vs BULLET -> détécté ? ou pas ? plutôt pas
   - mut: `fire_weapon`,`bladed_weapon`, `forces`
   - +accès `navigation_mesh`
 
-
-TODO think about doors, how it opens, how it modifies the navigation mesh
-TODO think about interrupter
-TODO think about AI director
 TODO think about networking
+
+##networking
+
+the server update all entity but not the autonomous proxy
+and have remoteEffect such as sound and particleeffect etc...
+
+the world client system update physic entities depends on their enetrole:
+simulated: interpolation
+autonomous: real update
+
+on snapshot receive:
+play remote effect
+update simulated locations and current counter
+check if autonomous are OK if false then replay from the snapshot
+
