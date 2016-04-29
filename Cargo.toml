@@ -7,8 +7,8 @@ authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 name = "ruga"
 
 [dependencies]
-thigra = { git = "https://github.com/thiolliere/thigra" }
-yaml_unifier = { git = "https://github.com/thiolliere/yaml_unifier" }
+graphics = { path = "src/graphics" }
+yaml_utils = { git = "https://github.com/thiolliere/yaml_utils" }
 yaml-rust = "0.3.0"
 baal = "0.2.0"
 glium = "0.14.0"

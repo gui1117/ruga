@@ -66,3 +66,4 @@ pub fn create(setting: &Setting) -> Result<glium::backend::glutin_backend::Gluti
 
     builder.build_glium()
 }
+

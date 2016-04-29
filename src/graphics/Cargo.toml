@@ -1,0 +1,11 @@
+[package]
+name = "graphics"
+version = "0.1.0"
+authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
+
+[dependencies]
+glium = "0.14"
+vecmath = "0.2"
+yaml-rust = "0.3"
+glium_text = { path = "src/glium_text" }
+specs = "0.5.0"
