@@ -11,19 +11,19 @@ use physic::{
 };
 use graphics::Color;
 
-yaml!(
-pub struct EntitiesSetting {
-    pub character: CharacterSetting,
-    pub monster: MonsterSetting,
-});
+// yaml!(
+// pub struct EntitiesSetting {
+//     pub character: CharacterSetting,
+//     pub monster: MonsterSetting,
+// });
 
-yaml!(
-pub struct CharacterSetting {
-});
+// yaml!(
+// pub struct CharacterSetting {
+// });
 
-yaml!(
-pub struct MonsterSetting {
-});
+// yaml!(
+// pub struct MonsterSetting {
+// });
 
 pub struct Entities {
     pub character: Character,
@@ -31,10 +31,10 @@ pub struct Entities {
 }
 
 impl Entities {
-    pub fn new(setting: EntitiesSetting) -> Self {
+    pub fn new() -> Self {
         Entities {
-            character: Character::new(setting.character),
-            monster: Monster::new(setting.monster),
+            character: Character::new(),
+            monster: Monster::new(),
         }
     }
 }
@@ -48,7 +48,7 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn new(setting: CharacterSetting) -> Self {
+    pub fn new() -> Self {
         Character {
             physic_state: PhysicState::new(),
             physic_type: PhysicType::new(
@@ -73,7 +73,7 @@ pub struct Monster {
 }
 
 impl Monster {
-    pub fn new(setting: MonsterSetting) -> Self {
+    pub fn new() -> Self {
         Monster {
             physic_state: PhysicState::new(),
             physic_type: PhysicType::new(

@@ -55,15 +55,16 @@ fn main() {
     let mut camera = graphics::Camera::new(&window, camera_setting).unwrap();
 
     // init entities
-    let entities_config = config.remove(&yaml::Yaml::String("entities".into())).unwrap();
-    let entities_setting = entities::EntitiesSetting::from_yaml(entities_config).unwrap();
-    let entities = entities::Entities::new(entities_setting);
+    // let entities_config = config.remove(&yaml::Yaml::String("entities".into())).unwrap();
+    // let entities_setting = entities::EntitiesSetting::from_yaml(entities_config).unwrap();
+    let entities = entities::Entities::new();
 
     // init world
     let mut world = specs::World::new();
     world.register::<physic::PhysicState>();
     world.register::<physic::PhysicType>();
     world.register::<physic::PhysicForce>();
+    world.register::<control::PlayerControl>();
     world.register::<graphics::Color>();
 
     // load level
@@ -112,6 +113,8 @@ fn main() {
 
                 // draw grid
                 // draw effects
+
+                frame.finish();
             },
             Event::Input(InputEvent::Closed) => break,
             Event::Input(InputEvent::KeyboardInput(state,_keycode,_)) => {
