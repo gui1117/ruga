@@ -1,7 +1,7 @@
 ---
-entities:
+# entities: external file
 
-graphics:
+graphics: external file
 
 audio:
     check_level: always
@@ -32,4 +32,6 @@ window:
 event_loop:
     ups: 120
     max_fps: 60
+camera:
+    zoom: 0.1
 ...

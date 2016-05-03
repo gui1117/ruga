@@ -1,5 +1,5 @@
 use specs;
-use entities;
+use entities::Entities;
 use hlua;
 use hlua::Lua;
 use hlua::any::AnyLuaValue;
@@ -14,7 +14,13 @@ pub enum LoadError {
 }
 
 
-pub fn load<'l>(level: String, world: &mut specs::World, entities: &entities::Setting) -> Result<(),LoadError>{
+pub fn load<'l>(level: String, world: &mut specs::World, entities: &Entities) -> Result<(),LoadError>{
+    // flush world
+    // for entity in world.entities() {
+    //     world.delete_later(entity);
+    // }
+    // world.merge();
+
     let file = try!(File::open(&Path::new("script.lua")).map_err(|e| LoadError::OpenFile(e)));
 
     let mut lua: Lua<'l> = Lua::new();

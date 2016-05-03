@@ -20,6 +20,15 @@ pub struct PhysicState {
     pub velocity: [f32;2],
     pub acceleration: [f32;2],
 }
+impl PhysicState {
+    pub fn new() -> Self {
+        PhysicState{
+            position: [0.,0.],
+            velocity: [0.,0.],
+            acceleration: [0.,0.],
+        }
+    }
+}
 impl specs::Component for PhysicState {
     type Storage = specs::VecStorage<Self>;
 }
@@ -30,6 +39,21 @@ pub struct PhysicType {
     pub collision_behavior: CollisionBehavior,
     pub damping: f32,
     pub force: f32,
+    pub weight: f32,
+}
+impl PhysicType {
+    pub fn new(shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
+        let rate: f32 = 0.9;
+        let damping = -weight * rate.ln() / time_to_reach_v_max;
+        let force = velocity * damping;
+        PhysicType {
+            shape: shape,
+            collision_behavior: collision,
+            weight: weight,
+            damping: damping,
+            force: force,
+        }
+    }
 }
 impl specs::Component for PhysicType {
     type Storage = specs::VecStorage<Self>;
@@ -40,40 +64,15 @@ pub struct PhysicForce {
     pub direction: f32,
     pub intensity: f32,
 }
+impl PhysicForce {
+    pub fn new() -> Self {
+        PhysicForce {
+            direction: 0.,
+            intensity: 0.,
+        }
+    }
+}
 impl specs::Component for PhysicForce {
     type Storage = specs::VecStorage<Self>;
 }
-
-// #[derive(Debug,Clone)]
-// pub struct Color {
-//     color: thigra::Color,
-// }
-
-// impl specs::Component for Color {
-//     type Storage = specs::VecStorage<Self>;
-// }
-// impl Color {
-//     pub fn from_yaml(config: &yaml::Yaml) -> Result<Color,String> {
-//         let color = match try!(config.as_str().ok_or("")) {
-//             "base1" => thigra::Color::Base1,
-//             "base2" => thigra::Color::Base2,
-//             "base3" => thigra::Color::Base3,
-//             "base4" => thigra::Color::Base4,
-//             "base5" => thigra::Color::Base5,
-//             "yellow" => thigra::Color::Yellow,
-//             "orange" => thigra::Color::Orange,
-//             "red" => thigra::Color::Red,
-//             "magenta" => thigra::Color::Magenta,
-//             "violet" => thigra::Color::Violet,
-//             "blue" => thigra::Color::Blue,
-//             "cyan" => thigra::Color::Cyan,
-//             "green" => thigra::Color::Green,
-//             _ => return Err("".into()),
-//         };
-
-//         Ok(Color {
-//             color: color,
-//         })
-//     }
-// }
 

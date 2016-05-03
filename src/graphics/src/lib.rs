@@ -6,7 +6,6 @@ extern crate yaml_rust;
 extern crate specs;
 
 use glium::{
-    Frame,
     SwapBuffersError,
     Surface,
     VertexBuffer,
@@ -73,7 +72,7 @@ impl Transformed for Transformation {
 }
 
 #[derive(Debug,Clone)]
-pub struct Setting {
+pub struct GraphicsSetting {
     pub colors: ColorsValue,
     pub mode: Mode,
     pub luminosity: f32,
@@ -101,7 +100,7 @@ macro_rules! color_from_yaml {
     }
 }
 
-impl Setting {
+impl GraphicsSetting {
     pub fn from_yaml(code: &Yaml) -> Result<Self,String> {
         let hash = try!(code.as_hash().ok_or_else(|| "config must be an associative array"));
         let mode = {
@@ -153,7 +152,7 @@ impl Setting {
             }
         };
 
-        Ok(Setting {
+        Ok(GraphicsSetting {
             colors: colors,
             mode: mode,
             luminosity: luminosity,
@@ -171,7 +170,7 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position);
 
-pub struct TGraphics {
+pub struct Graphics {
     colors: ColorsValue,
     colors_setting: ColorsValue,
     mode: Mode,
@@ -189,15 +188,15 @@ pub struct TGraphics {
 }
 
 #[derive(Debug)]
-pub enum TGraphicsCreationError {
+pub enum GraphicsCreationError {
     ProgramCreationError(ProgramCreationError),
     BufferCreationError(BufferCreationError),
     FontFileOpenError(std::io::Error),
     FontCreationError(()),
 }
 
-impl TGraphics {
-    pub fn new<F: Facade>(facade: &F, setting: Setting) -> Result<TGraphics,TGraphicsCreationError> {
+impl Graphics {
+    pub fn new<F: Facade>(facade: &F, setting: GraphicsSetting) -> Result<Graphics,GraphicsCreationError> {
 
         let quad_vertex = vec![
             Vertex { position: [-1., -1.] },
@@ -206,7 +205,7 @@ impl TGraphics {
             Vertex { position: [ 1.,  1.] }
         ];
         let quad_vertex_buffer = try!(VertexBuffer::new(facade, &quad_vertex)
-            .map_err(|bce| TGraphicsCreationError::BufferCreationError(bce)));
+            .map_err(|bce| GraphicsCreationError::BufferCreationError(bce)));
 
         let quad_indices = index::NoIndices(index::PrimitiveType::TriangleStrip);
 
@@ -222,7 +221,7 @@ impl TGraphics {
         }
 
         let circle_vertex_buffer = try!(VertexBuffer::new(facade, &circle_vertex)
-            .map_err(|bce| TGraphicsCreationError::BufferCreationError(bce)));
+            .map_err(|bce| GraphicsCreationError::BufferCreationError(bce)));
 
         let circle_indices = index::NoIndices(index::PrimitiveType::TriangleFan);
 
@@ -232,7 +231,7 @@ impl TGraphics {
         ];
 
         let line_vertex_buffer = try!(VertexBuffer::new(facade, &line_vertex)
-            .map_err(|bce| TGraphicsCreationError::BufferCreationError(bce)));
+            .map_err(|bce| GraphicsCreationError::BufferCreationError(bce)));
 
         let line_indices = index::NoIndices(index::PrimitiveType::LinesList);
 
@@ -255,7 +254,7 @@ impl TGraphics {
             }
         "#;
         let program = try!(Program::from_source(facade, vertex_shader_src, fragment_shader_src, None)
-            .map_err(|pce| TGraphicsCreationError::ProgramCreationError(pce)));
+            .map_err(|pce| GraphicsCreationError::ProgramCreationError(pce)));
 
         let mut colors = setting.colors.clone();
         colors.apply(&mut |color: &mut [f32;4]| {
@@ -266,11 +265,11 @@ impl TGraphics {
 
         let text_system = glium_text::TextSystem::new(facade);
         let font_file = try!(std::fs::File::open(&std::path::Path::new(&setting.font_file))
-            .map_err(|ioe| TGraphicsCreationError::FontFileOpenError(ioe)));
+            .map_err(|ioe| GraphicsCreationError::FontFileOpenError(ioe)));
         let font = try!(glium_text::FontTexture::new(facade, font_file, setting.font_precision)
-            .map_err(|fce| TGraphicsCreationError::FontCreationError(fce)));
+            .map_err(|fce| GraphicsCreationError::FontCreationError(fce)));
 
-        Ok(TGraphics {
+        Ok(Graphics {
             colors: colors,
             colors_setting: setting.colors,
             mode: setting.mode,
@@ -314,18 +313,48 @@ impl TGraphics {
     }
 }
 
-pub struct TFrame<'a> {
-    frame: Frame,
-    t_graphics: &'a TGraphics,
+pub struct Frame<'a> {
+    frame: glium::Frame,
+    t_graphics: &'a Graphics,
     camera: [[f32;4];4],
     draw_parameters: DrawParameters<'a>,
 }
 
+#[derive(Clone,Debug)]
+pub struct CameraSetting {
+    pub zoom: f32,
+}
+impl CameraSetting {
+    pub fn from_yaml(code: &Yaml) -> Result<Self,String> {
+        let hash = try!(code.as_hash().ok_or_else(|| "config must be an associative array"));
+        let zoom = try!(try!(hash.get(&Yaml::String(String::from("zoom")))
+                .ok_or_else(|| "config map must have a zoom key")).as_f64()
+                .ok_or_else(|| "zoom must be a float")) as f32;
+        Ok(CameraSetting {
+            zoom: zoom,
+        })
+    }
+}
+
+#[derive(Clone,Debug)]
 pub struct Camera {
     pub x: f32,
     pub y: f32,
-    pub zoom: f32,
-    pub ratio: f32,
+    zoom: f32,
+    ratio: f32,
+}
+
+impl Camera {
+    pub fn new<F: Facade>(facade: &F, setting: CameraSetting) -> Result<Self,String> {
+        let (width,height) = facade.get_context().get_framebuffer_dimensions();
+
+        Ok(Camera {
+            x: 0.,
+            y: 0.,
+            zoom: setting.zoom,
+            ratio: width as f32/ height as f32,
+        })
+    }
 }
 
 #[derive(Debug,Clone)]
@@ -335,8 +364,8 @@ pub struct Line {
     length: usize,
 }
 
-impl<'a> TFrame<'a> {
-    pub fn new(t_graphics: &'a TGraphics, mut frame: Frame, camera: &Camera) -> TFrame<'a> {
+impl<'a> Frame<'a> {
+    pub fn new(t_graphics: &'a Graphics, mut frame: glium::Frame, camera: &Camera) -> Frame<'a> {
         let camera_matrix = {
             let kx = camera.zoom;
             let ky = camera.zoom*camera.ratio;
@@ -363,7 +392,7 @@ impl<'a> TFrame<'a> {
             .. Default::default()
         };
 
-        TFrame {
+        Frame {
             camera: camera_matrix,
             frame: frame,
             t_graphics: t_graphics,
@@ -675,9 +704,9 @@ font_ratio: 1.5
 ...
 ").unwrap();
 
-    let setting = Setting::from_yaml(&yaml_config[0]).unwrap();
+    let setting = GraphicsSetting::from_yaml(&yaml_config[0]).unwrap();
 
-    let graphics = TGraphics::new(&display,setting).unwrap();
+    let graphics = Graphics::new(&display,setting).unwrap();
 
     let camera = Camera {
         x: 0.,
@@ -689,7 +718,7 @@ font_ratio: 1.5
     let trans = Transformation::identity().scale(0.1,0.5).translate(0.2,0.9);
 
     for _ in 0..10 {
-        let mut target = TFrame::new(&graphics,display.draw(),&camera);
+        let mut target = Frame::new(&graphics,display.draw(),&camera);
         target.draw_square(0.,0.,1.,Layer::Floor,Color::Base2);
         target.draw_circle(0.,0.,10.,Layer::Middle,Color::Base3);
         target.draw_quad(trans,Layer::Ceil,Color::Base4);

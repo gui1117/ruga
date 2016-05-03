@@ -6,7 +6,7 @@ dependencies = [
  "glium 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graphics 0.1.0",
  "hlua 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "specs 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "specs 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
  "yaml-rust 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "yaml_utils 0.1.0 (git+https://github.com/thiolliere/yaml_utils)",
@@ -141,7 +141,7 @@ name = "dlib"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libloading 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libloading 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -149,7 +149,7 @@ name = "dlib"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libloading 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libloading 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -280,7 +280,7 @@ version = "0.1.0"
 dependencies = [
  "glium 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium_text 0.8.0",
- "specs 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "specs 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "vecmath 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "yaml-rust 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -314,17 +314,22 @@ version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "lazy_static"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "libc"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libloading"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -507,9 +512,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "specs"
-version = "0.5.1"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
+ "atom 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "mopa 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pulse 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
