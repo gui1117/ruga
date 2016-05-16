@@ -3,7 +3,7 @@ top-down shooter
 doit ce concentrer sur les mouvements:
 - déplacement haut/bas/gauche/droite
 - esquive en direction du déplacement
-- saut/téléportation avec espace en directino de la souris
+- saut/téléportation avec espace sur la souris
 
 <!-- mécanique de jeu qui se fait à plusieur en collaboration ? -->
 <!-- - lien avec des ressorts -->
@@ -13,7 +13,7 @@ doit ce concentrer sur les mouvements:
 <!--   - sniper: tir extremement précis pour faire des "headshot" -->
 
 mécanique de jeu
-- trois armes: shotgun, mitraillette, sniper, sword, lance grenade
+- shotgun, mitraillette, sniper, sword?, lance grenade?
 
 collaboration crée par les actions du joueur ou les ennemis
 
@@ -23,7 +23,7 @@ copie quasi-directe:
 standard:
 - zombie
 - bomb: move a slowly mustn't be touched or explosed or doesn't move at all
-- buring wall: move slowly grid aligned
+- burning wall: move slowly grid aligned
 - rocket: launch by ?!? in special level, move toward the character but with inertie
 
 special:
@@ -33,7 +33,7 @@ special:
 - smoker
 - tank
 
-more special must be added by the community latter
+more special may be added by the community latter
 
 AI director: for spawning weapon, ennemy ... and even maze ?
 

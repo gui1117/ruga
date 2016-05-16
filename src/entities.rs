@@ -1,29 +1,14 @@
-use yaml_rust::yaml;
-use yaml_utils;
-
 use control::PlayerControl;
 use physic::{
     PhysicState,
     PhysicType,
     PhysicForce,
+    PhysicDynamic,
     Shape,
     CollisionBehavior,
 };
 use graphics::Color;
-
-// yaml!(
-// pub struct EntitiesSetting {
-//     pub character: CharacterSetting,
-//     pub monster: MonsterSetting,
-// });
-
-// yaml!(
-// pub struct CharacterSetting {
-// });
-
-// yaml!(
-// pub struct MonsterSetting {
-// });
+use specs;
 
 pub struct Entities {
     pub character: Character,
@@ -33,66 +18,47 @@ pub struct Entities {
 impl Entities {
     pub fn new() -> Self {
         Entities {
-            character: Character::new(),
-            monster: Monster::new(),
+            character: Character,
+            monster: Monster,
         }
     }
 }
 
-pub struct Character {
-    physic_state: PhysicState,
-    physic_type: PhysicType,
-    physic_force: PhysicForce,
-    color: Color,
-    control: PlayerControl,
-}
+pub struct Character;
 
 impl Character {
-    pub fn new() -> Self {
-        Character {
-            physic_state: PhysicState::new(),
-            physic_type: PhysicType::new(
+    pub fn build(&self, world: &specs::World, pos: [f32;2]) {
+        world.create_now()
+            .with::<PhysicState>(PhysicState::new(pos))
+            .with::<PhysicDynamic>(PhysicDynamic)
+            .with::<PhysicType>(PhysicType::new_movable(
                 Shape::Circle(1.),
                 CollisionBehavior::Persist,
-                1.,
-                0.1,
-                1.),
-
-            physic_force: PhysicForce::new(),
-            color: Color::Yellow,
-            control: PlayerControl,
-        }
+                30.,
+                0.2,
+                1.))
+            .with::<PhysicForce>(PhysicForce::new())
+            .with::<Color>(Color::Yellow)
+            .with::<PlayerControl>(PlayerControl)
+            .build();
     }
 }
 
-pub struct Monster {
-    physic_state: PhysicState,
-    physic_type: PhysicType,
-    physic_force: PhysicForce,
-    color: Color,
-}
+pub struct Monster;
 
 impl Monster {
-    pub fn new() -> Self {
-        Monster {
-            physic_state: PhysicState::new(),
-            physic_type: PhysicType::new(
+    pub fn build(&self, world: &specs::World, pos: [f32;2]) {
+        world.create_now()
+            .with::<PhysicState>(PhysicState::new(pos))
+            .with::<PhysicDynamic>(PhysicDynamic)
+            .with::<PhysicType>(PhysicType::new_movable(
                 Shape::Circle(1.),
                 CollisionBehavior::Persist,
-                1.,
-                0.1,
-                1.),
-
-            physic_force: PhysicForce::new(),
-            color: Color::Yellow,
-        }
+                30.,
+                0.2,
+                1.))
+            .with::<PhysicForce>(PhysicForce::new())
+            .with::<Color>(Color::Red)
+            .build();
     }
 }
-
-
-// entity!(Character,"character" =>
-//         physic_type,"physic_type" => PhysicType,PhysicType,
-//         physic_force,"physic_force" => PhysicForce,PhysicForce,
-//         physic_state,"physic_state" => PhysicState,PhysicState,
-//         color, "color" => Color,Color);
-

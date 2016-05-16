@@ -30,6 +30,7 @@ use specs::Join;
 use utils::Direction;
 use utils::key;
 
+//TODO let it being configurable
 const NUMBER_OF_THREADS: usize = 4;
 
 #[derive(Clone)]
@@ -43,6 +44,7 @@ struct App {
     entities: entities::Entities,
     planner: specs::Planner<UpdateContext>,
     player_dir: Vec<Direction>,
+    physic_world: physic::PhysicWorld,
 }
 
 impl App {
@@ -50,6 +52,8 @@ impl App {
         let context = UpdateContext {
             dt: args.dt,
         };
+
+        self.physic_world.update(args.dt as f32, &self.planner.world);
 
         self.planner.dispatch(context);
     }
@@ -230,13 +234,21 @@ fn main() {
     // init world
     let mut world = specs::World::new();
     world.register::<physic::PhysicState>();
+    world.register::<physic::PhysicStatic>();
+    world.register::<physic::PhysicDynamic>();
+    world.register::<physic::PhysicKinetic>();
     world.register::<physic::PhysicType>();
     world.register::<physic::PhysicForce>();
     world.register::<control::PlayerControl>();
     world.register::<graphics::Color>();
 
     // load level
-    levels::load("toto".into(),&mut world,&entities);
+    levels::load("toto".into(),&world,&entities).unwrap();
+
+    // init physic world
+    // TODO from setting
+    let mut physic_world = physic::PhysicWorld::new();
+    physic_world.fill(&world);
 
     // init planner
     let planner = specs::Planner::new(world,NUMBER_OF_THREADS);
@@ -252,6 +264,7 @@ fn main() {
         entities: entities,
         planner: planner,
         player_dir: vec!(),
+        physic_world: physic_world,
     };
 
     // game loop

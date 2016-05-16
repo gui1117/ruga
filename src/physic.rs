@@ -1,8 +1,14 @@
 use specs;
-use UpdateContext;
 use specs::Join;
 use std::collections::HashMap;
 use std::collections::HashSet;
+
+/// time to reach v max is actually time to reach rate*v_max
+//TODO let it being configurable
+const RATE: f32 = 0.9;
+/// length of cell for the spatial hashing
+//TODO let it being configurable
+const UNIT: f32 = 10.;
 
 #[derive(Debug,Clone)]
 pub enum Shape {
@@ -25,9 +31,9 @@ pub struct PhysicState {
     pub acceleration: [f32;2],
 }
 impl PhysicState {
-    pub fn new() -> Self {
+    pub fn new(pos: [f32;2]) -> Self {
         PhysicState{
-            position: [0.,0.],
+            position: pos,
             velocity: [0.,0.],
             acceleration: [0.,0.],
         }
@@ -46,9 +52,8 @@ pub struct PhysicType {
     pub weight: f32,
 }
 impl PhysicType {
-    pub fn new(shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
-        let rate: f32 = 0.9;
-        let damping = -weight * rate.ln() / time_to_reach_v_max;
+    pub fn new_movable(shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
+        let damping = -weight * (1.-RATE).ln() / time_to_reach_v_max;
         let force = velocity * damping;
         PhysicType {
             shape: shape,
@@ -56,6 +61,16 @@ impl PhysicType {
             weight: weight,
             damping: damping,
             force: force,
+        }
+    }
+    pub fn new_static(shape: Shape) -> Self {
+        use std::f32;
+        PhysicType {
+            shape: shape,
+            collision_behavior: CollisionBehavior::Persist,
+            weight: f32::MAX,
+            force: 0.,
+            damping: 0.,
         }
     }
 }
@@ -80,60 +95,23 @@ impl specs::Component for PhysicForce {
     type Storage = specs::VecStorage<Self>;
 }
 
-// pub struct PhysicSystem {
-// }
-// impl specs::System<UpdateContext> for PhysicSystem {
-//     fn run(&mut self, run_arg: specs::RunArg, context: UpdateContext) {
-//         let entities = run_arg.fetch(|world|
-//             world.entities()
-//         );
+#[derive(Debug,Clone,Default)]
+pub struct PhysicDynamic;
+impl specs::Component for PhysicDynamic {
+    type Storage = specs::NullStorage<Self>;
+}
 
-//             // for (a_entity, a_type, a_state) in (&entities, &types, &states).iter() {
-//             //     for (b_entity, b_type, b_state) in (&entities, &types, &states).iter() {
-//             //         if a_entity.get_id() > b_entity.get_id() {
-//             //             // if collision store resolution
-//             //         }
-//             //     }
-//             // }
+#[derive(Debug,Clone,Default)]
+pub struct PhysicKinetic;
+impl specs::Component for PhysicKinetic {
+    type Storage = specs::NullStorage<Self>;
+}
 
-//             //for entity {
-//             //  resolve collision
-//             //  store in a spatial_hashing
-//             //}
-//         // });
-//     }
-// }
-
-// pub struct Location {
-//     pub center: [f32;2],
-//     pub width: f32,
-//     pub height: f32,
-// }
-
-// impl Location {
-//     pub fn from_physic(pos: &[f32;2], shape: &Shape) -> Self {
-//         let radius = match *shape {
-//             Shape::Circle(r) => r,
-//             Shape::Square(r) => r,
-//         };
-//         Location {
-//             center: pos.clone(),
-//             width: radius,
-//             height: radius,
-//         }
-//     }
-//     fn cells(&self,unit: f32) -> Vec<[i32;2]> {
-//         let min_x = ((self.center[0]-self.width/2.)/unit).floor() as i32;
-//         let max_x = ((self.center[0]+self.width/2.)/unit).ceil() as i32;
-//         let min_y = ((self.center[1]-self.height/2.)/unit).floor() as i32;
-//         let max_y = ((self.center[1]+self.height/2.)/unit).ceil() as i32;
-
-//         (min_x..max_x)
-//             .zip(min_y..max_y)
-//             .map(|(x,y)| [x,y])
-//             .collect()
-//     }
-// }
+#[derive(Debug,Clone,Default)]
+pub struct PhysicStatic;
+impl specs::Component for PhysicStatic {
+    type Storage = specs::NullStorage<Self>;
+}
 
 pub struct Ray {
     pub origin: [f32;2],
@@ -141,103 +119,194 @@ pub struct Ray {
     pub length: f32,
 }
 
+/// if A collide with B then collision must represent
+/// the smallest vector to move A so it doesn't collide anymore
+pub struct Collision {
+    delta_x: f32,
+    delta_y: f32,
+}
+
 pub struct PhysicWorld {
     unit: f32,
-    static_hashmap: HashMap<[i32;2],Vec<(specs::Index,[f32;2],Shape)>>,
-    dynamic_hashmap: HashMap<[i32;2],Vec<(specs::Index,[f32;2],Shape)>>,
+    static_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],Shape)>>,
+    movable_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],Shape)>>,
 }
 
-struct Collision {
-}
-
-fn shape_collide(a_pos: &[f32;2], a_shape: &Shape, b_pos: &[f32;2], b_shape: &Shape) -> Option<Collision> {
-    unimplemented!();
+struct Resolution {
+    entity: specs::Entity,
+    rate: f32,
+    vec: [f32;2],
 }
 
 impl PhysicWorld {
+    pub fn new() -> Self {
+        PhysicWorld {
+            unit: UNIT,
+            static_hashmap: HashMap::new(),
+            movable_hashmap: HashMap::new(),
+        }
+    }
+
+    pub fn fill(&mut self, world: &specs::World) {
+        let dynamics = world.read::<PhysicDynamic>();
+        let kinetics = world.read::<PhysicKinetic>();
+        let statics = world.read::<PhysicStatic>();
+        let states = world.read::<PhysicState>();
+        let types = world.read::<PhysicType>();
+        let entities = world.entities();
+
+        for (_,state,typ,entity) in (&dynamics, &states, &types, &entities).iter() {
+            self.insert_movable(entity, &state.position, &typ.shape);
+        }
+        for (_,state,typ,entity) in (&kinetics, &states, &types, &entities).iter() {
+            self.insert_movable(entity, &state.position, &typ.shape);
+        }
+        for (_,state,typ,entity) in (&statics, &states, &types, &entities).iter() {
+            self.insert_static(entity, &state.position, &typ.shape);
+        }
+    }
+
     fn cells_of_shape(&self, pos: &[f32;2], shape: &Shape) -> Vec<[i32;2]> {
         let radius = match *shape {
             Shape::Circle(r) => r,
             Shape::Square(r) => r,
         };
 
-        let min_x = ((pos[0]-radius/2.)/self.unit).floor() as i32;
-        let max_x = ((pos[0]+radius/2.)/self.unit).ceil() as i32;
-        let min_y = ((pos[1]-radius/2.)/self.unit).floor() as i32;
-        let max_y = ((pos[1]+radius/2.)/self.unit).ceil() as i32;
+        let min_x = ((pos[0]-radius)/self.unit).floor() as i32;
+        let max_x = ((pos[0]+radius)/self.unit).ceil() as i32;
+        let min_y = ((pos[1]-radius)/self.unit).floor() as i32;
+        let max_y = ((pos[1]+radius)/self.unit).ceil() as i32;
 
-        (min_x..max_x)
-            .zip(min_y..max_y)
-            .map(|(x,y)| [x,y])
-            .collect()
+        let mut cells = Vec::new();
+        for x in min_x..max_x {
+            for y in min_y..max_y {
+                cells.push([x,y]);
+            }
+        }
+        cells
     }
 
-    pub fn apply_on_shape<F: FnMut(&specs::Index,&[f32;2],&Shape,&Collision)>(&self, pos: &[f32;2], shape: &Shape, callback: &mut F) {
+    pub fn apply_on_shape<F: FnMut(&specs::Entity,&Collision)>(&self, pos: &[f32;2], shape: &Shape, callback: &mut F) {
         let mut visited = HashSet::new();
 
         for cell in self.cells_of_shape(pos,shape) {
-            self.apply_on_index(cell, &mut |other_id, other_pos, other_shape| {
-                if !visited.contains(other_id) { return; }
-                visited.insert(*other_id);
+            self.apply_on_index(cell, &mut |other_entity, other_pos, other_shape| {
+                if visited.contains(other_entity) { return; }
+                visited.insert(*other_entity);
                 if let Some(collision) = shape_collide(pos,shape,other_pos,other_shape) {
-                    callback(other_id,other_pos,other_shape,&collision);
+                    callback(other_entity,&collision);
                 }
             });
         }
     }
 
+    fn apply_on_index<F: FnMut(&specs::Entity,&[f32;2],&Shape)>(&self, cell: [i32;2], callback: &mut F) {
+        if let Some(vec) = self.movable_hashmap.get(&cell) {
+            for &(ref entity,ref pos,ref shape) in vec {
+                callback(entity,pos,shape);
+            }
+        }
+        if let Some(vec) = self.static_hashmap.get(&cell) {
+            for &(ref entity,ref pos,ref shape) in vec {
+                callback(entity,pos,shape);
+            }
+        }
+    }
+
     pub fn update(&mut self, dt: f32, world: &specs::World) {
+        use std::f32::consts::PI;
         use specs::Join;
 
+        let kinetics = world.read::<PhysicKinetic>();
+        let dynamics = world.read::<PhysicDynamic>();
         let mut states = world.write::<PhysicState>();
         let forces= world.read::<PhysicForce>();
         let types = world.read::<PhysicType>();
         let entities = world.entities();
 
-        self.dynamic_hashmap = HashMap::new();
+        let mut resolutions = Vec::new();
 
-        for (state,force,typ,entity) in (&mut states, &forces, &types, &entities).iter() {
-            // acceleration
-            // velocity
-            // position
+        self.movable_hashmap = HashMap::new();
+        for (_,state,force,typ,entity) in (&dynamics, &mut states, &forces, &types, &entities).iter() {
+            state.acceleration[0] = (typ.force*force.intensity*force.direction.cos() - typ.damping*state.velocity[0])/typ.weight;
+            state.acceleration[1] = (typ.force*force.intensity*force.direction.sin() - typ.damping*state.velocity[1])/typ.weight;
 
-            self.apply_on_shape(&state.position, &typ.shape, &mut |other_id,_,_,collision| {
-                // resolve collision
+            state.velocity[0] += dt*state.acceleration[0];
+            state.velocity[1] += dt*state.acceleration[1];
+
+            state.position[0] += dt*state.velocity[0];
+            state.position[1] += dt*state.velocity[1];
+
+            self.apply_on_shape(&state.position, &typ.shape, &mut |other_entity,collision| {
+                let other_type = types.get(*other_entity).unwrap();
+
+                let mut rate = typ.weight/(typ.weight+other_type.weight);
+                if rate.is_nan() {
+                    rate = 1.;
+                }
+
+                resolutions.push(Resolution {
+                    entity: entity,
+                    rate: rate,
+                    vec: [collision.delta_x, collision.delta_y],
+                });
+                resolutions.push(Resolution {
+                    entity: *other_entity,
+                    rate: 1.-rate,
+                    vec: [-collision.delta_x, -collision.delta_y],
+                });
             });
 
-            self.insert_dynamic(entity.get_id(), &state.position, &typ.shape);
+            self.insert_movable(entity, &state.position, &typ.shape);
         }
-    }
 
-    pub fn apply_on_index<F: FnMut(&specs::Index,&[f32;2],&Shape)>(&self, cell: [i32;2], callback: &mut F) {
-        if let Some(vec) = self.dynamic_hashmap.get(&cell) {
-            for &(ref id,ref pos,ref shape) in vec {
-                callback(id,pos,shape);
+        for res in resolutions {
+            let state = states.get_mut(res.entity).unwrap();
+            let typ = types.get(res.entity).unwrap();
+
+            state.position[0] += res.rate*res.vec[0];
+            state.position[1] += res.rate*res.vec[1];
+
+            match typ.collision_behavior {
+                CollisionBehavior::Bounce => {
+                    let angle = state.velocity[1].atan2(state.velocity[0]) + PI;
+                    state.velocity[0] = angle.cos();
+                    state.velocity[1] = angle.sin();
+                },
+                CollisionBehavior::Stop => state.velocity = [0.,0.],
+                CollisionBehavior::Back => {
+                    state.velocity[0] = -state.velocity[0];
+                    state.velocity[1] = -state.velocity[1];
+                },
+                CollisionBehavior::Persist => (),
             }
         }
-        if let Some(vec) = self.static_hashmap.get(&cell) {
-            for &(ref id,ref pos,ref shape) in vec {
-                callback(id,pos,shape);
-            }
+
+        self.movable_hashmap = HashMap::new();
+        for (_,state,typ,entity) in (&dynamics, &mut states, &types, &entities).iter() {
+            self.insert_movable(entity, &state.position, &typ.shape);
+        }
+        for (_,state,typ,entity) in (&kinetics, &mut states, &types, &entities).iter() {
+            self.insert_movable(entity, &state.position, &typ.shape);
         }
     }
 
-    pub fn insert_static(&mut self, index: specs::Index, pos: &[f32;2], shape: &Shape) {
+    fn insert_static(&mut self, entity: specs::Entity, pos: &[f32;2], shape: &Shape) {
         for cell in self.cells_of_shape(pos,shape) {
-            self.static_hashmap.entry(cell).or_insert(Vec::new()).push((index,pos.clone(),shape.clone()));
+            self.static_hashmap.entry(cell).or_insert(Vec::new()).push((entity,pos.clone(),shape.clone()));
         }
     }
 
-    pub fn insert_dynamic(&mut self, index: specs::Index, pos: &[f32;2], shape: &Shape) {
+    fn insert_movable(&mut self, entity: specs::Entity, pos: &[f32;2], shape: &Shape) {
         for cell in self.cells_of_shape(pos,shape) {
-            self.dynamic_hashmap.entry(cell).or_insert(Vec::new()).push((index,pos.clone(),shape.clone()));
+            self.movable_hashmap.entry(cell).or_insert(Vec::new()).push((entity,pos.clone(),shape.clone()));
         }
     }
 
-    pub fn raycast<F: FnMut((specs::Index,f32,f32)) -> bool>(&self, ray: &Ray, callback: &mut F) {
+    pub fn raycast<F: FnMut((specs::Entity,f32,f32)) -> bool>(&self, ray: &Ray, callback: &mut F) {
         use std::f32::consts::PI;
         use std::cmp::Ordering;
-        use utils::{minus_pi_pi, grid_raycast, bounding_box_raycast, circle_raycast};
+        use utils::minus_pi_pi;
 
         let angle = minus_pi_pi(ray.angle);
 
@@ -258,7 +327,7 @@ impl PhysicWorld {
         let line_start = x0.min(x1);
         let line_end = x0.max(x1);
 
-        let mut visited: HashSet<specs::Index> = HashSet::new();
+        let mut visited: HashSet<specs::Entity> = HashSet::new();
 
         for cell in cells {
             // abscisse of start and end the segment of
@@ -267,11 +336,11 @@ impl PhysicWorld {
             let segment_start = ((cell[0] as f32)*self.unit).max(line_start);
             let segment_end = (((cell[0]+1) as f32)*self.unit).min(line_end);
 
-            let mut bodies: Vec<(specs::Index,f32,f32)> = Vec::new();
+            let mut bodies: Vec<(specs::Entity,f32,f32)> = Vec::new();
 
             {
                 let null_vec = vec!();
-                let entities = self.dynamic_hashmap.get(&cell).unwrap_or(&null_vec).iter()
+                let entities = self.movable_hashmap.get(&cell).unwrap_or(&null_vec).iter()
                     .chain(self.static_hashmap.get(&cell).unwrap_or(&null_vec).iter());
 
                 for &(entity,ref pos,ref shape) in entities {
@@ -331,5 +400,360 @@ impl PhysicWorld {
             }
         }
     }
+}
+
+fn shape_collide(a_pos: &[f32;2], a_shape: &Shape, b_pos: &[f32;2], b_shape: &Shape) -> Option<Collision> {
+    match *a_shape {
+        Shape::Circle(a_rad) => {
+            match *b_shape {
+                Shape::Circle(b_rad) => {
+                    let dx = a_pos[0]-b_pos[0];
+                    let dy = a_pos[1]-b_pos[1];
+                    let dn2 = dx.powi(2) + dy.powi(2);
+                    let rad = a_rad+b_rad;
+                    if dn2 < rad.powi(2) {
+                        let dn = dn2.sqrt();
+                        let delta = rad - dn;
+                        Some(Collision {
+                            delta_x: dx/dn*delta,
+                            delta_y: dy/dn*delta,
+                        })
+                    } else {
+                        None
+                    }
+                },
+                Shape::Square(b_rad) => {
+                    let extern_horizontal = a_pos[0] < b_pos[0]-b_rad || a_pos[0] > b_pos[0]+b_rad;
+                    let extern_vertical = a_pos[1] < b_pos[1]-b_rad || a_pos[1] > b_pos[1]+b_rad;
+
+                    if extern_horizontal && extern_vertical {
+                        shape_collide(a_pos,a_shape,b_pos,&Shape::Circle(b_rad))
+                    } else {
+                        shape_collide(a_pos,&Shape::Square(a_rad),b_pos,b_shape)
+                    }
+                },
+            }
+        },
+        Shape::Square(a_rad) => {
+            match *b_shape {
+                Shape::Circle(_) => {
+                    shape_collide(b_pos,b_shape,a_pos,a_shape).map(|col| Collision {
+                        delta_x: -col.delta_x,
+                        delta_y: -col.delta_y,
+                    })
+                },
+                Shape::Square(b_rad) => {
+                    let a_min_x = a_pos[0] - a_rad/2.;
+                    let a_max_x = a_pos[0] + a_rad/2.;
+                    let a_min_y = a_pos[1] - a_rad/2.;
+                    let a_max_y = a_pos[1] + a_rad/2.;
+                    let b_min_x = b_pos[0] - b_rad/2.;
+                    let b_max_x = b_pos[0] + b_rad/2.;
+                    let b_min_y = b_pos[1] - b_rad/2.;
+                    let b_max_y = b_pos[1] + b_rad/2.;
+
+                    if (a_min_x >= b_max_x) || (b_min_x >= a_max_x) || (a_min_y >= b_max_y) || (b_min_y >= a_max_y) {
+                        None
+                    } else {
+                        let delta_ox = b_max_x - a_min_x;
+                        let delta_oxp = b_min_x - a_max_x;
+                        let delta_oy = b_max_y - a_min_y;
+                        let delta_oyp =  b_min_y - a_max_y;
+
+                        let delta_x = if delta_ox.abs() < delta_oxp.abs() {
+                            delta_ox
+                        } else {
+                            delta_oxp
+                        };
+
+                        let delta_y = if delta_oy.abs() < delta_oyp.abs() {
+                            delta_oy
+                        } else {
+                            delta_oyp
+                        };
+
+                        if delta_x.abs() < delta_y.abs() {
+                            Some(Collision {
+                                delta_x: delta_x,
+                                delta_y: 0.,
+                            })
+                        } else {
+                            Some(Collision {
+                                delta_x: 0.,
+                                delta_y: delta_y,
+                            })
+                        }
+                    }
+                },
+            }
+        },
+    }
+}
+
+fn grid_raycast(x0: f32, y0: f32, x1: f32, y1: f32) -> Vec<[i32;2]> {
+    if (x1-x0).abs() < (y1-y0).abs() {
+        grid_raycast(y0,x0,y1,x1).iter().map(|s| [s[1],s[0]]).collect::<Vec<[i32;2]>>()
+    } else if x0 == x1 {
+        let x0_i32 = x0.floor() as i32;
+        let y0_i32 = y0.floor() as i32;
+        let y1_i32 = y1.floor() as i32;
+        let mut vec = Vec::new();
+
+        if y0 > y1 {
+            for y in y1_i32..y0_i32+1 {
+                vec.push([x0_i32,y]);
+            }
+            vec.reverse();
+        } else {
+            for y in y0_i32..y1_i32+1 {
+                vec.push([x0_i32,y]);
+            }
+        }
+
+        vec
+    } else if x0 > x1 {
+        let mut vec = grid_raycast(x1,y1,x0,y0);
+        vec.reverse();
+        vec
+    } else {
+        // x0 < x1
+        //println!("x0:{},y0:{},x1:{},y1:{}",x0,y0,x1,y1);
+
+        let x0_i32 = x0.floor() as i32;
+        let y0_i32 = y0.floor() as i32;
+        let x1_i32 = x1.floor() as i32;
+
+        // equation y = ax + b
+        let a = (y1 - y0)/(x1 - x0);
+        let b = y0 -a*x0;
+        //println!("a:{} b:{}",a,b);
+
+        let delta_error = a.abs();
+
+        let signum;
+        if a > 0. {
+            signum = 1;
+        } else {
+            signum = -1;
+        }
+        let mut error = if a > 0. {
+            (a*x0.floor()+b)-y0.floor()
+        } else {
+            y0.ceil()-(a*x0.floor()+b)
+        };
+
+        //TODO cut some cells at the end
+        //let mut error_end = if a > 0. {
+        //    y1.ceil() - (a*x1.ceil()+b)
+        //} else {
+        //    (y1.floor() - (a*x1.ceil()+b))
+        //};
+        //println!("debut: error: {}",error);
+        //println!("error end : {}", error_end);
+
+        let mut vec = Vec::new();
+        let mut y = y0_i32;
+
+        for x in x0_i32..x1_i32+1 {
+            vec.push([x,y]);
+            error += delta_error;
+            //println!("error: {}",error);
+            while error >= 1.0 {
+                y += signum;
+                error -= 1.0;
+                //println!("error -= 1.0: {}",error);
+                vec.push([x,y]);
+            }
+        }
+        //while error_end >= 0. {
+        //    vec.pop();
+        //    error_end -= 1.0;
+        //}
+
+        //println!("result: {:?}",vec);
+        vec
+    }
+}
+
+/// the coordinate of the intersections (if some) of a circle of center (x,y) and radius,
+/// and the line of equation ax+by+c=0
+fn circle_raycast(x: f32, y: f32, radius: f32, a: f32, b: f32, c: f32) -> Option<(f32,f32,f32,f32)> {
+    if a == 0. && b == 0. {
+        None
+    } else if a == 0. {
+        let y_ray = -c/b;
+        if (y_ray - y).abs() < radius {
+            let dx = (radius.powi(2) - (y_ray - y).powi(2)).sqrt();
+            Some((x-dx,y_ray,x+dx,y_ray))
+        } else {
+            None
+        }
+    } else if b == 0. {
+        let x_ray = -c/a;
+        if (x_ray - x).abs() < radius {
+            let dy = (radius.powi(2) - (x_ray - x).powi(2)).sqrt();
+            Some((x_ray,y-dy,x_ray,y+dy))
+        } else {
+            None
+        }
+    } else {
+        // the equation of intersection abscisse: d*x^2 + e*x + f = 0
+        let d = 1. + (a/b).powi(2);
+        let e = 2.*(-x + a/b*(c/b+y));
+        let f = x.powi(2) + (c/b+y).powi(2) - radius.powi(2);
+
+        let delta = e.powi(2) - 4.*d*f;
+
+        if delta > 0. {
+            let (x1,x2) = {
+                let x1 = (e.powi(2) - delta.sqrt())/2.*d;
+                let x2 = (e.powi(2) + delta.sqrt())/2.*d;
+                if x1 > x2 {
+                    (x2,x1)
+                } else {
+                    (x1,x2)
+                }
+            };
+            let y1 = (-c-a*x1)/b;
+            let y2 = (-c-a*x2)/b;
+
+            Some((x1,y1,x2,y2))
+        } else {
+            None
+        }
+    }
+}
+
+/// the coordinate of the intersections (if some) of a rectangle of center (x,y) width and height,
+/// and the line of equation ax+by+c=0
+fn bounding_box_raycast(x: f32, y: f32, width: f32, height: f32, a: f32, b: f32, c: f32) -> Option<(f32,f32,f32,f32)> {
+    if a == 0. && b == 0. {
+        None
+    } else if a == 0. {
+        let y_proj = -c/b;
+        if y - height/2. <= y_proj && y_proj <= y + height/2. {
+            Some((x-width/2.,y_proj,x+width/2.,y_proj))
+        } else {
+            None
+        }
+    } else if b == 0. {
+        let x_proj = -c/a;
+        if x - width/2. <= x_proj && x_proj <= x + width/2. {
+            Some((x_proj,y-height/2.,x_proj,y+height/2.))
+        } else {
+            None
+        }
+    } else {
+        //println!("x:{}, y:{}, width:{}, height:{}, a:{}, b:{}, c:{}",x,y,width,height,a,b,c);
+        // the ordonate of the point that is on the line(a,b) and the horizontal line that cut (x,y)
+        let y_proj = -(a*x + c)/b;
+        // the abscisse of the point that is on the line(a,b) and the vertical line that cut (x,y)
+        let x_proj = -(b*y+c)/a;
+
+        //println!("proj: {:?} | {:?}",x_proj,y_proj);
+        // i,j,k,l are three point:
+        // * i represent the point on the horizontal line on the top of the bounding box
+        // and on the line(a,b)
+        // * j represent the point on the vertical line on the right of the bounding box
+        // and on the line(a,b)
+        // * k represent the point on the horizontal line on the bottom of the bounding box
+        // and on the line(a,b)
+        // * l represent the point on the vertical line on the left of the bounding box
+        // and on the line(a,b)
+
+        // dy = -a/b * dx
+
+        let dx = -height/2. * b/a;
+        //println!("dx: {:?}",dx);
+        let x_i = x_proj + dx;
+        let y_i = y + height/2.;
+        let x_k = x_proj - dx;
+        let y_k = y - height/2.;
+        //println!("i: {:?} | {:?}",x_i,y_i);
+        //println!("k: {:?} | {:?}",x_k,y_k);
+
+        let dy = -width/2. * a/b;
+        //println!("dy: {:?}",dy);
+        let x_j = x + width/2.;
+        let y_j = y_proj + dy;
+        let x_l = x - width/2.;
+        let y_l = y_proj - dy;
+        //println!("j: {:?} | {:?}",x_j,y_j);
+        //println!("l: {:?} | {:?}",x_l,y_l);
+
+
+        let cond_i = x-width/2. < x_i && x_i < x+width/2.;
+        let cond_k = x-width/2. < x_k && x_k < x+width/2.;
+        let cond_j = y-width/2. < y_j && y_j < y+width/2.;
+        let cond_l = y-width/2. < y_l && y_l < y+width/2.;
+
+        if cond_i && cond_k {
+            if x_i < x_k {
+                Some((x_i,y_i,x_k,y_k))
+            } else {
+                Some((x_k,y_k,x_i,y_i))
+            }
+        } else if cond_i && cond_j {
+            if x_i < x_j {
+                Some((x_i,y_i,x_j,y_j))
+            } else {
+                Some((x_j,y_j,x_i,y_i))
+            }
+        } else if cond_i && cond_l {
+            if x_i < x_l {
+                Some((x_i,y_i,x_l,y_l))
+            } else {
+                Some((x_l,y_l,x_i,y_i))
+            }
+        } else if cond_j && cond_k {
+            if x_j < x_k {
+                Some((x_j,y_j,x_k,y_k))
+            } else {
+                Some((x_k,y_k,x_j,y_j))
+            }
+        } else if cond_j && cond_l {
+            if x_j < x_l {
+                Some((x_j,y_j,x_l,y_l))
+            } else {
+                Some((x_l,y_l,x_j,y_j))
+            }
+        } else if cond_k && cond_l {
+            if x_k < x_l {
+                Some((x_k,y_k,x_l,y_l))
+            } else {
+                Some((x_l,y_l,x_k,y_k))
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[test]
+fn test_bounding_box_raycast() {
+    // for a == 0
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., 0., 0., -1.));
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., 0., 1., -1.));
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., 0., -1./0.5, -1.));
+    assert_eq!(Some((-4.,-1.,2.,-1.)),bounding_box_raycast( -1., -2., 6., 2., 0., -1./1., -1.));
+    assert_eq!(Some((-4.,-2.,2.,-2.)),bounding_box_raycast( -1., -2., 6., 2., 0., -1./2., -1.));
+    assert_eq!(Some((-4.,-3.,2.,-3.)),bounding_box_raycast( -1., -2., 6., 2., 0., -1./3., -1.));
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., 0., -1./3.5, -1.));
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., 0., -1./4., -1.));
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., 0., -1./4.5, -1.));
+
+    // for b == 0
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., -1./4.5, 0., -1.));
+    assert_eq!(Some((-4.,-3.,-4.,-1.)),bounding_box_raycast( -1., -2., 6., 2., -1./4., 0., -1.));
+    assert_eq!(Some((0.,-3.,0.,-1.)),bounding_box_raycast( -1., -2., 6., 2., 1., 0., 0.));
+    assert_eq!(Some((2.,-3.,2.,-1.)),bounding_box_raycast( -1., -2., 6., 2., 1./2., 0., -1.));
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., 1./2.5, 0., -1.));
+
+    // for b != 0 && a != 0
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., -1., -1., 9.));
+    assert_eq!(None,bounding_box_raycast( -1., -2., 6., 2., 1., 1., 7.));
+    assert_eq!(Some((-4.,-2.,-3.,-3.)),bounding_box_raycast( -1., -2., 6., 2., 1., 1., 6.));
+
+    assert_eq!(Some((-4.,-1.96,2.,-2.02)),bounding_box_raycast( -1., -2., 6., 2., 0.01, 1., 2.));
 }
 
