@@ -2,7 +2,7 @@ top-down shooter
 
 doit ce concentrer sur les mouvements:
 - déplacement haut/bas/gauche/droite
-- esquive en direction du déplacement
+- ¿esquive en direction du déplacement?
 - saut/téléportation avec espace sur la souris
 
 <!-- mécanique de jeu qui se fait à plusieur en collaboration ? -->
@@ -13,9 +13,9 @@ doit ce concentrer sur les mouvements:
 <!--   - sniper: tir extremement précis pour faire des "headshot" -->
 
 mécanique de jeu
-- shotgun, mitraillette, sniper, sword?, lance grenade?
+- shotgun, mitraillette, sniper, sword, lance grenade
 
-collaboration crée par les actions du joueur ou les ennemis
+<!-- collaboration crée par les actions du joueur ou les ennemis -->
 
 à la manière de left4dead, des ennemis.
 copie quasi-directe:
@@ -41,7 +41,7 @@ Navigation Mesh: for ennemy AI
 
 Physic: with acceleration but collision are not necessarily realisic
 
-Networking: shoots are instantate other are interpolate from snapshot
+<!-- Networking: shoots are instantate other are interpolate from snapshot -->
 
 #Physique
 
@@ -51,16 +51,6 @@ le monde est composé d'objet physique qui sont
 - statique: murs et environment static en général
 - dynamique: les joueurs, les ennemis
 - kinetic: les balles
-
-lors des collisions:
-WALL vs WALL -> rien
-WALL vs LIVING -> résoud la collision et déplacent le LIVING
-WALL vs BULLET -> selon le type de BULLET
-
-LIVING vs LIVING -> résoud la collision en déplacent les deux (selon leurs poids)
-LIVING vs BULLET -> selon le type de BULLET
-
-BULLET vs BULLET -> détécté ? ou pas ? plutôt pas
 
 ##ECS
 
@@ -88,7 +78,7 @@ TODO think of dynamic/kinetic/static
 - `dynamic_forces`: // forces appliquées
   - direction: f64
   - intensité: f64 // pourcentage
-<!-- - `impulses`: impulsions appliquées sur une itération seulement (par exemple coup d'un zombie): -->
+  - ¡¿`impulses`: impulsions appliquées sur une itération seulement (par exemple coup d'un zombie)?!
 
 - `dynamic_collisions`: identifier of all entity it collide with
 
@@ -179,7 +169,7 @@ TODO think about networking
 the server update all entity but not the autonomous proxy
 and have remoteEffect such as sound and particleeffect etc...
 
-the world client system update physic entities depends on their enetrole:
+the world client system update physic entities depends on their controle:
 simulated: interpolation
 autonomous: real update
 

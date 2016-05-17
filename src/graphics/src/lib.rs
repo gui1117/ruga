@@ -340,8 +340,8 @@ impl CameraSetting {
 pub struct Camera {
     pub x: f32,
     pub y: f32,
-    zoom: f32,
-    ratio: f32,
+    pub zoom: f32,
+    pub ratio: f32,
 }
 
 impl Camera {

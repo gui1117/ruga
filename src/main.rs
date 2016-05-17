@@ -143,7 +143,10 @@ impl App {
     }
     fn mouse_pressed(&mut self, _button: MouseButton) {}
     fn mouse_released(&mut self, _button: MouseButton) {}
-    fn mouse_moved(&mut self, _x: i32, _y: i32) {}
+    fn mouse_moved(&mut self, x: f32, y: f32) {
+        let mouse_rel = [x/self.camera.zoom, y/self.camera.zoom/self.camera.ratio];
+        let _mouse_abs = [mouse_rel[0] + self.camera.x, mouse_rel[1] + self.camera.y];
+    }
     fn update_player_direction(&mut self) {
         use std::f32::consts::PI;
 
@@ -200,6 +203,9 @@ impl App {
                 force.intensity = 0.;
             }
         }
+    }
+    fn resize(&mut self, width: u32, height: u32) {
+        self.camera.ratio = width as f32 / height as f32;
     }
 }
 
@@ -288,9 +294,18 @@ fn main() {
                 }
             },
             Event::Input(InputEvent::MouseMoved(x,y)) => {
-                app.mouse_moved(x,y);
+                let dimension = window.get_framebuffer_dimensions();
+
+                let dimension = [dimension.0 as f32, dimension.1 as f32];
+                let x = x as f32;
+                let y = y as f32;
+
+                app.mouse_moved((x-dimension[0]/2.)/dimension[0]*2., (-y+dimension[1]/2.)/dimension[1]*2.);
             },
-            Event::Input(_) => (),
+            Event::Input(InputEvent::Resized(width,height)) => {
+                app.resize(width,height);
+            },
+            Event::Input(_) => {},
             Event::Idle(args) => thread::sleep(Duration::from_millis(args.dt as u64)),
         }
     }
