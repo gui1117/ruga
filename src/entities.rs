@@ -1,4 +1,7 @@
 use control::PlayerControl;
+use weapons::{
+    Rifle,
+};
 use physic::{
     PhysicState,
     PhysicType,
@@ -40,6 +43,15 @@ impl Character {
             .with::<PhysicForce>(PhysicForce::new())
             .with::<Color>(Color::Yellow)
             .with::<PlayerControl>(PlayerControl)
+            .with::<Rifle>(Rifle {
+                rate: 1.,
+                length: 20.,
+                damage: 1.,
+                shoot: false,
+                recovery: 0.,
+                ammo: 64,
+                aim: 0.,
+            })
             .build();
     }
 }

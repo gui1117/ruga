@@ -401,12 +401,16 @@ impl<'a> Frame<'a> {
     }
 
     pub fn draw_square(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: Color) {
+        self.draw_rectangle(x,y,radius*2.,radius*2.,layer,color);
+    }
+
+    pub fn draw_rectangle(&mut self, x: f32, y: f32, width: f32, height: f32, layer: Layer, color: Color) {
         let trans = {
             [
-                [ radius,     0.,           0., 0.],
-                [     0., radius,           0., 0.],
-                [     0.,     0.,           1., 0.],
-                [      x,      y, layer.into(), 1.]
+                [ width/2.,        0.,           0., 0.],
+                [       0., height/2.,           0., 0.],
+                [       0.,        0.,           1., 0.],
+                [        x,         y, layer.into(), 1.]
             ]
         };
         let uniform = uniform!{
@@ -672,7 +676,6 @@ fn main_test() {
 
     let display = glium::glutin::WindowBuilder::new()
         .with_dimensions(640,480)
-        .with_multisampling(2)
         .build_glium()
         .unwrap();
 
@@ -719,7 +722,7 @@ font_ratio: 1.5
 
     for _ in 0..10 {
         let mut target = Frame::new(&graphics,display.draw(),&camera);
-        target.draw_square(0.,0.,1.,Layer::Floor,Color::Base2);
+        target.draw_rectangle(0.,0.,1.,1.,Layer::Floor,Color::Base2);
         target.draw_circle(0.,0.,10.,Layer::Middle,Color::Base3);
         target.draw_quad(trans,Layer::Ceil,Color::Base4);
         target.draw_line(0.,0.,1.,10.,1.,Layer::Ceil,Color::Base5);

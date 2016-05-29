@@ -10,6 +10,7 @@ extern crate time;
 mod levels;
 mod event_loop;
 mod window;
+pub mod weapons;
 pub mod control;
 pub mod physic;
 pub mod entities;
@@ -32,6 +33,9 @@ use utils::key;
 
 //TODO let it being configurable
 const NUMBER_OF_THREADS: usize = 4;
+const CURSOR_OUTER_RADIUS: f32 = 1.0;
+const CURSOR_INNER_RADIUS: f32 = 0.1;
+const CURSOR_COLOR: graphics::Color = graphics::Color::Base5;
 
 #[derive(Clone)]
 pub struct UpdateContext {
@@ -42,6 +46,7 @@ struct App {
     camera: graphics::Camera,
     graphics: graphics::Graphics,
     entities: entities::Entities,
+    cursor: [f32;2],
     planner: specs::Planner<UpdateContext>,
     player_dir: Vec<Direction>,
     physic_world: physic::PhysicWorld,
@@ -56,6 +61,7 @@ impl App {
         self.physic_world.update(args.dt as f32, &self.planner.world);
 
         self.planner.dispatch(context);
+        self.planner.wait();
     }
     fn render(&mut self, args: event_loop::RenderArgs) {
         // update camera
@@ -86,7 +92,13 @@ impl App {
             }
         }
 
-        // draw grid
+        // draw cursor
+        {
+            let cursor = self.cursor_absolute_position();
+            frame.draw_rectangle(cursor[0],cursor[1],CURSOR_OUTER_RADIUS,CURSOR_INNER_RADIUS,graphics::Layer::Ceil,CURSOR_COLOR);
+            frame.draw_rectangle(cursor[0],cursor[1],CURSOR_INNER_RADIUS,CURSOR_OUTER_RADIUS,graphics::Layer::Ceil,CURSOR_COLOR);
+        }
+
         // draw effects
 
         frame.finish().unwrap();
@@ -141,11 +153,25 @@ impl App {
             _ => (),
         }
     }
-    fn mouse_pressed(&mut self, _button: MouseButton) {}
-    fn mouse_released(&mut self, _button: MouseButton) {}
+    fn cursor_relative_position(&self) -> [f32;2] {
+        [self.cursor[0]/self.camera.zoom, self.cursor[1]/self.camera.zoom/self.camera.ratio]
+    }
+    fn cursor_absolute_position(&self) -> [f32;2] {
+        let rel = self.cursor_relative_position();
+        [rel[0] + self.camera.x, rel[1] + self.camera.y]
+    }
+    fn mouse_pressed(&mut self, _button: MouseButton) {
+    }
+    fn mouse_released(&mut self, _button: MouseButton) {
+    }
     fn mouse_moved(&mut self, x: f32, y: f32) {
-        let mouse_rel = [x/self.camera.zoom, y/self.camera.zoom/self.camera.ratio];
-        let _mouse_abs = [mouse_rel[0] + self.camera.x, mouse_rel[1] + self.camera.y];
+        self.cursor = [x,y];
+        let characters = self.planner.world.read::<control::PlayerControl>();
+        let mut rifles = self.planner.world.write::<weapons::Rifle>();
+        for (_, rifle) in (&characters, &mut rifles).iter() {
+            let cursor = self.cursor_relative_position();
+            rifle.aim = cursor[1].atan2(cursor[0]);
+        }
     }
     fn update_player_direction(&mut self) {
         use std::f32::consts::PI;
@@ -247,6 +273,7 @@ fn main() {
     world.register::<physic::PhysicForce>();
     world.register::<control::PlayerControl>();
     world.register::<graphics::Color>();
+    world.register::<weapons::Rifle>();
 
     // load level
     levels::load("toto".into(),&world,&entities).unwrap();
@@ -257,7 +284,9 @@ fn main() {
     physic_world.fill(&world);
 
     // init planner
-    let planner = specs::Planner::new(world,NUMBER_OF_THREADS);
+    let mut planner = specs::Planner::new(world,NUMBER_OF_THREADS);
+    let weapons_system = weapons::System;
+    planner.add_system(weapons_system, "weapons", 0);
 
     // init event loop
     let event_loop_config = config.get(&yaml::Yaml::String("event_loop".into())).unwrap();
@@ -267,6 +296,7 @@ fn main() {
     let mut app = App {
         camera: camera,
         graphics: graphics,
+        cursor: [0.,0.],
         entities: entities,
         planner: planner,
         player_dir: vec!(),
