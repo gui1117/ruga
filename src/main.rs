@@ -21,6 +21,8 @@ use glium::glutin::Event as InputEvent;
 use glium::glutin::MouseButton;
 use std::time::Duration;
 use std::thread;
+use std::cell::RefCell;
+use std::sync::Arc;
 use event_loop::{
     Events,
     Event,
@@ -39,7 +41,8 @@ const CURSOR_COLOR: graphics::Color = graphics::Color::Base5;
 
 #[derive(Clone)]
 pub struct UpdateContext {
-    pub dt: f64
+    pub dt: f64,
+    pub physic_world: Arc<RefCell<physic::PhysicWorld>>,
 }
 
 struct App {
@@ -54,11 +57,13 @@ struct App {
 
 impl App {
     fn update(&mut self, args: event_loop::UpdateArgs) {
+        self.physic_world.update(args.dt as f32, &self.planner.world);
+
         let context = UpdateContext {
             dt: args.dt,
+            physic_world: Arc::new(RefCell::new(self.physic_world)),
         };
 
-        self.physic_world.update(args.dt as f32, &self.planner.world);
 
         self.planner.dispatch(context);
         self.planner.wait();
@@ -274,14 +279,10 @@ fn main() {
     world.register::<control::PlayerControl>();
     world.register::<graphics::Color>();
     world.register::<weapons::Rifle>();
+    world.register::<physic::PhysicWorld>();
 
     // load level
     levels::load("toto".into(),&world,&entities).unwrap();
-
-    // init physic world
-    // TODO from setting
-    let mut physic_world = physic::PhysicWorld::new();
-    physic_world.fill(&world);
 
     // init planner
     let mut planner = specs::Planner::new(world,NUMBER_OF_THREADS);
@@ -300,7 +301,6 @@ fn main() {
         entities: entities,
         planner: planner,
         player_dir: vec!(),
-        physic_world: physic_world,
     };
 
     // game loop

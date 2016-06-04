@@ -7,6 +7,7 @@ use std::fs::File;
 use std::path::Path;
 use std::io;
 use specs::Join;
+use physic;
 
 #[derive(Debug)]
 pub enum LoadError {
@@ -21,6 +22,12 @@ pub fn load<'l>(level: String, world: &specs::World, entities: &Entities) -> Res
         world.delete_later(entity);
     }
     world.maintain();
+
+    // init world
+    // TODO from setting
+    let master = world.create_now()
+        .with::<physic::PhysicWorld>(physic::PhysicWorld::new())
+        .build();
 
     let dir = "levels";
     let path = Path::new(dir).join(Path::new(&*format!("{}{}",level,".lua")));

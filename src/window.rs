@@ -54,7 +54,7 @@ pub fn create(setting: &Setting) -> Result<glium::backend::glutin_backend::Gluti
 
     let mut builder = glium::glutin::WindowBuilder::new()
         .with_dimensions(setting.dimension[0], setting.dimension[1])
-        // .with_fullscreen(setting.fullscreen)
+        .with_fullscreen(setting.fullscreen)
         .with_title(format!("ruga"));
 
     if setting.vsync {

@@ -15,18 +15,32 @@ impl specs::Component for Rifle {
     type Storage = specs::VecStorage<Self>;
 }
 
+pub struct Life(f32);
+impl specs::Component for Life {
+    type Storage = specs::VecStorage<Self>;
+}
+
 pub struct System;
 
 impl specs::System<super::UpdateContext> for System {
     fn run(&mut self, arg: specs::RunArg, context: super::UpdateContext) {
+        // let physic_world = context.physic_world.borrow();
         let (mut rifles, states) = arg.fetch(|world| {
             (
                 world.write::<Rifle>(),
                 world.read::<physic::PhysicState>(),
             )
         });
-        for (rifle, state) in (&mut rifles, &states).iter() {
-        }
+        // for (rifle, state) in (&mut rifles, &states).iter() {
+        //     let ray = physic::Ray {
+        //         origin: state.position,
+        //         angle: rifle.aim,
+        //         length: rifle.length,
+        //     };
+        //     physic_world.raycast(&ray, &mut |(entity,start,end)| {
+        //         false
+        //     });
+        // }
     }
 }
 // pub fn process(&mut self, dt: f64, sh: &mut Schedule) {//w_state: &mut FireWeaponState, w_type: &FireWeaponType) {
