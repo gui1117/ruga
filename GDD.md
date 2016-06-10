@@ -178,3 +178,7 @@ play remote effect
 update simulated locations and current counter
 check if autonomous are OK if false then replay from the snapshot
 
+#THOUGHTS
+
+what if doors can move?
+what if sensors can move?

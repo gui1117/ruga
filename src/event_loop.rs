@@ -6,7 +6,6 @@ use std::thread::sleep;
 use std::time::Duration;
 use time;
 use std::cmp;
-use yaml_rust::yaml;
 
 pub struct RenderArgs {
     pub ext_dt: f64,
@@ -30,28 +29,8 @@ pub enum Event {
 
 #[derive(Clone,Debug)]
 pub struct Setting {
-    ups: u64,
-    max_fps: u64,
-}
-
-impl Setting {
-    pub fn from_yaml(config: &yaml::Yaml) -> Result<Setting, String> {
-        let hash = try!(config.as_hash().ok_or("event loop setting not associative array"));
-        let ups = try!(try!(hash.get(&yaml::Yaml::from_str("ups"))
-                                      .ok_or("event loop setting must have ups key"))
-                       .as_i64()
-                       .ok_or("event loop setting ups must be an integer")) as u64;
-
-        let max_fps = try!(try!(hash.get(&yaml::Yaml::from_str("max_fps"))
-                                      .ok_or("event loop setting must have max_fps key"))
-                       .as_i64()
-                       .ok_or("event loop setting max_fps must be an integer")) as u64;
-
-        Ok(Setting {
-            ups: ups,
-            max_fps: max_fps,
-        })
-    }
+    pub ups: u64,
+    pub max_fps: u64,
 }
 
 /// A trait for create event iterator from window.

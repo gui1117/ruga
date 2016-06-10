@@ -5,6 +5,16 @@
 * start end
 * monsters
 
+* window creation catch error and try whitout vsync and then without multisampling
+
+* vi-like live configuration:
+  * volume
+  * switch light dark
+  * luminosity
+  * reset game
+  * quit game
+  * affiche les touches
+
 #vrac
 
 levels function for create

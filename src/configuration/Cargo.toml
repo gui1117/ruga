@@ -1,0 +1,8 @@
+[package]
+name = "configuration"
+version = "0.1.0"
+authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
+
+[dependencies]
+lazy_static = "*"
+toml = "*"

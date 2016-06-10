@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 
 [dependencies]
-glium = "0.14"
-vecmath = "0.2"
-yaml-rust = "0.3"
+glium = "*"
+vecmath = "*"
+yaml-rust = "*"
 glium_text = { path = "src/glium_text" }
-specs = "0.6.0"
+specs = "*"

@@ -8,10 +8,14 @@ name = "ruga"
 
 [dependencies]
 graphics = { path = "src/graphics" }
-yaml_utils = { git = "https://github.com/thiolliere/yaml_utils" }
-yaml-rust = "0.3.0"
-baal = "0.2.0"
-glium = "0.14.0"
-specs = "0.6.0"
-hlua = "0.1"
-time = "0.1.0"
+configuration = { path = "src/configuration" }
+baal = "*"
+glium = "*"
+specs = "*"
+hlua = "*"
+time = "*"
+lazy_static = "*"
+toml = "*"
+rand = "*"
+nom = "*"
+

@@ -1,0 +1,5 @@
+[general]
+number_of_thread = 4
+cursor_outer_radius: 1.0;
+cursor_inner_radius: 0.1;
+cursor_color: base5;

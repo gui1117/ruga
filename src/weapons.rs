@@ -1,15 +1,41 @@
+use utils::Into3D;
+use snd_effect;
+use baal;
+use app;
 use specs;
 use physic;
 use specs::Join;
+use rand;
+use rand::distributions::{IndependentSample, Range};
+use effects::Effect;
+
+#[derive(Clone,Copy)]
+pub enum RifleState {
+    ShootOne,
+    ShootLots,
+    Rest,
+}
 
 pub struct Rifle {
-    pub rate: f32,
+    /// length of the shoot (actual length is lenght - distance)
     pub length: f32,
+    pub max_ammo: f32,
+    /// time to reach max_ammo
+    pub ammo_regen: f32,
     pub damage: f32,
-    pub shoot: bool,
-    pub recovery: f32,
-    pub ammo: u32,
+    /// time between to shoot
+    pub rate: f32,
+    /// number of shoot for ShootLots
+    pub lots: u32,
+    /// max angle of deviation
+    pub deviation: f32,
+    /// distance to start the shoot from the position
+    pub distance: f32,
+
     pub aim: f32,
+    pub ammo: f32,
+    pub state: RifleState,
+    pub recovery: f32,
 }
 impl specs::Component for Rifle {
     type Storage = specs::VecStorage<Self>;
@@ -22,38 +48,89 @@ impl specs::Component for Life {
 
 pub struct System;
 
-impl specs::System<super::UpdateContext> for System {
-    fn run(&mut self, arg: specs::RunArg, context: super::UpdateContext) {
-        // let physic_world = context.physic_world.borrow();
-        let (mut rifles, states) = arg.fetch(|world| {
+impl specs::System<app::UpdateContext> for System {
+    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
+        let (mut rifles, mut lives, states, physic_worlds) = arg.fetch(|world| {
             (
                 world.write::<Rifle>(),
+                world.write::<Life>(),
                 world.read::<physic::PhysicState>(),
+                world.read::<physic::PhysicWorld>(),
             )
         });
-        // for (rifle, state) in (&mut rifles, &states).iter() {
-        //     let ray = physic::Ray {
-        //         origin: state.position,
-        //         angle: rifle.aim,
-        //         length: rifle.length,
-        //     };
-        //     physic_world.raycast(&ray, &mut |(entity,start,end)| {
-        //         false
-        //     });
-        // }
+
+        let physic_world = physic_worlds.get(context.master_entity)
+            .expect("master_entity expect physic_world");
+
+        let dt = context.dt as f32;
+        let effect_tx = context.effect_tx;
+
+        for (rifle, state) in (&mut rifles, &states).iter() {
+            let old_rifle_ammo = rifle.ammo;
+            rifle.ammo = rifle.max_ammo.min(rifle.ammo + dt*rifle.max_ammo/rifle.ammo_regen);
+            if rifle.ammo.floor() as usize - old_rifle_ammo.floor() as usize == 1 {
+                baal::effect::play(snd_effect::RIFLE_RELOAD,&state.position.into_3d());
+            }
+            rifle.recovery -= dt;
+
+            if rifle.recovery > 0. { continue; }
+
+            let shoots = match rifle.state {
+                RifleState::ShootOne => {
+                    if rifle.ammo >= 1. {
+                        baal::effect::play(snd_effect::RIFLE_SHOOT_ONE,&state.position.into_3d());
+                        rifle.ammo -= 1.;
+                        1
+                    } else {
+                        baal::effect::play(snd_effect::RIFLE_SHOOT_ZERO,&state.position.into_3d());
+                        0
+                    }
+                },
+                RifleState::ShootLots => {
+                    if (rifle.lots as f32) >= rifle.ammo {
+                        baal::effect::play(snd_effect::RIFLE_SHOOT_LOTS,&state.position.into_3d());
+                        rifle.ammo -= rifle.lots as f32;
+                        rifle.lots
+                    } else {
+                        baal::effect::play(snd_effect::RIFLE_SHOOT_ZERO,&state.position.into_3d());
+                        0
+                    }
+                },
+                RifleState::Rest => { 0 },
+            };
+
+            if shoots == 0 { continue; }
+
+            rifle.recovery = rifle.rate;
+
+            let mut rng = rand::thread_rng();
+            let range = Range::new(-rifle.deviation,rifle.deviation);
+
+            for _ in 0..shoots {
+                let angle = rifle.aim + range.ind_sample(&mut rng);
+                let origin = [
+                    state.position[0] + rifle.distance * angle.cos(),
+                    state.position[1] + rifle.distance * angle.sin(),
+                ];
+                let ray = physic::Ray {
+                    origin: origin,
+                    angle: angle,
+                    length: rifle.length - rifle.distance,
+                };
+
+                physic_world.raycast(&ray, &mut |(entity,start,_)| {
+                    if let Some(&mut Life(ref mut life)) = lives.get_mut(entity) {
+                        *life -= rifle.damage;
+                        effect_tx.send(Effect::RifleShoot(
+                            origin[0],
+                            origin[1],
+                            origin[0] + start * angle.cos(),
+                            origin[1] + start * angle.sin(),
+                        )).unwrap();
+                        true
+                    } else { false }
+                });
+            }
+        }
     }
 }
-// pub fn process(&mut self, dt: f64, sh: &mut Schedule) {//w_state: &mut FireWeaponState, w_type: &FireWeaponType) {
-//     let w_state = sh.get_mut::<FireWeaponState>().unwrap();
-//     let w_weapon = sh.get_mut::<FireWeaponType>().unwrap();
-    // // iterate over w_state and w_type
-    // w_state.recovery -= dt;
-    // if w_state.shoot && w_state.ammo != 0 && w_state.recovery <= 0. {
-    //     w_state.recovery += w_type.rate;
-    //     w_state.ammo -= 1;
-    //     //TODO shoot
-    // } else {
-    //     w_state.recovery = (w_state.recovery).max(0.);
-    // }
-// }
-

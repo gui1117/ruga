@@ -1,14 +1,14 @@
+use app;
 use specs;
+use config;
 use specs::Join;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-/// time to reach v max is actually time to reach rate*v_max
-//TODO let it being configurable
-const RATE: f32 = 0.9;
-/// length of cell for the spatial hashing
-//TODO let it being configurable
-const UNIT: f32 = 10.;
+// /// time to reach v max is actually time to reach rate*v_max
+// const _RATE: f32 = 0.9;
+// /// length of cell for the spatial hashing
+// const _UNIT: f32 = 10.;
 
 #[derive(Debug,Clone)]
 pub enum Shape {
@@ -53,7 +53,7 @@ pub struct PhysicType {
 }
 impl PhysicType {
     pub fn new_movable(shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
-        let damping = -weight * (1.-RATE).ln() / time_to_reach_v_max;
+        let damping = -weight * (1.-config.physic.rate).ln() / time_to_reach_v_max;
         let force = velocity * damping;
         PhysicType {
             shape: shape,
@@ -131,6 +131,9 @@ pub struct PhysicWorld {
     static_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],Shape)>>,
     movable_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],Shape)>>,
 }
+impl specs::Component for PhysicWorld {
+    type Storage = specs::VecStorage<Self>;
+}
 
 struct Resolution {
     entity: specs::Entity,
@@ -138,10 +141,107 @@ struct Resolution {
     vec: [f32;2],
 }
 
+pub struct System;
+impl specs::System<app::UpdateContext> for System {
+    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
+        use std::f32::consts::PI;
+        use specs::Join;
+
+        let (kinetics,dynamics,mut states,forces,types,mut physic_worlds,entities) = arg.fetch(|world| {
+            (
+                world.read::<PhysicKinetic>(),
+                world.read::<PhysicDynamic>(),
+                world.write::<PhysicState>(),
+                world.read::<PhysicForce>(),
+                world.read::<PhysicType>(),
+                world.write::<PhysicWorld>(),
+                world.entities(),
+            )
+        });
+        let mut physic_world = physic_worlds.get_mut(context.master_entity)
+            .expect("master_entity expect physic_world component");
+
+        let dt = context.dt as f32;
+
+        let mut resolutions = Vec::new();
+
+        physic_world.movable_hashmap = HashMap::new();
+        for (_,entity) in (&dynamics, &entities).iter() {
+            let state = states.get_mut(entity).expect("dynamic entity expect state component");
+            let force = forces.get(entity).expect("dynamic entity expect force component");
+            let typ = types.get(entity).expect("dynamic entity expect type component");
+
+            state.acceleration[0] = (typ.force*force.intensity*force.direction.cos()
+                                     - typ.damping*state.velocity[0])/typ.weight;
+
+            state.acceleration[1] = (typ.force*force.intensity*force.direction.sin()
+                                     - typ.damping*state.velocity[1])/typ.weight;
+
+            state.velocity[0] += dt*state.acceleration[0];
+            state.velocity[1] += dt*state.acceleration[1];
+
+            state.position[0] += dt*state.velocity[0];
+            state.position[1] += dt*state.velocity[1];
+
+            physic_world.apply_on_shape(&state.position, &typ.shape, &mut |other_entity,collision| {
+                let other_type = types.get(*other_entity).expect("physic entity expect type component");
+
+                let mut rate = typ.weight/(typ.weight+other_type.weight);
+                if rate.is_nan() {
+                    rate = 1.;
+                }
+
+                resolutions.push(Resolution {
+                    entity: entity,
+                    rate: rate,
+                    vec: [collision.delta_x, collision.delta_y],
+                });
+                resolutions.push(Resolution {
+                    entity: *other_entity,
+                    rate: 1.-rate,
+                    vec: [-collision.delta_x, -collision.delta_y],
+                });
+            });
+
+            physic_world.insert_movable(entity, &state.position, &typ.shape);
+        }
+
+        for res in resolutions {
+            let state = states.get_mut(res.entity).unwrap();
+            let typ = types.get(res.entity).unwrap();
+
+            state.position[0] += res.rate*res.vec[0];
+            state.position[1] += res.rate*res.vec[1];
+
+            match typ.collision_behavior {
+                CollisionBehavior::Bounce => {
+                    let angle = state.velocity[1].atan2(state.velocity[0]) + PI;
+                    state.velocity[0] = angle.cos();
+                    state.velocity[1] = angle.sin();
+                },
+                CollisionBehavior::Stop => state.velocity = [0.,0.],
+                CollisionBehavior::Back => {
+                    state.velocity[0] = -state.velocity[0];
+                    state.velocity[1] = -state.velocity[1];
+                },
+                CollisionBehavior::Persist => (),
+            }
+        }
+
+        physic_world.movable_hashmap = HashMap::new();
+        for (_,state,typ,entity) in (&dynamics, &mut states, &types, &entities).iter() {
+            physic_world.insert_movable(entity, &state.position, &typ.shape);
+        }
+        for (_,state,typ,entity) in (&kinetics, &mut states, &types, &entities).iter() {
+            physic_world.insert_movable(entity, &state.position, &typ.shape);
+        }
+    }
+}
+
 impl PhysicWorld {
     pub fn new() -> Self {
         PhysicWorld {
-            unit: UNIT,
+            unit: config.physic.unit,
             static_hashmap: HashMap::new(),
             movable_hashmap: HashMap::new(),
         }
@@ -213,87 +313,17 @@ impl PhysicWorld {
         }
     }
 
-    pub fn update(&mut self, dt: f32, world: &specs::World) {
-        use std::f32::consts::PI;
-        use specs::Join;
-
-        let kinetics = world.read::<PhysicKinetic>();
-        let dynamics = world.read::<PhysicDynamic>();
-        let mut states = world.write::<PhysicState>();
-        let forces= world.read::<PhysicForce>();
-        let types = world.read::<PhysicType>();
-        let entities = world.entities();
-
-        let mut resolutions = Vec::new();
-
-        self.movable_hashmap = HashMap::new();
-        for (_,state,force,typ,entity) in (&dynamics, &mut states, &forces, &types, &entities).iter() {
-            state.acceleration[0] = (typ.force*force.intensity*force.direction.cos() - typ.damping*state.velocity[0])/typ.weight;
-            state.acceleration[1] = (typ.force*force.intensity*force.direction.sin() - typ.damping*state.velocity[1])/typ.weight;
-
-            state.velocity[0] += dt*state.acceleration[0];
-            state.velocity[1] += dt*state.acceleration[1];
-
-            state.position[0] += dt*state.velocity[0];
-            state.position[1] += dt*state.velocity[1];
-
-            self.apply_on_shape(&state.position, &typ.shape, &mut |other_entity,collision| {
-                let other_type = types.get(*other_entity).unwrap();
-
-                let mut rate = typ.weight/(typ.weight+other_type.weight);
-                if rate.is_nan() {
-                    rate = 1.;
-                }
-
-                resolutions.push(Resolution {
-                    entity: entity,
-                    rate: rate,
-                    vec: [collision.delta_x, collision.delta_y],
-                });
-                resolutions.push(Resolution {
-                    entity: *other_entity,
-                    rate: 1.-rate,
-                    vec: [-collision.delta_x, -collision.delta_y],
-                });
-            });
-
-            self.insert_movable(entity, &state.position, &typ.shape);
-        }
-
-        for res in resolutions {
-            let state = states.get_mut(res.entity).unwrap();
-            let typ = types.get(res.entity).unwrap();
-
-            state.position[0] += res.rate*res.vec[0];
-            state.position[1] += res.rate*res.vec[1];
-
-            match typ.collision_behavior {
-                CollisionBehavior::Bounce => {
-                    let angle = state.velocity[1].atan2(state.velocity[0]) + PI;
-                    state.velocity[0] = angle.cos();
-                    state.velocity[1] = angle.sin();
-                },
-                CollisionBehavior::Stop => state.velocity = [0.,0.],
-                CollisionBehavior::Back => {
-                    state.velocity[0] = -state.velocity[0];
-                    state.velocity[1] = -state.velocity[1];
-                },
-                CollisionBehavior::Persist => (),
-            }
-        }
-
-        self.movable_hashmap = HashMap::new();
-        for (_,state,typ,entity) in (&dynamics, &mut states, &types, &entities).iter() {
-            self.insert_movable(entity, &state.position, &typ.shape);
-        }
-        for (_,state,typ,entity) in (&kinetics, &mut states, &types, &entities).iter() {
-            self.insert_movable(entity, &state.position, &typ.shape);
+    pub fn insert_static(&mut self, entity: specs::Entity, pos: &[f32;2], shape: &Shape) {
+        for cell in self.cells_of_shape(pos,shape) {
+            self.static_hashmap.entry(cell).or_insert(Vec::new()).push((entity,pos.clone(),shape.clone()));
         }
     }
 
-    fn insert_static(&mut self, entity: specs::Entity, pos: &[f32;2], shape: &Shape) {
+    pub fn remove_static(&mut self, entity: specs::Entity, pos:&[f32;2], shape: &Shape) {
         for cell in self.cells_of_shape(pos,shape) {
-            self.static_hashmap.entry(cell).or_insert(Vec::new()).push((entity,pos.clone(),shape.clone()));
+            let vec = self.static_hashmap.get_mut(&cell).expect("remove static in an unexisting cell");
+            let i = vec.iter().position(|&(e,_,_)| e == entity).expect("remove unfindable entity");
+            vec.swap_remove(i);
         }
     }
 

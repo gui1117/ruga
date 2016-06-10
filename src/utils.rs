@@ -56,13 +56,23 @@ pub fn minus_pi_pi(a: f32) -> f32 {
     }
 }
 
+pub trait Into3D {
+    fn into_3d(&self) -> [f64;3];
+}
+
+impl Into3D for [f32;2] {
+    fn into_3d(&self) -> [f64;3] {
+        [self[0] as f64,self[1] as f64,0f64]
+    }
+}
+
 #[test]
 fn test_minus_pi_pi() {
     use std::f32::consts::PI;
-    assert_eq!(minus_pi_pi(PI),PI);
-    assert_eq!(minus_pi_pi(-PI),PI);
-    assert_eq!(minus_pi_pi(3.*PI),PI);
-    assert_eq!(minus_pi_pi(3.*PI),PI);
+    assert!((minus_pi_pi(PI)-PI).abs() < 0.001);
+    assert!((minus_pi_pi(-PI)-PI).abs() < 0.001);
+    assert!((minus_pi_pi(3.*PI)-PI).abs() < 0.001);
+    assert!((minus_pi_pi(3.*PI)-PI).abs() < 0.001);
 }
 
 //TODO replace by action: up, down ...

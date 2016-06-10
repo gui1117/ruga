@@ -1,306 +1,107 @@
+#[macro_use] extern crate configuration;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate nom;
 extern crate baal;
 extern crate graphics;
 extern crate glium;
 extern crate hlua;
 extern crate specs;
-#[macro_use] extern crate yaml_utils;
-extern crate yaml_rust;
 extern crate time;
+extern crate toml;
+extern crate rand;
 
 mod levels;
-mod event_loop;
-mod window;
+mod app;
+mod conf;
+pub mod doors;
+pub mod signal_network;
+pub mod effects;
+pub mod event_loop;
 pub mod weapons;
 pub mod control;
 pub mod physic;
 pub mod entities;
 pub mod utils;
 
+pub use conf::{config,snd_effect,music};
+pub use utils::Direction;
+pub use utils::key;
 use glium::glutin::ElementState;
 use glium::glutin::Event as InputEvent;
-use glium::glutin::MouseButton;
 use std::time::Duration;
 use std::thread;
-use std::cell::RefCell;
-use std::sync::Arc;
 use event_loop::{
     Events,
     Event,
 };
-use yaml_utils::FromYaml;
-use yaml_rust::yaml;
-use specs::Join;
-use utils::Direction;
-use utils::key;
 
-//TODO let it being configurable
-const NUMBER_OF_THREADS: usize = 4;
-const CURSOR_OUTER_RADIUS: f32 = 1.0;
-const CURSOR_INNER_RADIUS: f32 = 0.1;
-const CURSOR_COLOR: graphics::Color = graphics::Color::Base5;
+fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event_loop::WindowEvents),String> {
+    use glium::DisplayBuild;
 
-#[derive(Clone)]
-pub struct UpdateContext {
-    pub dt: f64,
-    pub physic_world: Arc<RefCell<physic::PhysicWorld>>,
-}
+    // init baal
+    try!(baal::init(&baal::Setting {
+        channels: config.audio.channels,
+        sample_rate: config.audio.sample_rate,
+        frames_per_buffer: config.audio.frames_per_buffer,
+        effect_dir: config.audio.effect_dir.clone(),
+        music_dir: config.audio.music_dir.clone(),
+        global_volume: config.audio.global_volume,
+        music_volume: config.audio.music_volume,
+        effect_volume: config.audio.effect_volume,
+        distance_model: match &*config.audio.distance_model {
+            "linear" => baal::effect::DistanceModel::Linear(config.audio.distance_model_min,config.audio.distance_model_max),
+            "pow2" => baal::effect::DistanceModel::Pow2(config.audio.distance_model_min,config.audio.distance_model_max),
+            _ => unreachable!(),
+        },
+        music_loop: config.audio.music_loop,
+        effect: config.audio.effect.to_vec(),
+        music: config.audio.music.to_vec(),
+        check_level: match &*config.audio.check_level {
+            "never" => baal::CheckLevel::Never,
+            "always" => baal::CheckLevel::Always,
+            "debug" => baal::CheckLevel::Debug,
+            _ => unreachable!(),
+        },
+    }).map_err(|e| format!("ERROR: audio init failed: {:#?}",e)));
 
-struct App {
-    camera: graphics::Camera,
-    graphics: graphics::Graphics,
-    entities: entities::Entities,
-    cursor: [f32;2],
-    planner: specs::Planner<UpdateContext>,
-    player_dir: Vec<Direction>,
-    physic_world: physic::PhysicWorld,
-}
+    // init window
+    // TODO if fail then disable vsync and then multisampling and then vsync and multisamping
+    let window = {
+        let mut builder = glium::glutin::WindowBuilder::new()
+            .with_dimensions(config.window.dimension[0], config.window.dimension[1])
+            .with_title(format!("ruga"));
 
-impl App {
-    fn update(&mut self, args: event_loop::UpdateArgs) {
-        self.physic_world.update(args.dt as f32, &self.planner.world);
-
-        let context = UpdateContext {
-            dt: args.dt,
-            physic_world: Arc::new(RefCell::new(self.physic_world)),
-        };
-
-
-        self.planner.dispatch(context);
-        self.planner.wait();
-    }
-    fn render(&mut self, args: event_loop::RenderArgs) {
-        // update camera
-        {
-            let characters = self.planner.world.read::<control::PlayerControl>();
-            let states = self.planner.world.read::<physic::PhysicState>();
-            for (_, state) in (&characters, &states).iter() {
-                self.camera.x = state.position[0];
-                self.camera.y = state.position[1];
-            }
+        if config.window.vsync {
+            builder = builder.with_vsync();
         }
-
-        let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
-
-        // draw entities
-        {
-            let states = self.planner.world.read::<physic::PhysicState>();
-            let types = self.planner.world.read::<physic::PhysicType>();
-            let colors = self.planner.world.read::<graphics::Color>();
-
-            for (state, typ, color) in (&states, &types, &colors).iter() {
-                let x = state.position[0];
-                let y = state.position[1];
-                match typ.shape {
-                    physic::Shape::Circle(radius) => frame.draw_circle(x,y,radius,graphics::Layer::Middle,*color),
-                    physic::Shape::Square(radius) => frame.draw_square(x,y,radius,graphics::Layer::Middle,*color),
-                }
-            }
+        if config.window.multisampling != 0 {
+            builder = builder.with_multisampling(config.window.multisampling)
         }
+        try!(builder.build_glium().map_err(|e| format!("ERROR: window init failed: {}",e)))
+    };
+    window.get_window().unwrap().set_cursor_state(glium::glutin::CursorState::Hide).unwrap();
 
-        // draw cursor
-        {
-            let cursor = self.cursor_absolute_position();
-            frame.draw_rectangle(cursor[0],cursor[1],CURSOR_OUTER_RADIUS,CURSOR_INNER_RADIUS,graphics::Layer::Ceil,CURSOR_COLOR);
-            frame.draw_rectangle(cursor[0],cursor[1],CURSOR_INNER_RADIUS,CURSOR_OUTER_RADIUS,graphics::Layer::Ceil,CURSOR_COLOR);
-        }
+    // init app
+    let app = try!(app::App::new(&window));
 
-        // draw effects
+    // init event loop
+    let window_events = window.events(&event_loop::Setting {
+        ups: config.event_loop.ups,
+        max_fps: config.event_loop.max_fps,
+    });
 
-        frame.finish().unwrap();
-    }
-    fn key_pressed(&mut self, key: u8) {
-        match key {
-            key::Z => {
-                if !self.player_dir.contains(&Direction::Up) {
-                    self.player_dir.push(Direction::Up);
-                    self.update_player_direction();
-                }
-            },
-            key::S => {
-                if !self.player_dir.contains(&Direction::Down) {
-                    self.player_dir.push(Direction::Down);
-                    self.update_player_direction();
-                }
-            },
-            key::Q => {
-                if !self.player_dir.contains(&Direction::Left) {
-                    self.player_dir.push(Direction::Left);
-                    self.update_player_direction();
-                }
-            },
-            key::D => {
-                if !self.player_dir.contains(&Direction::Right) {
-                    self.player_dir.push(Direction::Right);
-                    self.update_player_direction();
-                }
-            },
-            _ => (),
-        }
-    }
-    fn key_released(&mut self, key: u8) {
-        match key {
-            key::Z => {
-                self.player_dir.retain(|dir| &Direction::Up != dir);
-                self.update_player_direction();
-            }
-            key::S => {
-                self.player_dir.retain(|dir| &Direction::Down != dir);
-                self.update_player_direction();
-            }
-            key::Q => {
-                self.player_dir.retain(|dir| &Direction::Left != dir);
-                self.update_player_direction();
-            }
-            key::D => {
-                self.player_dir.retain(|dir| &Direction::Right != dir);
-                self.update_player_direction();
-            }
-            _ => (),
-        }
-    }
-    fn cursor_relative_position(&self) -> [f32;2] {
-        [self.cursor[0]/self.camera.zoom, self.cursor[1]/self.camera.zoom/self.camera.ratio]
-    }
-    fn cursor_absolute_position(&self) -> [f32;2] {
-        let rel = self.cursor_relative_position();
-        [rel[0] + self.camera.x, rel[1] + self.camera.y]
-    }
-    fn mouse_pressed(&mut self, _button: MouseButton) {
-    }
-    fn mouse_released(&mut self, _button: MouseButton) {
-    }
-    fn mouse_moved(&mut self, x: f32, y: f32) {
-        self.cursor = [x,y];
-        let characters = self.planner.world.read::<control::PlayerControl>();
-        let mut rifles = self.planner.world.write::<weapons::Rifle>();
-        for (_, rifle) in (&characters, &mut rifles).iter() {
-            let cursor = self.cursor_relative_position();
-            rifle.aim = cursor[1].atan2(cursor[0]);
-        }
-    }
-    fn update_player_direction(&mut self) {
-        use std::f32::consts::PI;
 
-        if let Some(dir) = self.player_dir.last() {
-
-            let mut last_perpendicular: Option<&Direction> = None;
-            for d in &self.player_dir {
-                if d.perpendicular(dir) {
-                    last_perpendicular = Some(d);
-                }
-            }
-
-            let angle = match dir {
-                &Direction::Up => {
-                    match last_perpendicular {
-                        Some(&Direction::Left) => 3.*PI/4.,
-                        Some(&Direction::Right) => PI/4.,
-                        _ => PI/2.,
-                    }
-                },
-                &Direction::Down => {
-                    match last_perpendicular {
-                        Some(&Direction::Left) => -3.*PI/4.,
-                        Some(&Direction::Right) => -PI/4.,
-                        _ => -PI/2.,
-                    }
-                },
-                &Direction::Right => {
-                    match last_perpendicular {
-                        Some(&Direction::Down) => -PI/4.,
-                        Some(&Direction::Up) => PI/4.,
-                        _ => 0.,
-                    }
-                },
-                &Direction::Left => {
-                    match last_perpendicular {
-                        Some(&Direction::Down) => -3.*PI/4.,
-                        Some(&Direction::Up) => 3.*PI/4.,
-                        _ => PI,
-                    }
-                },
-            };
-
-            let characters = self.planner.world.read::<control::PlayerControl>();
-            let mut forces = self.planner.world.write::<physic::PhysicForce>();
-            for (_, force) in (&characters, &mut forces).iter() {
-                force.direction = angle;
-                force.intensity = 1.;
-            }
-        } else {
-            let characters = self.planner.world.read::<control::PlayerControl>();
-            let mut forces = self.planner.world.write::<physic::PhysicForce>();
-            for (_, force) in (&characters, &mut forces).iter() {
-                force.intensity = 0.;
-            }
-        }
-    }
-    fn resize(&mut self, width: u32, height: u32) {
-        self.camera.ratio = width as f32 / height as f32;
-    }
+    Ok((app,window,window_events))
 }
 
 fn main() {
-    let mut config = yaml_utils::unify(std::path::Path::new("config")).unwrap();
-
-    // init baal
-    let audio_config = config.remove(&yaml::Yaml::String("audio".into())).unwrap();
-    let baal_setting = baal::Setting::from_yaml(&audio_config).unwrap();
-    baal::init(&baal_setting).unwrap();
-
-    // init window
-    let window_config = config.remove(&yaml::Yaml::String("window".into())).unwrap();
-    let window_setting = window::Setting::from_yaml(&window_config).unwrap();
-    let mut window = window::create(&window_setting).unwrap();
-
-    // init graphics
-    let graphics_config = config.remove(&yaml::Yaml::String("graphics".into())).unwrap();
-    let graphics_setting = graphics::GraphicsSetting::from_yaml(&graphics_config).unwrap();
-    let graphics = graphics::Graphics::new(&window, graphics_setting).unwrap();
-
-    // init camera
-    let camera_config = config.remove(&yaml::Yaml::String("camera".into())).unwrap();
-    let camera_setting = graphics::CameraSetting::from_yaml(&camera_config).unwrap();
-    let camera = graphics::Camera::new(&window, camera_setting).unwrap();
-
-    // init entities
-    // let entities_config = config.remove(&yaml::Yaml::String("entities".into())).unwrap();
-    // let entities_setting = entities::EntitiesSetting::from_yaml(entities_config).unwrap();
-    let entities = entities::Entities::new();
-
-    // init world
-    let mut world = specs::World::new();
-    world.register::<physic::PhysicState>();
-    world.register::<physic::PhysicStatic>();
-    world.register::<physic::PhysicDynamic>();
-    world.register::<physic::PhysicKinetic>();
-    world.register::<physic::PhysicType>();
-    world.register::<physic::PhysicForce>();
-    world.register::<control::PlayerControl>();
-    world.register::<graphics::Color>();
-    world.register::<weapons::Rifle>();
-    world.register::<physic::PhysicWorld>();
-
-    // load level
-    levels::load("toto".into(),&world,&entities).unwrap();
-
-    // init planner
-    let mut planner = specs::Planner::new(world,NUMBER_OF_THREADS);
-    let weapons_system = weapons::System;
-    planner.add_system(weapons_system, "weapons", 0);
-
-    // init event loop
-    let event_loop_config = config.get(&yaml::Yaml::String("event_loop".into())).unwrap();
-    let event_loop_setting = event_loop::Setting::from_yaml(event_loop_config).unwrap();
-    let mut window_events = window.events(&event_loop_setting);
-
-    let mut app = App {
-        camera: camera,
-        graphics: graphics,
-        cursor: [0.,0.],
-        entities: entities,
-        planner: planner,
-        player_dir: vec!(),
+    // init
+    let (mut app,mut window,mut window_events) = match init() {
+        Ok(app) => app,
+        Err(err) => {
+            println!("{}",err);
+            std::process::exit(1);
+        },
     };
 
     // game loop
@@ -324,6 +125,7 @@ fn main() {
                 }
             },
             Event::Input(InputEvent::MouseMoved(x,y)) => {
+                println!("mouse move {:?} {:?}",x,y);
                 let dimension = window.get_framebuffer_dimensions();
 
                 let dimension = [dimension.0 as f32, dimension.1 as f32];
@@ -335,7 +137,7 @@ fn main() {
             Event::Input(InputEvent::Resized(width,height)) => {
                 app.resize(width,height);
             },
-            Event::Input(_) => {},
+            Event::Input(_) => (),
             Event::Idle(args) => thread::sleep(Duration::from_millis(args.dt as u64)),
         }
     }
