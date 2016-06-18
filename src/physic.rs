@@ -4,6 +4,7 @@ use config;
 use specs::Join;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::f32;
 
 // /// time to reach v max is actually time to reach rate*v_max
 // const _RATE: f32 = 0.9;
@@ -38,6 +39,16 @@ impl PhysicState {
             acceleration: [0.,0.],
         }
     }
+    pub fn new_aligned(pos: [isize;2]) -> Self {
+        PhysicState{
+            position: [
+                pos[0] as f32 + 0.5,
+                pos[1] as f32 + 0.5,
+            ],
+            velocity: [0.,0.],
+            acceleration: [0.,0.],
+        }
+    }
 }
 impl specs::Component for PhysicState {
     type Storage = specs::VecStorage<Self>;
@@ -64,7 +75,6 @@ impl PhysicType {
         }
     }
     pub fn new_static(shape: Shape) -> Self {
-        use std::f32;
         PhysicType {
             shape: shape,
             collision_behavior: CollisionBehavior::Persist,
@@ -135,6 +145,7 @@ impl specs::Component for PhysicWorld {
     type Storage = specs::VecStorage<Self>;
 }
 
+#[derive(Debug)]
 struct Resolution {
     entity: specs::Entity,
     rate: f32,
@@ -186,21 +197,30 @@ impl specs::System<app::UpdateContext> for System {
             physic_world.apply_on_shape(&state.position, &typ.shape, &mut |other_entity,collision| {
                 let other_type = types.get(*other_entity).expect("physic entity expect type component");
 
-                let mut rate = typ.weight/(typ.weight+other_type.weight);
-                if rate.is_nan() {
-                    rate = 1.;
-                }
+                let rate = {
+                    if other_type.weight == f32::MAX {
+                        0.
+                    } else if typ.weight == f32::MAX {
+                        1.
+                    } else {
+                        typ.weight/(typ.weight+other_type.weight)
+                    }
+                };
 
-                resolutions.push(Resolution {
-                    entity: entity,
-                    rate: rate,
-                    vec: [collision.delta_x, collision.delta_y],
-                });
-                resolutions.push(Resolution {
-                    entity: *other_entity,
-                    rate: 1.-rate,
-                    vec: [-collision.delta_x, -collision.delta_y],
-                });
+                if rate != 1. {
+                    resolutions.push(Resolution {
+                        entity: entity,
+                        rate: rate,
+                        vec: [collision.delta_x, collision.delta_y],
+                    });
+                }
+                if rate != 0. {
+                    resolutions.push(Resolution {
+                        entity: *other_entity,
+                        rate: 1.-rate,
+                        vec: [-collision.delta_x, -collision.delta_y],
+                    });
+                }
             });
 
             physic_world.insert_movable(entity, &state.position, &typ.shape);
@@ -210,8 +230,8 @@ impl specs::System<app::UpdateContext> for System {
             let state = states.get_mut(res.entity).unwrap();
             let typ = types.get(res.entity).unwrap();
 
-            state.position[0] += res.rate*res.vec[0];
-            state.position[1] += res.rate*res.vec[1];
+            state.position[0] += (1.-res.rate)*res.vec[0];
+            state.position[1] += (1.-res.rate)*res.vec[1];
 
             match typ.collision_behavior {
                 CollisionBehavior::Bounce => {
@@ -240,11 +260,15 @@ impl specs::System<app::UpdateContext> for System {
 
 impl PhysicWorld {
     pub fn new() -> Self {
-        PhysicWorld {
+        let physic_world = PhysicWorld {
             unit: config.physic.unit,
             static_hashmap: HashMap::new(),
             movable_hashmap: HashMap::new(),
-        }
+        };
+        debug_assert_eq!(physic_world.cells_of_shape(&[0.5,0.5], &Shape::Square(0.5 + f32::EPSILON)).len(),1);
+        debug_assert_eq!(physic_world.cells_of_shape(&[0.5,0.5], &Shape::Circle(0.5 + f32::EPSILON)).len(),1);
+
+        physic_world
     }
 
     pub fn fill(&mut self, world: &specs::World) {
@@ -272,10 +296,10 @@ impl PhysicWorld {
             Shape::Square(r) => r,
         };
 
-        let min_x = ((pos[0]-radius)/self.unit).floor() as i32;
-        let max_x = ((pos[0]+radius)/self.unit).ceil() as i32;
-        let min_y = ((pos[1]-radius)/self.unit).floor() as i32;
-        let max_y = ((pos[1]+radius)/self.unit).ceil() as i32;
+        let min_x = ((pos[0]-radius+f32::EPSILON)/self.unit).floor() as i32;
+        let max_x = ((pos[0]+radius-f32::EPSILON)/self.unit).ceil() as i32;
+        let min_y = ((pos[1]-radius+f32::EPSILON)/self.unit).floor() as i32;
+        let max_y = ((pos[1]+radius-f32::EPSILON)/self.unit).ceil() as i32;
 
         let mut cells = Vec::new();
         for x in min_x..max_x {
@@ -379,7 +403,7 @@ impl PhysicWorld {
                     // let intersections = entity.borrow().body().raycast(a,b,c);
                     let intersections = match *shape {
                         Shape::Circle(radius) => circle_raycast(pos[0],pos[1],radius,a,b,c),
-                        Shape::Square(radius) => bounding_box_raycast(pos[0],pos[1],radius,radius,a,b,c),
+                        Shape::Square(radius) => bounding_box_raycast(pos[0],pos[1],radius*2.,radius*2.,a,b,c),
                     };
 
                     if let Some((x_min,y_min,x_max,y_max)) = intersections {
@@ -432,6 +456,8 @@ impl PhysicWorld {
     }
 }
 
+const MOVE: f32 = 7./8.;
+const FACTOR: f32 = 8.*1.41421356237309504880;
 fn shape_collide(a_pos: &[f32;2], a_shape: &Shape, b_pos: &[f32;2], b_shape: &Shape) -> Option<Collision> {
     match *a_shape {
         Shape::Circle(a_rad) => {
@@ -442,22 +468,38 @@ fn shape_collide(a_pos: &[f32;2], a_shape: &Shape, b_pos: &[f32;2], b_shape: &Sh
                     let dn2 = dx.powi(2) + dy.powi(2);
                     let rad = a_rad+b_rad;
                     if dn2 < rad.powi(2) {
+                        let angle = dy.atan2(dx);
                         let dn = dn2.sqrt();
                         let delta = rad - dn;
                         Some(Collision {
-                            delta_x: dx/dn*delta,
-                            delta_y: dy/dn*delta,
+                            delta_x: delta*angle.cos(),
+                            delta_y: delta*angle.sin(),
                         })
                     } else {
                         None
                     }
                 },
                 Shape::Square(b_rad) => {
-                    let extern_horizontal = a_pos[0] < b_pos[0]-b_rad || a_pos[0] > b_pos[0]+b_rad;
-                    let extern_vertical = a_pos[1] < b_pos[1]-b_rad || a_pos[1] > b_pos[1]+b_rad;
+                    let left = a_pos[0] < b_pos[0]-b_rad;
+                    let right = a_pos[0] > b_pos[0]+b_rad;
+                    let down = a_pos[1] < b_pos[1]-b_rad;
+                    let up = a_pos[1] > b_pos[1]+b_rad;
+
+                    let extern_horizontal = left || right;
+                    let extern_vertical = up || down;
 
                     if extern_horizontal && extern_vertical {
-                        shape_collide(a_pos,a_shape,b_pos,&Shape::Circle(b_rad))
+                        let pos = if up && left {
+                            [b_pos[0] - b_rad*MOVE, b_pos[1] + b_rad*MOVE]
+                        } else if down && left {
+                            [b_pos[0] - b_rad*MOVE, b_pos[1] - b_rad*MOVE]
+                        } else if up && right {
+                            [b_pos[0] + b_rad*MOVE, b_pos[1] + b_rad*MOVE]
+                        } else {
+                            [b_pos[0] + b_rad*MOVE, b_pos[1] - b_rad*MOVE]
+                        };
+                        let rad = b_rad/FACTOR;
+                        shape_collide(a_pos,a_shape,&pos,&Shape::Circle(rad))
                     } else {
                         shape_collide(a_pos,&Shape::Square(a_rad),b_pos,b_shape)
                     }
@@ -473,14 +515,14 @@ fn shape_collide(a_pos: &[f32;2], a_shape: &Shape, b_pos: &[f32;2], b_shape: &Sh
                     })
                 },
                 Shape::Square(b_rad) => {
-                    let a_min_x = a_pos[0] - a_rad/2.;
-                    let a_max_x = a_pos[0] + a_rad/2.;
-                    let a_min_y = a_pos[1] - a_rad/2.;
-                    let a_max_y = a_pos[1] + a_rad/2.;
-                    let b_min_x = b_pos[0] - b_rad/2.;
-                    let b_max_x = b_pos[0] + b_rad/2.;
-                    let b_min_y = b_pos[1] - b_rad/2.;
-                    let b_max_y = b_pos[1] + b_rad/2.;
+                    let a_min_x = a_pos[0] - a_rad;
+                    let a_max_x = a_pos[0] + a_rad;
+                    let a_min_y = a_pos[1] - a_rad;
+                    let a_max_y = a_pos[1] + a_rad;
+                    let b_min_x = b_pos[0] - b_rad;
+                    let b_max_x = b_pos[0] + b_rad;
+                    let b_min_y = b_pos[1] - b_rad;
+                    let b_max_y = b_pos[1] + b_rad;
 
                     if (a_min_x >= b_max_x) || (b_min_x >= a_max_x) || (a_min_y >= b_max_y) || (b_min_y >= a_max_y) {
                         None

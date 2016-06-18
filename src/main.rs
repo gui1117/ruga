@@ -15,7 +15,6 @@ mod app;
 mod conf;
 pub mod doors;
 pub mod signal_network;
-pub mod effects;
 pub mod event_loop;
 pub mod weapons;
 pub mod control;
@@ -38,31 +37,31 @@ use event_loop::{
 fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event_loop::WindowEvents),String> {
     use glium::DisplayBuild;
 
-    // init baal
-    try!(baal::init(&baal::Setting {
-        channels: config.audio.channels,
-        sample_rate: config.audio.sample_rate,
-        frames_per_buffer: config.audio.frames_per_buffer,
-        effect_dir: config.audio.effect_dir.clone(),
-        music_dir: config.audio.music_dir.clone(),
-        global_volume: config.audio.global_volume,
-        music_volume: config.audio.music_volume,
-        effect_volume: config.audio.effect_volume,
-        distance_model: match &*config.audio.distance_model {
-            "linear" => baal::effect::DistanceModel::Linear(config.audio.distance_model_min,config.audio.distance_model_max),
-            "pow2" => baal::effect::DistanceModel::Pow2(config.audio.distance_model_min,config.audio.distance_model_max),
-            _ => unreachable!(),
-        },
-        music_loop: config.audio.music_loop,
-        effect: config.audio.effect.to_vec(),
-        music: config.audio.music.to_vec(),
-        check_level: match &*config.audio.check_level {
-            "never" => baal::CheckLevel::Never,
-            "always" => baal::CheckLevel::Always,
-            "debug" => baal::CheckLevel::Debug,
-            _ => unreachable!(),
-        },
-    }).map_err(|e| format!("ERROR: audio init failed: {:#?}",e)));
+    // // init baal
+    // try!(baal::init(&baal::Setting {
+    //     channels: config.audio.channels,
+    //     sample_rate: config.audio.sample_rate,
+    //     frames_per_buffer: config.audio.frames_per_buffer,
+    //     effect_dir: config.audio.effect_dir.clone(),
+    //     music_dir: config.audio.music_dir.clone(),
+    //     global_volume: config.audio.global_volume,
+    //     music_volume: config.audio.music_volume,
+    //     effect_volume: config.audio.effect_volume,
+    //     distance_model: match &*config.audio.distance_model {
+    //         "linear" => baal::effect::DistanceModel::Linear(config.audio.distance_model_min,config.audio.distance_model_max),
+    //         "pow2" => baal::effect::DistanceModel::Pow2(config.audio.distance_model_min,config.audio.distance_model_max),
+    //         _ => unreachable!(),
+    //     },
+    //     music_loop: config.audio.music_loop,
+    //     effect: config.audio.effect.to_vec(),
+    //     music: config.audio.music.to_vec(),
+    //     check_level: match &*config.audio.check_level {
+    //         "never" => baal::CheckLevel::Never,
+    //         "always" => baal::CheckLevel::Always,
+    //         "debug" => baal::CheckLevel::Debug,
+    //         _ => unreachable!(),
+    //     },
+    // }).map_err(|e| format!("ERROR: audio init failed: {:#?}",e)));
 
     // init window
     // TODO if fail then disable vsync and then multisampling and then vsync and multisamping
@@ -125,7 +124,6 @@ fn main() {
                 }
             },
             Event::Input(InputEvent::MouseMoved(x,y)) => {
-                println!("mouse move {:?} {:?}",x,y);
                 let dimension = window.get_framebuffer_dimensions();
 
                 let dimension = [dimension.0 as f32, dimension.1 as f32];

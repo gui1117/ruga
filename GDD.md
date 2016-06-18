@@ -1,4 +1,4 @@
-top-down shooter
+#first attempt: top-down shooter
 
 doit ce concentrer sur les mouvements:
 - déplacement haut/bas/gauche/droite
@@ -43,127 +43,6 @@ Physic: with acceleration but collision are not necessarily realisic
 
 <!-- Networking: shoots are instantate other are interpolate from snapshot -->
 
-#Physique
-
-pas besoin de joint,
-
-le monde est composé d'objet physique qui sont
-- statique: murs et environment static en général
-- dynamique: les joueurs, les ennemis
-- kinetic: les balles
-
-##ECS
-
-##composants
-
-###physiques
-
-TODO think of dynamic/kinetic/static
-
-- `static_physic`:
-  - position: [f64;2]
-  - shape: Shape
-
-- `dynamic_state`:
-  - position: [f64;2]
-  - velocity: [f64;2]
-  - acceleration: [f64;2]
-
-- `dynamic_type`:
-  - shape: Shape
-  - collision\_behavior: CollisionBehavior // can be nothing -> simulate kinetic object or move it into a specific component, may be better
-  - damping: f64
-  - force: f64 // intensité max pour la force de direction
-
-- `dynamic_forces`: // forces appliquées
-  - direction: f64
-  - intensité: f64 // pourcentage
-  - ¡¿`impulses`: impulsions appliquées sur une itération seulement (par exemple coup d'un zombie)?!
-
-- `dynamic_collisions`: identifier of all entity it collide with
-
-###armes
-
-- `fire_weapon_type`:
-  - ammo: u64,
-  - rate: f64,
-  - projectile: u64,
-  - apeture: f64,
-  - range: f64,
-  - damage: f64,
-
-- `fire_weapon_state`:
-  - recovery: f64,
-  - stamina: f64,
-  - attack: bool,
-
-- `bladed_weapon_type`:
-  - stamina: f64,
-  - stamina\_rate: f64,
-  - range: f64,
-  - aperture: f64,
-  - damage: f64,
-  - rate: f64,
-
-- `bladed_weapon_state`:
-  - ammo: u64,
-  - aim: f64,
-  - shoot: bool,
-  - recovery: f64,
-
-###autres
-
-- `life`: f64
-
-- `navigation_mesh`: // implement some pathfinding etc...
-  - hashmap: HashMap<[i32;2],enum>,
-  - unit: f64,
-
-- `world`: enregistre la position des entités dommageable pour raycast et location
-- `trigger`:
-  - status: bool,
-  - mask: Vec<TypeId>,
-  - id: u64,
-  - sender: Sender<bool>
-
-- `controller`:
-  - status: bool,
-  - id: u64,
-  - sender: Sender<bool>
-
-- `door`:
-  - receiver: Receiver<bool>
-  - TODO
-
-- `director`
-  - TODO
-
-##systèmes
-
-- `physic_step`:
-  - mut: `damage`,`physic_state`
-  - `force`,`physic_type`
-
-- `world_update`:
-  - mut: `world`
-  - `life`,`physic_state`
-
-- `fire_weapons`:
-  - mut: `fire_weapon`, `life`
-  - `physic_state`
-- `bladed_weapons`:
-  - mut: `bladed_weapon`, `life`
-  - `physic_state`
-
-- `input`
-  - mut: `fire_weapon`,`bladed_weapon`, `forces`
-
-- `AI`
-  - mut: `fire_weapon`,`bladed_weapon`, `forces`
-  - +accès `navigation_mesh`
-
-TODO think about networking
-
 ##networking
 
 the server update all entity but not the autonomous proxy
@@ -178,7 +57,123 @@ play remote effect
 update simulated locations and current counter
 check if autonomous are OK if false then replay from the snapshot
 
-#THOUGHTS
+##vrac
 
-what if doors can move?
-what if sensors can move?
+levels function for create
+
+wall
+start room
+end room
+
+monsters:
+
+chaman/peon as diablo 1 and 2
+beast: we can hear it comming its just follow randomly between predifined points
+no path is computed at creation of the map
+flood: lots of bats that goes into the level as electricity
+a creation point where all spider comes from and for each intersection split
+and die when ?
+
+weapon:
+mitraillette avec laquelle on peut charger des tirs, puis relacher tout les tirs chargé
+
+monsters:
+zombie: si il voit un heros et plus il sont proche d'un heros plus il peuvent passer dans l'état superieur
+    si il ne voit pas de heros alors il passe dans l'état inferieur petit à petit
+    etat 1: immobile ou très peu
+    etat 2: en direction du heros en marchant sans pathfinding
+    etat 3: en direction du heros en courant sans pathfinding
+tour: lance des bombes sur lesquels sont appliqués des forces style gravitation pour chaque heros.
+    si un heros tir dessus alors explose et fait des dommages a tout le monde
+    est utilisé parfois pour casser des portes. le heros doit les guider jusqu'a la porte
+
+door:
+    verrous : message receiver: close, open, switch
+
+lock\_mulitplexer
+        il peut avoir plusieurs verrous receiver pour un verrous sender
+
+sensor\_zone:
+    can send to lock message if heros on it
+
+situation:
+    vision differente pour les deux joureurs:
+        hallucination:
+            un joueur voit des ennemis et pas l'auter parfois
+            du coup il ne comprend pas purquoi l'autre ne l'aide pas mais l'auter
+            bien qu'il ne recoit pas les coup doit pouvoir aider
+        maze:
+            sur le sol au début les 2 voient la même chose genre un tracé par exemple
+            puis leur tracé respectif se détache sans qu'ils ne le sachent
+            solution suivre alternaitvement l'un puis l'autre ?
+        maze2:
+            certain mur sont visible par l'un d'autre par l'autre
+        old:
+            reprendre les vieux concepts
+
+si les deux joueurs sont proches ils se soignent ? bof.
+
+communication:
+    à l'écrit visible directement à l'ecran
+    morse ? bof
+    possibilité de faire des cercles (comme l'eau) pour dire à l'autre se position
+
+entree sortie:
+    carre avec porte ouverte lorsque ferme avec
+    heros dedans alors vide autour puis apparaition
+    de nouvelle porte et du nouveau niveau
+
+#second attempt: top-down mover
+
+there is no gun anymore for the player, he can only move and maybe some other action like teleport or sth like this.
+
+##Component
+
+control:
+  Player: require Force
+  MoveTowardPlayer: require Force
+
+physic:
+  State
+  Type
+  Force
+  Dynamic
+  Static
+  World
+  TODO collision: vec of entity and the collision related
+
+graphics:
+  Color for dynamic entities
+
+other:
+  Life
+  Door: size three, ball cannot pass through
+  Column: through ball once at a time
+  Explosive: explose when contact on certain group (mask)
+  Trap
+
+##monster
+
+à partir d'une certaine distance il regarde régulièrement (loi exponentielle) si il voit le héros
+si oui il avance un coup et passe dans l'état superieur (loi eexponentielle de param supérieur)
+ainsi de suite jusqu'a palier max
+s'il ne voit pas il descend d'un palier
+
+reglage: nombre de palier, palier max, palier min, force du coup ...
+
+##TODO
+
+* physic type have group and mask
+* better circle rectangle collision: use math
+* start/end
+
+* window creation catch error and try whitout vsync and then without multisampling
+
+* vi-like live configuration:
+  * volume
+  * switch light dark
+  * luminosity
+  * reset game
+  * quit game
+  * affiche les touches
+

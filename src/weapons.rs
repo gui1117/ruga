@@ -7,12 +7,14 @@ use physic;
 use specs::Join;
 use rand;
 use rand::distributions::{IndependentSample, Range};
-use effects::Effect;
+use app::Effect;
+use graphics;
 
 #[derive(Clone,Copy)]
 pub enum RifleState {
     ShootOne,
     ShootLots,
+    ShootLotsOrOne,
     Rest,
 }
 
@@ -69,7 +71,7 @@ impl specs::System<app::UpdateContext> for System {
             let old_rifle_ammo = rifle.ammo;
             rifle.ammo = rifle.max_ammo.min(rifle.ammo + dt*rifle.max_ammo/rifle.ammo_regen);
             if rifle.ammo.floor() as usize - old_rifle_ammo.floor() as usize == 1 {
-                baal::effect::play(snd_effect::RIFLE_RELOAD,&state.position.into_3d());
+                // baal::effect::play(snd_effect::RIFLE_RELOAD,&state.position.into_3d());
             }
             rifle.recovery -= dt;
 
@@ -78,21 +80,34 @@ impl specs::System<app::UpdateContext> for System {
             let shoots = match rifle.state {
                 RifleState::ShootOne => {
                     if rifle.ammo >= 1. {
-                        baal::effect::play(snd_effect::RIFLE_SHOOT_ONE,&state.position.into_3d());
+                        // baal::effect::play(snd_effect::RIFLE_SHOOT_ONE,&state.position.into_3d());
                         rifle.ammo -= 1.;
                         1
                     } else {
-                        baal::effect::play(snd_effect::RIFLE_SHOOT_ZERO,&state.position.into_3d());
+                        // baal::effect::play(snd_effect::RIFLE_SHOOT_ZERO,&state.position.into_3d());
                         0
                     }
                 },
                 RifleState::ShootLots => {
-                    if (rifle.lots as f32) >= rifle.ammo {
-                        baal::effect::play(snd_effect::RIFLE_SHOOT_LOTS,&state.position.into_3d());
+                    if (rifle.lots as f32) <= rifle.ammo {
+                        // baal::effect::play(snd_effect::RIFLE_SHOOT_LOTS,&state.position.into_3d());
                         rifle.ammo -= rifle.lots as f32;
                         rifle.lots
                     } else {
-                        baal::effect::play(snd_effect::RIFLE_SHOOT_ZERO,&state.position.into_3d());
+                        // baal::effect::play(snd_effect::RIFLE_SHOOT_ZERO,&state.position.into_3d());
+                        0
+                    }
+                },
+                RifleState::ShootLotsOrOne => {
+                    if (rifle.lots as f32) <= rifle.ammo {
+                        // baal::effect::play(snd_effect::RIFLE_SHOOT_LOTS,&state.position.into_3d());
+                        rifle.ammo -= rifle.lots as f32;
+                        rifle.lots
+                    } else if rifle.ammo >= 1. {
+                        rifle.ammo -= 1.;
+                        1
+                    } else {
+                        // baal::effect::play(snd_effect::RIFLE_SHOOT_ZERO,&state.position.into_3d());
                         0
                     }
                 },
@@ -101,7 +116,7 @@ impl specs::System<app::UpdateContext> for System {
 
             if shoots == 0 { continue; }
 
-            rifle.recovery = rifle.rate;
+            rifle.recovery = shoots as f32 * rifle.rate;
 
             let mut rng = rand::thread_rng();
             let range = Range::new(-rifle.deviation,rifle.deviation);
@@ -118,18 +133,25 @@ impl specs::System<app::UpdateContext> for System {
                     length: rifle.length - rifle.distance,
                 };
 
+                let mut actual_length = rifle.length;
                 physic_world.raycast(&ray, &mut |(entity,start,_)| {
                     if let Some(&mut Life(ref mut life)) = lives.get_mut(entity) {
                         *life -= rifle.damage;
-                        effect_tx.send(Effect::RifleShoot(
-                            origin[0],
-                            origin[1],
-                            origin[0] + start * angle.cos(),
-                            origin[1] + start * angle.sin(),
-                        )).unwrap();
-                        true
-                    } else { false }
+                    } else {
+                        actual_length = start;
+                    }
+                    actual_length = start;
+                    true
                 });
+                effect_tx.send(Effect::Line {
+                        origin: origin,
+                        angle: angle,
+                        length: actual_length,
+                        thickness: 5.0,
+                        layer: graphics::Layer::Middle,
+                        color: graphics::Color::Yellow,
+                        persistance: 0.05,
+                }).unwrap();
             }
         }
     }

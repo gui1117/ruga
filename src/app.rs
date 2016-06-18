@@ -11,8 +11,49 @@ use glium::glutin::MouseButton;
 use glium;
 use specs::Join;
 use levels;
-use effects::Effect;
 use std::sync::mpsc;
+
+pub enum Effect {
+    Line {
+        origin: [f32;2],
+        length: f32,
+        angle: f32,
+        persistance: f32,
+        thickness: f32,
+        layer: graphics::Layer,
+        color: graphics::Color,
+    },
+}
+impl Effect {
+    fn next(self,dt: f32) -> Option<Effect> {
+        match self {
+            Effect::Line { origin: o, length: le, angle: a, persistance: mut p, thickness: t, layer: la, color: c, }
+            => {
+                p -= dt;
+                if p > 0. {
+                    Some(Effect::Line { origin: o, length: le, angle: a, persistance: p, thickness: t, layer: la, color: c, })
+                } else {
+                    None
+                }
+            },
+        }
+    }
+    fn draw(&self, frame: &mut graphics::Frame) {
+        match self {
+            &Effect::Line {
+                origin: o,
+                length: le,
+                angle: a,
+                persistance: _,
+                thickness: t,
+                layer: la,
+                color: co,
+            } => {
+                frame.draw_line(o[0],o[1],a,le,t,la,co);
+            },
+        }
+    }
+}
 
 struct Cursor {
     position: [f32;2],
@@ -34,7 +75,11 @@ pub struct App {
     cursor: Cursor,
     planner: specs::Planner<UpdateContext>,
     player_dir: Vec<Direction>,
+    /// 0: shoot one
+    /// 1: shoot lots
+    player_state: [bool;2],
     effect_rx: mpsc::Receiver<Effect>,
+    effect_storage: Vec<Effect>,
     effect_tx: mpsc::Sender<Effect>,
     master_entity: specs::Entity,
 }
@@ -89,6 +134,7 @@ impl App {
         world.register::<graphics::Color>();
         world.register::<weapons::Rifle>();
         world.register::<physic::PhysicWorld>();
+        world.register::<weapons::Life>();
 
         // load level
         let master_entity = try!(levels::load(config.levels.first_level.clone(),&world)
@@ -97,8 +143,8 @@ impl App {
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
         let weapons_system = weapons::System;
-        let physic_system = weapons::System;
-        planner.add_system(weapons_system, "weapons", 0);
+        let physic_system = physic::System;
+        planner.add_system(weapons_system, "weapons", 10);
         planner.add_system(physic_system, "physic", 30);
 
         let cursor = Cursor {
@@ -126,11 +172,13 @@ impl App {
         let (effect_tx, effect_rx) = mpsc::channel();
 
         Ok(App {
+            effect_storage: Vec::new(),
             camera: camera,
             graphics: graphics,
             cursor: cursor,
             planner: planner,
             player_dir: vec!(),
+            player_state: [false,false],
             master_entity: master_entity,
             effect_rx: effect_rx,
             effect_tx: effect_tx,
@@ -147,6 +195,8 @@ impl App {
         self.planner.wait();
     }
     pub fn render(&mut self, args: event_loop::RenderArgs) {
+        let dt = 1. / config.event_loop.max_fps as f32;
+
         // update camera
         {
             let characters = self.planner.world.read::<control::PlayerControl>();
@@ -190,14 +240,30 @@ impl App {
             frame.draw_rectangle(
                 cursor[0],
                 cursor[1],
-                self.cursor.outer_radius,
                 self.cursor.inner_radius,
+                self.cursor.outer_radius,
                 graphics::Layer::Ceil,
                 self.cursor.color);
         }
 
         // draw effects
-        // TODO
+        for effect in &self.effect_storage {
+            effect.draw(&mut frame);
+        }
+
+        let old_effect_storage = self.effect_storage.drain(..).collect::<Vec<Effect>>();;
+        for effect in old_effect_storage {
+            if let Some(effect) = effect.next(dt) {
+                self.effect_storage.push(effect)
+            }
+        }
+
+        while let Ok(effect) = self.effect_rx.try_recv() {
+            effect.draw(&mut frame);
+            if let Some(effect) = effect.next(dt) {
+                self.effect_storage.push(effect);
+            }
+        }
 
         frame.finish().unwrap();
     }
@@ -258,9 +324,48 @@ impl App {
         let rel = self.cursor_relative_position();
         [rel[0] + self.camera.x, rel[1] + self.camera.y]
     }
-    pub fn mouse_pressed(&mut self, _button: MouseButton) {
+    fn update_rifle_state(&mut self) {
+        let state = if self.player_state[1] && self.player_state[0] {
+            weapons::RifleState::ShootLotsOrOne
+        } else if self.player_state[1] {
+            weapons::RifleState::ShootLots
+        } else if self.player_state[0] {
+            weapons::RifleState::ShootOne
+        } else {
+            weapons::RifleState::Rest
+        };
+
+        let characters = self.planner.world.read::<control::PlayerControl>();
+        let mut rifles = self.planner.world.write::<weapons::Rifle>();
+        for (_,mut rifle) in (&characters, &mut rifles).iter() {
+            rifle.state = state
+        }
     }
-    pub fn mouse_released(&mut self, _button: MouseButton) {
+    pub fn mouse_pressed(&mut self, button: MouseButton) {
+        match button {
+            MouseButton::Left => {
+                self.player_state[0] = true;
+                self.update_rifle_state();
+            },
+            MouseButton::Right => {
+                self.player_state[1] = true;
+                self.update_rifle_state();
+            },
+            _ => (),
+        }
+    }
+    pub fn mouse_released(&mut self, button: MouseButton) {
+        match button {
+            MouseButton::Left => {
+                self.player_state[0] = false;
+                self.update_rifle_state();
+            },
+            MouseButton::Right => {
+                self.player_state[1] = false;
+                self.update_rifle_state();
+            },
+            _ => (),
+        }
     }
     pub fn mouse_moved(&mut self, x: f32, y: f32) {
         self.cursor.position = [x,y];

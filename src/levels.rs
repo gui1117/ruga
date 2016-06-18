@@ -29,12 +29,12 @@ pub fn load<'l>(level: String, world: &specs::World) -> Result<specs::Entity,Loa
 
     let mut lua: Lua<'l> = Lua::new();
 
-    //lua.set("add_character", hlua::function2(|x: f32,y: f32| {
-    //    entities.character.build(world,[x,y]);
-    //}));
-    //lua.set("add_monster", hlua::function2(|x: f32,y: f32| {
-    //    entities.monster.build(world,[x,y]);
-    //}));
+    lua.set("add_character", hlua::function2(|x: f32,y: f32| {
+        entities::add_character(world,[x,y]);
+    }));
+    lua.set("add_wall", hlua::function2(|x: i32,y: i32| {
+        entities::add_wall(world,[x as isize,y as isize]);
+    }));
 
     try!(lua.execute_from_reader::<(),_>(file).map_err(|e| LoadError::Lua(e)));
 
