@@ -2,7 +2,7 @@ use app;
 use specs;
 use config;
 use specs::Join;
-use std::collections::HashMap;
+use std::collections::hash_map::{HashMap, Entry};
 use std::collections::HashSet;
 use std::f32;
 
@@ -147,9 +147,15 @@ impl specs::Component for PhysicWorld {
 
 #[derive(Debug)]
 struct Resolution {
-    entity: specs::Entity,
-    rate: f32,
-    vec: [f32;2],
+    dx: f32,
+    dy: f32,
+}
+
+impl Resolution {
+    fn push(&mut self, res: Resolution) {
+        if res.dx.abs() > self.dx.abs() { self.dx = res.dx; }
+        if res.dy.abs() > self.dy.abs() { self.dy = res.dy; }
+    }
 }
 
 pub struct System;
@@ -174,7 +180,7 @@ impl specs::System<app::UpdateContext> for System {
 
         let dt = context.dt as f32;
 
-        let mut resolutions = Vec::new();
+        let mut resolutions = HashMap::<specs::Entity,Resolution>::new();
 
         physic_world.movable_hashmap = HashMap::new();
         for (_,entity) in (&dynamics, &entities).iter() {
@@ -208,30 +214,36 @@ impl specs::System<app::UpdateContext> for System {
                 };
 
                 if rate != 1. {
-                    resolutions.push(Resolution {
-                        entity: entity,
-                        rate: rate,
-                        vec: [collision.delta_x, collision.delta_y],
-                    });
+                    let resolution = Resolution {
+                        dx: collision.delta_x*(1.-rate),
+                        dy: collision.delta_y*(1.-rate),
+                    };
+                    match resolutions.entry(entity) {
+                        Entry::Occupied(mut entry) => entry.get_mut().push(resolution),
+                        Entry::Vacant(entry) => {entry.insert(resolution);},
+                    }
                 }
                 if rate != 0. {
-                    resolutions.push(Resolution {
-                        entity: *other_entity,
-                        rate: 1.-rate,
-                        vec: [-collision.delta_x, -collision.delta_y],
-                    });
+                    let resolution = Resolution {
+                        dx: -collision.delta_x*rate,
+                        dy: -collision.delta_y*rate,
+                    };
+                    match resolutions.entry(entity) {
+                        Entry::Occupied(mut entry) => entry.get_mut().push(resolution),
+                        Entry::Vacant(entry) => {entry.insert(resolution);},
+                    }
                 }
             });
 
             physic_world.insert_movable(entity, &state.position, &typ.shape);
         }
 
-        for res in resolutions {
-            let state = states.get_mut(res.entity).unwrap();
-            let typ = types.get(res.entity).unwrap();
+        for (entity,res) in resolutions {
+            let state = states.get_mut(entity).unwrap();
+            let typ = types.get(entity).unwrap();
 
-            state.position[0] += (1.-res.rate)*res.vec[0];
-            state.position[1] += (1.-res.rate)*res.vec[1];
+            state.position[0] += res.dx;
+            state.position[1] += res.dy;
 
             match typ.collision_behavior {
                 CollisionBehavior::Bounce => {
