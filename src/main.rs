@@ -48,8 +48,6 @@ mod systems {
 }
 
 pub use conf::{config,snd_effect,music};
-pub use utils::Direction;
-pub use utils::key;
 
 use glium::glutin::ElementState;
 use glium::glutin::Event as InputEvent;

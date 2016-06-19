@@ -1,9 +1,11 @@
 use graphics;
 use specs;
-use Direction;
+use utils::{
+    Direction,
+    key,
+};
 use event_loop;
 use config;
-use key;
 use glium::glutin::MouseButton;
 use glium;
 use specs::Join;
