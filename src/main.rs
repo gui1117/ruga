@@ -12,7 +12,6 @@ extern crate rand;
 mod levels;
 mod app;
 mod conf;
-pub mod doors;
 pub mod event_loop;
 pub mod weapons;
 pub mod control;
