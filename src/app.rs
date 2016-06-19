@@ -1,16 +1,15 @@
 use graphics;
 use specs;
 use Direction;
-use control;
 use event_loop;
-use physic;
-use weapons;
 use config;
 use key;
 use glium::glutin::MouseButton;
 use glium;
 use specs::Join;
 use levels;
+use systems::*;
+use components::*;
 use std::sync::mpsc;
 
 pub enum Effect {
@@ -124,17 +123,17 @@ impl App {
 
         // init world
         let mut world = specs::World::new();
-        world.register::<physic::PhysicState>();
-        world.register::<physic::PhysicStatic>();
-        world.register::<physic::PhysicDynamic>();
-        world.register::<physic::PhysicKinetic>();
-        world.register::<physic::PhysicType>();
-        world.register::<physic::PhysicForce>();
-        world.register::<control::PlayerControl>();
-        world.register::<graphics::Color>();
-        world.register::<weapons::Rifle>();
-        world.register::<physic::PhysicWorld>();
-        world.register::<weapons::Life>();
+        world.register::<PhysicState>();
+        world.register::<PhysicStatic>();
+        world.register::<PhysicDynamic>();
+        world.register::<PhysicKinetic>();
+        world.register::<PhysicType>();
+        world.register::<PhysicForce>();
+        world.register::<PlayerControl>();
+        world.register::<Color>();
+        world.register::<Rifle>();
+        world.register::<PhysicWorld>();
+        world.register::<Life>();
 
         // load level
         let master_entity = try!(levels::load(config.levels.first_level.clone(),&world)
@@ -142,8 +141,8 @@ impl App {
 
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
-        let weapons_system = weapons::System;
-        let physic_system = physic::System;
+        let weapons_system = WeaponSystem;
+        let physic_system = PhysicSystem;
         planner.add_system(weapons_system, "weapons", 10);
         planner.add_system(physic_system, "physic", 30);
 
@@ -199,8 +198,8 @@ impl App {
 
         // update camera
         {
-            let characters = self.planner.world.read::<control::PlayerControl>();
-            let states = self.planner.world.read::<physic::PhysicState>();
+            let characters = self.planner.world.read::<PlayerControl>();
+            let states = self.planner.world.read::<PhysicState>();
             for (_, state) in (&characters, &states).iter() {
                 self.camera.x = state.position[0];
                 self.camera.y = state.position[1];
@@ -211,16 +210,16 @@ impl App {
 
         // draw entities
         {
-            let states = self.planner.world.read::<physic::PhysicState>();
-            let types = self.planner.world.read::<physic::PhysicType>();
+            let states = self.planner.world.read::<PhysicState>();
+            let types = self.planner.world.read::<PhysicType>();
             let colors = self.planner.world.read::<graphics::Color>();
 
             for (state, typ, color) in (&states, &types, &colors).iter() {
                 let x = state.position[0];
                 let y = state.position[1];
                 match typ.shape {
-                    physic::Shape::Circle(radius) => frame.draw_circle(x,y,radius,graphics::Layer::Middle,*color),
-                    physic::Shape::Square(radius) => frame.draw_square(x,y,radius,graphics::Layer::Middle,*color),
+                    Shape::Circle(radius) => frame.draw_circle(x,y,radius,graphics::Layer::Middle,*color),
+                    Shape::Square(radius) => frame.draw_square(x,y,radius,graphics::Layer::Middle,*color),
                 }
             }
         }
@@ -326,17 +325,17 @@ impl App {
     }
     fn update_rifle_state(&mut self) {
         let state = if self.player_state[1] && self.player_state[0] {
-            weapons::RifleState::ShootLotsOrOne
+            RifleState::ShootLotsOrOne
         } else if self.player_state[1] {
-            weapons::RifleState::ShootLots
+            RifleState::ShootLots
         } else if self.player_state[0] {
-            weapons::RifleState::ShootOne
+            RifleState::ShootOne
         } else {
-            weapons::RifleState::Rest
+            RifleState::Rest
         };
 
-        let characters = self.planner.world.read::<control::PlayerControl>();
-        let mut rifles = self.planner.world.write::<weapons::Rifle>();
+        let characters = self.planner.world.read::<PlayerControl>();
+        let mut rifles = self.planner.world.write::<Rifle>();
         for (_,mut rifle) in (&characters, &mut rifles).iter() {
             rifle.state = state
         }
@@ -369,8 +368,8 @@ impl App {
     }
     pub fn mouse_moved(&mut self, x: f32, y: f32) {
         self.cursor.position = [x,y];
-        let characters = self.planner.world.read::<control::PlayerControl>();
-        let mut rifles = self.planner.world.write::<weapons::Rifle>();
+        let characters = self.planner.world.read::<PlayerControl>();
+        let mut rifles = self.planner.world.write::<Rifle>();
         for (_, rifle) in (&characters, &mut rifles).iter() {
             let cursor = self.cursor_relative_position();
             rifle.aim = cursor[1].atan2(cursor[0]);
@@ -419,15 +418,15 @@ impl App {
                 },
             };
 
-            let characters = self.planner.world.read::<control::PlayerControl>();
-            let mut forces = self.planner.world.write::<physic::PhysicForce>();
+            let characters = self.planner.world.read::<PlayerControl>();
+            let mut forces = self.planner.world.write::<PhysicForce>();
             for (_, force) in (&characters, &mut forces).iter() {
                 force.direction = angle;
                 force.intensity = 1.;
             }
         } else {
-            let characters = self.planner.world.read::<control::PlayerControl>();
-            let mut forces = self.planner.world.write::<physic::PhysicForce>();
+            let characters = self.planner.world.read::<PlayerControl>();
+            let mut forces = self.planner.world.write::<PhysicForce>();
             for (_, force) in (&characters, &mut forces).iter() {
                 force.intensity = 0.;
             }

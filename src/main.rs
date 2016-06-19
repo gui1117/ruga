@@ -12,14 +12,14 @@ extern crate rand;
 mod levels;
 mod app;
 mod conf;
-pub mod event_loop;
-pub mod weapons;
+mod event_loop;
+mod weapons;
 mod control;
-pub mod physic;
-pub mod entities;
-pub mod utils;
+mod physic;
+mod entities;
+mod utils;
 
-pub mod components {
+mod components {
     pub use control::{
         PlayerControl,
         TowardPlayerControl,
@@ -28,6 +28,8 @@ pub mod components {
         PhysicState,
         PhysicType,
         PhysicForce,
+        PhysicKinetic,
+        PhysicWorld,
         PhysicDynamic,
         PhysicStatic,
         Shape,
@@ -35,14 +37,20 @@ pub mod components {
     };
     pub use graphics::Color;
     pub use weapons::{
+        Life,
         Rifle,
         RifleState,
     };
+}
+mod systems {
+    pub use physic::PhysicSystem;
+    pub use weapons::WeaponSystem;
 }
 
 pub use conf::{config,snd_effect,music};
 pub use utils::Direction;
 pub use utils::key;
+
 use glium::glutin::ElementState;
 use glium::glutin::Event as InputEvent;
 use std::time::Duration;

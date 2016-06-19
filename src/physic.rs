@@ -158,8 +158,8 @@ impl Resolution {
     }
 }
 
-pub struct System;
-impl specs::System<app::UpdateContext> for System {
+pub struct PhysicSystem;
+impl specs::System<app::UpdateContext> for PhysicSystem {
     fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
         use std::f32::consts::PI;
         use specs::Join;

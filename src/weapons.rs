@@ -48,9 +48,9 @@ impl specs::Component for Life {
     type Storage = specs::VecStorage<Self>;
 }
 
-pub struct System;
+pub struct WeaponSystem;
 
-impl specs::System<app::UpdateContext> for System {
+impl specs::System<app::UpdateContext> for WeaponSystem {
     fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
         let (mut rifles, mut lives, states, physic_worlds) = arg.fetch(|world| {
             (
