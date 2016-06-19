@@ -1,18 +1,4 @@
-use control::PlayerControl;
-use weapons::{
-    Rifle,
-    RifleState,
-};
-use physic::{
-    PhysicState,
-    PhysicType,
-    PhysicForce,
-    PhysicDynamic,
-    PhysicStatic,
-    Shape,
-    CollisionBehavior,
-};
-use graphics::Color;
+use components::*;
 use specs;
 
 pub fn add_character(world: &specs::World, pos: [f32;2]) {

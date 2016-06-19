@@ -14,10 +14,31 @@ mod app;
 mod conf;
 pub mod event_loop;
 pub mod weapons;
-pub mod control;
+mod control;
 pub mod physic;
 pub mod entities;
 pub mod utils;
+
+pub mod components {
+    pub use control::{
+        PlayerControl,
+        TowardPlayerControl,
+    };
+    pub use physic::{
+        PhysicState,
+        PhysicType,
+        PhysicForce,
+        PhysicDynamic,
+        PhysicStatic,
+        Shape,
+        CollisionBehavior,
+    };
+    pub use graphics::Color;
+    pub use weapons::{
+        Rifle,
+        RifleState,
+    };
+}
 
 pub use conf::{config,snd_effect,music};
 pub use utils::Direction;
