@@ -22,7 +22,7 @@ pub fn add_character(world: &specs::World, pos: [f32;2]) {
         .with::<PhysicType>(PhysicType::new_movable(
                 Shape::Circle(0.5),
                 CollisionBehavior::Persist,
-                30.,
+                10.,
                 0.05,
                 1.))
         .with::<PhysicForce>(PhysicForce::new())

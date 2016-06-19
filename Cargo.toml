@@ -17,5 +17,4 @@ time = "*"
 lazy_static = "*"
 toml = "*"
 rand = "*"
-nom = "*"
 

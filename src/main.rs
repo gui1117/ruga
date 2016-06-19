@@ -1,6 +1,5 @@
 #[macro_use] extern crate configuration;
 #[macro_use] extern crate lazy_static;
-#[macro_use] extern crate nom;
 extern crate baal;
 extern crate graphics;
 extern crate glium;
@@ -14,7 +13,6 @@ mod levels;
 mod app;
 mod conf;
 pub mod doors;
-pub mod signal_network;
 pub mod event_loop;
 pub mod weapons;
 pub mod control;
