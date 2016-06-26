@@ -12,6 +12,13 @@ impl specs::Component for TowardPlayerControl {
     type Storage = specs::NullStorage<Self>;
 }
 
+pub struct MonsterControl {
+    state: u8,
+    nbr_of_state: u8,
+    coefs: Vec<f32>,
+    next_lookup: f32,
+}
+
 // pub struct System;
 
 // impl specs::System<app::UpdateContext> for System {
