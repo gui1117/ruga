@@ -39,7 +39,7 @@ first_level = "toto"
 [window]
 dimension = [640,480]
 vsync = true
-multisampling = 0
+multisampling = 4
 # fullscreen = false
 
 [camera]
