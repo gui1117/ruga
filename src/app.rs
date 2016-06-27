@@ -1,9 +1,6 @@
 use graphics;
 use specs;
-use utils::{
-    Direction,
-    key,
-};
+use utils::Direction;
 use event_loop;
 use config;
 use glium::glutin::MouseButton;
@@ -269,53 +266,41 @@ impl App {
         frame.finish().unwrap();
     }
     pub fn key_pressed(&mut self, key: u8) {
-        match key {
-            key::Z => {
-                if !self.player_dir.contains(&Direction::Up) {
-                    self.player_dir.push(Direction::Up);
-                    self.update_player_direction();
-                }
-            },
-            key::S => {
-                if !self.player_dir.contains(&Direction::Down) {
-                    self.player_dir.push(Direction::Down);
-                    self.update_player_direction();
-                }
-            },
-            key::Q => {
-                if !self.player_dir.contains(&Direction::Left) {
-                    self.player_dir.push(Direction::Left);
-                    self.update_player_direction();
-                }
-            },
-            key::D => {
-                if !self.player_dir.contains(&Direction::Right) {
-                    self.player_dir.push(Direction::Right);
-                    self.update_player_direction();
-                }
-            },
-            _ => (),
+        if key == config.keys.up {
+            if !self.player_dir.contains(&Direction::Up) {
+                self.player_dir.push(Direction::Up);
+                self.update_player_direction();
+            }
+        } else if key == config.keys.down {
+            if !self.player_dir.contains(&Direction::Down) {
+                self.player_dir.push(Direction::Down);
+                self.update_player_direction();
+            }
+        } else if key == config.keys.left {
+            if !self.player_dir.contains(&Direction::Left) {
+                self.player_dir.push(Direction::Left);
+                self.update_player_direction();
+            }
+        } else if key == config.keys.right {
+            if !self.player_dir.contains(&Direction::Right) {
+                self.player_dir.push(Direction::Right);
+                self.update_player_direction();
+            }
         }
     }
     pub fn key_released(&mut self, key: u8) {
-        match key {
-            key::Z => {
-                self.player_dir.retain(|dir| &Direction::Up != dir);
-                self.update_player_direction();
-            }
-            key::S => {
-                self.player_dir.retain(|dir| &Direction::Down != dir);
-                self.update_player_direction();
-            }
-            key::Q => {
-                self.player_dir.retain(|dir| &Direction::Left != dir);
-                self.update_player_direction();
-            }
-            key::D => {
-                self.player_dir.retain(|dir| &Direction::Right != dir);
-                self.update_player_direction();
-            }
-            _ => (),
+        if key == config.keys.up {
+            self.player_dir.retain(|dir| &Direction::Up != dir);
+            self.update_player_direction();
+        } else if key == config.keys.down {
+            self.player_dir.retain(|dir| &Direction::Down != dir);
+            self.update_player_direction();
+        } else if key == config.keys.left {
+            self.player_dir.retain(|dir| &Direction::Left != dir);
+            self.update_player_direction();
+        } else if key == config.keys.right {
+            self.player_dir.retain(|dir| &Direction::Right != dir);
+            self.update_player_direction();
         }
     }
     fn cursor_relative_position(&self) -> [f32;2] {

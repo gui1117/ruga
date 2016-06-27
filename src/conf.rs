@@ -19,6 +19,13 @@ configure!(
     general: {
         number_of_thread: t usize,
     },
+    keys: {
+        up: t u8,
+        down: t u8,
+        left: t u8,
+        right: t u8,
+        quit: t u8,
+    },
     cursor: {
         outer_radius: t f32,
         inner_radius: t f32,

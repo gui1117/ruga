@@ -25,6 +25,7 @@ impl Direction {
         }
     }
 
+    #[allow(dead_code)]
     pub fn opposite(&self) -> Direction {
         match self {
             &Direction::Up => Direction::Down,
@@ -73,18 +74,5 @@ fn test_minus_pi_pi() {
     assert!((minus_pi_pi(-PI)-PI).abs() < 0.001);
     assert!((minus_pi_pi(3.*PI)-PI).abs() < 0.001);
     assert!((minus_pi_pi(3.*PI)-PI).abs() < 0.001);
-}
-
-//TODO replace by action: up, down ...
-pub mod key {
-    pub const Z:      u8 = 25;
-    pub const Q:      u8 = 38;
-    pub const S:      u8 = 39;
-    pub const D:      u8 = 40;
-    pub const E:      u8 = 26;
-    pub const R:      u8 = 27;
-    pub const T:      u8 = 28;
-    pub const Y:      u8 = 29;
-    pub const ESCAPE: u8 = 9;
 }
 

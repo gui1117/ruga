@@ -14,6 +14,13 @@ unit = 2.0
 dir = "./levels"
 first_level = "toto"
 
+[keys]
+up = 25
+down = 39
+left = 38
+right = 40
+quit = 9
+
 # [audio]
 # check_level = always
 
