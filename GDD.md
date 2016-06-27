@@ -132,6 +132,7 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 control:
   Player: require Force
   MoveTowardPlayer: require Force
+  Monster: require Force
 
 physic:
   State
@@ -146,11 +147,13 @@ graphics:
   Color for dynamic entities
 
 other:
-  Life
-  Door: size three, ball cannot pass through
+  Life: boolean
+  <!-- Door: size three, ball cannot pass through -->
   Column: through ball once at a time
-  Explosive: explose when contact on certain group (mask)
-  Trap
+  Killer: kill when touch (on a mask): require Type and State
+  Kamikaze: kill and die when touch (on a mask): require Type and State and Life and
+  Laser: kill balls and monsters but not players
+  <!-- Trap -->
 
 ##monster
 
@@ -161,11 +164,37 @@ s'il ne voit pas il descend d'un palier
 
 reglage: nombre de palier, palier max, palier min, force du coup ...
 
+##begin/end
+
+area 3 square long
+
+###begin
+an aera you must rest on during a certain time
+a sound is played on enter and on exit
+
+you must be entirely on this area
+
+###end
+same area as end you teleport at the same position
+
+##map
+
+BMP file on each pixel a color that correspond to the unit
+
+* empty
+* wall
+* monster
+* column
+* laser
+* begin
+* end
+
 ##TODO
 
 * physic type have group and mask
 * better circle rectangle collision: use math
 * start/end
+* level from bitmap or sth else but not lua
 
 * window creation catch error and try whitout vsync and then without multisampling
 
