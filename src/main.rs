@@ -41,7 +41,10 @@ mod components {
 }
 mod systems {
     pub use physic::PhysicSystem;
-    pub use life::LifeSystem;
+    pub use life::{
+        LifeSystem,
+        KillerSystem,
+    };
 }
 
 pub use conf::{config,snd_effect,music};
