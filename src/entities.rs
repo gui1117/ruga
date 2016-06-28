@@ -1,34 +1,22 @@
 use components::*;
 use specs;
+use config;
 
 pub fn add_character(world: &specs::World, pos: [f32;2]) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicDynamic>(PhysicDynamic)
         .with::<PhysicType>(PhysicType::new_movable(
-                Shape::Circle(0.5),
+                config.entity.char_group,
+                config.entity.char_mask,
+                Shape::Circle(config.entity.char_radius),
                 CollisionBehavior::Persist,
-                10.,
-                0.05,
-                1.))
+                config.entity.char_velocity,
+                config.entity.char_time,
+                config.entity.char_weight))
         .with::<PhysicForce>(PhysicForce::new())
-        .with::<Color>(Color::Yellow)
+        .with::<Color>(Color::from_str(&*config.entity.char_color))
         .with::<PlayerControl>(PlayerControl)
-        .with::<Rifle>(Rifle {
-            length: 10.,
-            max_ammo: 20.,
-            ammo_regen: 1.,
-            damage: 1.,
-            rate: 0.1,
-            lots: 5,
-            deviation: 0.1,
-            distance: 0.6,
-
-            aim: 0.,
-            ammo: 0.,
-            state: RifleState::Rest,
-            recovery: 0.,
-        })
         .build();
 }
 
@@ -36,8 +24,11 @@ pub fn add_wall(world: &specs::World, pos: [isize;2]) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new_aligned(pos))
         .with::<PhysicStatic>(PhysicStatic)
-        .with::<PhysicType>(PhysicType::new_static(Shape::Square(0.5)))
-        .with::<Color>(Color::Yellow)
+        .with::<PhysicType>(PhysicType::new_static(
+                config.entity.wall_group,
+                config.entity.wall_mask,
+                Shape::Square(config.entity.wall_radius)))
+        .with::<Color>(Color::from_str(&*config.entity.wall_color))
         .build();
 }
 

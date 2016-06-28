@@ -35,6 +35,20 @@ configure!(
         rate: t f32,
         unit: t f32,
     },
+    entity: {
+        char_group: t u32,
+        char_mask: t u32,
+        char_radius: t f32,
+        char_velocity: t f32,
+        char_time: t f32,
+        char_weight: t f32,
+        char_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+
+        wall_group: t u32,
+        wall_mask: t u32,
+        wall_radius: t f32,
+        wall_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+    },
     levels: {
         dir: t String,
         first_level: t String,

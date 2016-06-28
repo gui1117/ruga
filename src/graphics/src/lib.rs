@@ -568,6 +568,42 @@ pub enum Color {
 }
 
 impl Color {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "base5" => Color::Base5,
+            "base4" => Color::Base4,
+            "base3" => Color::Base3,
+            "base2" => Color::Base2,
+            "base1" => Color::Base1,
+            "yellow" => Color::Yellow,
+            "orange" => Color::Orange,
+            "red" => Color::Red,
+            "magenta" => Color::Magenta,
+            "violet" => Color::Violet,
+            "blue" => Color::Blue,
+            "cyan" => Color::Cyan,
+            "green" => Color::Green,
+            _ => unreachable!(),
+        }
+    }
+    pub fn from_string(s: &String) -> Self {
+        match &**s {
+            "base5" => Color::Base5,
+            "base4" => Color::Base4,
+            "base3" => Color::Base3,
+            "base2" => Color::Base2,
+            "base1" => Color::Base1,
+            "yellow" => Color::Yellow,
+            "orange" => Color::Orange,
+            "red" => Color::Red,
+            "magenta" => Color::Magenta,
+            "violet" => Color::Violet,
+            "blue" => Color::Blue,
+            "cyan" => Color::Cyan,
+            "green" => Color::Green,
+            _ => unreachable!(),
+        }
+    }
     fn into_vec4(self, mode: Mode, colors_value: &ColorsValue) -> [f32;4] {
         match self {
             Color::Base1 => match mode {

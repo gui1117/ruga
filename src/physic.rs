@@ -61,9 +61,11 @@ pub struct PhysicType {
     pub damping: f32,
     pub force: f32,
     pub weight: f32,
+    pub group: u32,
+    pub mask: u32,
 }
 impl PhysicType {
-    pub fn new_movable(shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
+    pub fn new_movable(group: u32, mask: u32, shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
         let damping = -weight * (1.-config.physic.rate).ln() / time_to_reach_v_max;
         let force = velocity * damping;
         PhysicType {
@@ -72,15 +74,19 @@ impl PhysicType {
             weight: weight,
             damping: damping,
             force: force,
+            group: group,
+            mask: mask,
         }
     }
-    pub fn new_static(shape: Shape) -> Self {
+    pub fn new_static(group: u32, mask: u32, shape: Shape) -> Self {
         PhysicType {
             shape: shape,
             collision_behavior: CollisionBehavior::Persist,
             weight: f32::MAX,
             force: 0.,
             damping: 0.,
+            group: group,
+            mask: mask,
         }
     }
 }
@@ -112,12 +118,6 @@ impl specs::Component for PhysicDynamic {
 }
 
 #[derive(Debug,Clone,Default)]
-pub struct PhysicKinetic;
-impl specs::Component for PhysicKinetic {
-    type Storage = specs::NullStorage<Self>;
-}
-
-#[derive(Debug,Clone,Default)]
 pub struct PhysicStatic;
 impl specs::Component for PhysicStatic {
     type Storage = specs::NullStorage<Self>;
@@ -127,6 +127,8 @@ pub struct Ray {
     pub origin: [f32;2],
     pub angle: f32,
     pub length: f32,
+    pub group: u32,
+    pub mask: u32,
 }
 
 /// if A collide with B then collision must represent
@@ -138,8 +140,8 @@ pub struct Collision {
 
 pub struct PhysicWorld {
     unit: f32,
-    static_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],Shape)>>,
-    movable_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],Shape)>>,
+    static_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],u32,u32,Shape)>>,
+    movable_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],u32,u32,Shape)>>,
 }
 impl specs::Component for PhysicWorld {
     type Storage = specs::VecStorage<Self>;
@@ -164,9 +166,8 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
         use std::f32::consts::PI;
         use specs::Join;
 
-        let (kinetics,dynamics,mut states,forces,types,mut physic_worlds,entities) = arg.fetch(|world| {
+        let (dynamics,mut states,forces,types,mut physic_worlds,entities) = arg.fetch(|world| {
             (
-                world.read::<PhysicKinetic>(),
                 world.read::<PhysicDynamic>(),
                 world.write::<PhysicState>(),
                 world.read::<PhysicForce>(),
@@ -200,7 +201,7 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
             state.position[0] += dt*state.velocity[0];
             state.position[1] += dt*state.velocity[1];
 
-            physic_world.apply_on_shape(&state.position, &typ.shape, &mut |other_entity,collision| {
+            physic_world.apply_on_shape(&state.position, typ.group, typ.mask, &typ.shape, &mut |other_entity,collision| {
                 let other_type = types.get(*other_entity).expect("physic entity expect type component");
 
                 let rate = {
@@ -235,7 +236,7 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
                 }
             });
 
-            physic_world.insert_movable(entity, &state.position, &typ.shape);
+            physic_world.insert_movable(entity, &state.position, typ.group, typ.mask, &typ.shape);
         }
 
         for (entity,res) in resolutions {
@@ -262,10 +263,7 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
 
         physic_world.movable_hashmap = HashMap::new();
         for (_,state,typ,entity) in (&dynamics, &mut states, &types, &entities).iter() {
-            physic_world.insert_movable(entity, &state.position, &typ.shape);
-        }
-        for (_,state,typ,entity) in (&kinetics, &mut states, &types, &entities).iter() {
-            physic_world.insert_movable(entity, &state.position, &typ.shape);
+            physic_world.insert_movable(entity, &state.position, typ.group, typ.mask, &typ.shape);
         }
     }
 }
@@ -285,20 +283,16 @@ impl PhysicWorld {
 
     pub fn fill(&mut self, world: &specs::World) {
         let dynamics = world.read::<PhysicDynamic>();
-        let kinetics = world.read::<PhysicKinetic>();
         let statics = world.read::<PhysicStatic>();
         let states = world.read::<PhysicState>();
         let types = world.read::<PhysicType>();
         let entities = world.entities();
 
         for (_,state,typ,entity) in (&dynamics, &states, &types, &entities).iter() {
-            self.insert_movable(entity, &state.position, &typ.shape);
-        }
-        for (_,state,typ,entity) in (&kinetics, &states, &types, &entities).iter() {
-            self.insert_movable(entity, &state.position, &typ.shape);
+            self.insert_movable(entity, &state.position, typ.group, typ.mask, &typ.shape);
         }
         for (_,state,typ,entity) in (&statics, &states, &types, &entities).iter() {
-            self.insert_static(entity, &state.position, &typ.shape);
+            self.insert_static(entity, &state.position, typ.group, typ.mask, &typ.shape);
         }
     }
 
@@ -322,11 +316,11 @@ impl PhysicWorld {
         cells
     }
 
-    pub fn apply_on_shape<F: FnMut(&specs::Entity,&Collision)>(&self, pos: &[f32;2], shape: &Shape, callback: &mut F) {
+    pub fn apply_on_shape<F: FnMut(&specs::Entity,&Collision)>(&self, pos: &[f32;2], group: u32, mask: u32, shape: &Shape, callback: &mut F) {
         let mut visited = HashSet::new();
 
         for cell in self.cells_of_shape(pos,shape) {
-            self.apply_on_index(cell, &mut |other_entity, other_pos, other_shape| {
+            self.apply_on_index(cell, group, mask, &mut |other_entity, other_pos, other_shape| {
                 if visited.contains(other_entity) { return; }
                 visited.insert(*other_entity);
                 if let Some(collision) = shape_collide(pos,shape,other_pos,other_shape) {
@@ -336,36 +330,35 @@ impl PhysicWorld {
         }
     }
 
-    fn apply_on_index<F: FnMut(&specs::Entity,&[f32;2],&Shape)>(&self, cell: [i32;2], callback: &mut F) {
-        if let Some(vec) = self.movable_hashmap.get(&cell) {
-            for &(ref entity,ref pos,ref shape) in vec {
+    fn apply_on_index<F: FnMut(&specs::Entity,&[f32;2],&Shape)>(&self, cell: [i32;2], group: u32, mask: u32, callback: &mut F) {
+        let empty_vec = vec!();
+        let vec = self.movable_hashmap.get(&cell).unwrap_or(&empty_vec).iter()
+            .chain(self.static_hashmap.get(&cell).unwrap_or(&empty_vec));
+
+        for &(ref entity,ref pos, ent_group, ent_mask, ref shape) in vec {
+            if ((group & ent_mask) != 0) && ((ent_group & mask) != 0) {
                 callback(entity,pos,shape);
             }
         }
-        if let Some(vec) = self.static_hashmap.get(&cell) {
-            for &(ref entity,ref pos,ref shape) in vec {
-                callback(entity,pos,shape);
-            }
+    }
+
+    pub fn insert_static(&mut self, entity: specs::Entity, pos: &[f32;2], group: u32, mask: u32, shape: &Shape) {
+        for cell in self.cells_of_shape(pos,shape) {
+            self.static_hashmap.entry(cell).or_insert(Vec::new()).push((entity,pos.clone(),group,mask,shape.clone()));
         }
     }
 
-    pub fn insert_static(&mut self, entity: specs::Entity, pos: &[f32;2], shape: &Shape) {
-        for cell in self.cells_of_shape(pos,shape) {
-            self.static_hashmap.entry(cell).or_insert(Vec::new()).push((entity,pos.clone(),shape.clone()));
-        }
-    }
+    // pub fn remove_static(&mut self, entity: specs::Entity, pos:&[f32;2], shape: &Shape) {
+    //     for cell in self.cells_of_shape(pos,shape) {
+    //         let vec = self.static_hashmap.get_mut(&cell).expect("remove static in an unexisting cell");
+    //         let i = vec.iter().position(|&(e,_,_,_,_)| e == entity).expect("remove unfindable entity");
+    //         vec.swap_remove(i);
+    //     }
+    // }
 
-    pub fn remove_static(&mut self, entity: specs::Entity, pos:&[f32;2], shape: &Shape) {
+    fn insert_movable(&mut self, entity: specs::Entity, pos: &[f32;2], group: u32, mask: u32, shape: &Shape) {
         for cell in self.cells_of_shape(pos,shape) {
-            let vec = self.static_hashmap.get_mut(&cell).expect("remove static in an unexisting cell");
-            let i = vec.iter().position(|&(e,_,_)| e == entity).expect("remove unfindable entity");
-            vec.swap_remove(i);
-        }
-    }
-
-    fn insert_movable(&mut self, entity: specs::Entity, pos: &[f32;2], shape: &Shape) {
-        for cell in self.cells_of_shape(pos,shape) {
-            self.movable_hashmap.entry(cell).or_insert(Vec::new()).push((entity,pos.clone(),shape.clone()));
+            self.movable_hashmap.entry(cell).or_insert(Vec::new()).push((entity,pos.clone(),group,mask,shape.clone()));
         }
     }
 
@@ -409,7 +402,8 @@ impl PhysicWorld {
                 let entities = self.movable_hashmap.get(&cell).unwrap_or(&null_vec).iter()
                     .chain(self.static_hashmap.get(&cell).unwrap_or(&null_vec).iter());
 
-                for &(entity,ref pos,ref shape) in entities {
+                for &(entity,ref pos,group,mask,ref shape) in entities {
+                    if ((group & ray.mask) == 0) || ((ray.group & mask) == 0) { continue; }
                     if visited.contains(&entity) { continue; }
 
                     // let intersections = entity.borrow().body().raycast(a,b,c);

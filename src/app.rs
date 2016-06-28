@@ -125,7 +125,6 @@ impl App {
         world.register::<PhysicState>();
         world.register::<PhysicStatic>();
         world.register::<PhysicDynamic>();
-        world.register::<PhysicKinetic>();
         world.register::<PhysicType>();
         world.register::<PhysicForce>();
         world.register::<PlayerControl>();
@@ -149,22 +148,7 @@ impl App {
             position: [0.,0.],
             inner_radius: config.cursor.inner_radius,
             outer_radius: config.cursor.outer_radius,
-            color: match &*config.cursor.color {
-                "base5" => graphics::Color::Base5,
-                "base4" => graphics::Color::Base4,
-                "base3" => graphics::Color::Base3,
-                "base2" => graphics::Color::Base2,
-                "base1" => graphics::Color::Base1,
-                "yellow" => graphics::Color::Yellow,
-                "orange" => graphics::Color::Orange,
-                "red" => graphics::Color::Red,
-                "magenta" => graphics::Color::Magenta,
-                "violet" => graphics::Color::Violet,
-                "blue" => graphics::Color::Blue,
-                "cyan" => graphics::Color::Cyan,
-                "green" => graphics::Color::Green,
-                _ => unreachable!(),
-            },
+            color: graphics::Color::from_string(&config.cursor.color),
         };
 
         let (effect_tx, effect_rx) = mpsc::channel();

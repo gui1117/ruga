@@ -131,6 +131,8 @@ impl specs::System<app::UpdateContext> for WeaponSystem {
                     origin: origin,
                     angle: angle,
                     length: rifle.length - rifle.distance,
+                    group: !0,
+                    mask: !0,
                 };
 
                 let mut actual_length = rifle.length;

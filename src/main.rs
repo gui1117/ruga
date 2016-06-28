@@ -28,7 +28,6 @@ mod components {
         PhysicState,
         PhysicType,
         PhysicForce,
-        PhysicKinetic,
         PhysicWorld,
         PhysicDynamic,
         PhysicStatic,
