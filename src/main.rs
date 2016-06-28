@@ -17,6 +17,7 @@ mod control;
 mod physic;
 mod entities;
 mod utils;
+mod life;
 
 mod components {
     pub use control::{
@@ -34,9 +35,13 @@ mod components {
         CollisionBehavior,
     };
     pub use graphics::Color;
+    pub use life::{
+        Life,
+    };
 }
 mod systems {
     pub use physic::PhysicSystem;
+    pub use life::LifeSystem;
 }
 
 pub use conf::{config,snd_effect,music};

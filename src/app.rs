@@ -127,6 +127,7 @@ impl App {
         world.register::<PlayerControl>();
         world.register::<Color>();
         world.register::<PhysicWorld>();
+        world.register::<Life>();
 
         // load level
         let master_entity = try!(levels::load(config.levels.first_level.clone(),&world)
@@ -135,7 +136,9 @@ impl App {
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
         let physic_system = PhysicSystem;
+        let life_system = LifeSystem;
         planner.add_system(physic_system, "physic", 30);
+        planner.add_system(life_system, "life", 10);
 
         let cursor = Cursor {
             position: [0.,0.],

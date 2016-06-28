@@ -191,10 +191,8 @@ BMP file on each pixel a color that correspond to the unit
 
 ##TODO
 
-* physic type have group and mask
 * better circle rectangle collision: use math
 * start/end
-* level from bitmap or sth else but not lua
 
 * window creation catch error and try whitout vsync and then without multisampling
 

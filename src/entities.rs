@@ -14,6 +14,7 @@ pub fn add_character(world: &specs::World, pos: [f32;2]) {
                 config.entity.char_time,
                 config.entity.char_weight))
         .with::<PhysicForce>(PhysicForce::new())
+        .with::<Life>(Life::new())
         .with::<Color>(Color::from_str(&*config.entity.char_color))
         .with::<PlayerControl>(PlayerControl)
         .build();
