@@ -73,9 +73,6 @@ pub struct App {
     cursor: Cursor,
     planner: specs::Planner<UpdateContext>,
     player_dir: Vec<Direction>,
-    /// 0: shoot one
-    /// 1: shoot lots
-    player_state: [bool;2],
     effect_rx: mpsc::Receiver<Effect>,
     effect_storage: Vec<Effect>,
     effect_tx: mpsc::Sender<Effect>,
@@ -129,9 +126,7 @@ impl App {
         world.register::<PhysicForce>();
         world.register::<PlayerControl>();
         world.register::<Color>();
-        world.register::<Rifle>();
         world.register::<PhysicWorld>();
-        world.register::<Life>();
 
         // load level
         let master_entity = try!(levels::load(config.levels.first_level.clone(),&world)
@@ -139,9 +134,7 @@ impl App {
 
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
-        let weapons_system = WeaponSystem;
         let physic_system = PhysicSystem;
-        planner.add_system(weapons_system, "weapons", 10);
         planner.add_system(physic_system, "physic", 30);
 
         let cursor = Cursor {
@@ -160,7 +153,6 @@ impl App {
             cursor: cursor,
             planner: planner,
             player_dir: vec!(),
-            player_state: [false,false],
             master_entity: master_entity,
             effect_rx: effect_rx,
             effect_tx: effect_tx,
@@ -294,57 +286,18 @@ impl App {
         let rel = self.cursor_relative_position();
         [rel[0] + self.camera.x, rel[1] + self.camera.y]
     }
-    fn update_rifle_state(&mut self) {
-        let state = if self.player_state[1] && self.player_state[0] {
-            RifleState::ShootLotsOrOne
-        } else if self.player_state[1] {
-            RifleState::ShootLots
-        } else if self.player_state[0] {
-            RifleState::ShootOne
-        } else {
-            RifleState::Rest
-        };
-
-        let characters = self.planner.world.read::<PlayerControl>();
-        let mut rifles = self.planner.world.write::<Rifle>();
-        for (_,mut rifle) in (&characters, &mut rifles).iter() {
-            rifle.state = state
-        }
-    }
     pub fn mouse_pressed(&mut self, button: MouseButton) {
         match button {
-            MouseButton::Left => {
-                self.player_state[0] = true;
-                self.update_rifle_state();
-            },
-            MouseButton::Right => {
-                self.player_state[1] = true;
-                self.update_rifle_state();
-            },
             _ => (),
         }
     }
     pub fn mouse_released(&mut self, button: MouseButton) {
         match button {
-            MouseButton::Left => {
-                self.player_state[0] = false;
-                self.update_rifle_state();
-            },
-            MouseButton::Right => {
-                self.player_state[1] = false;
-                self.update_rifle_state();
-            },
             _ => (),
         }
     }
     pub fn mouse_moved(&mut self, x: f32, y: f32) {
         self.cursor.position = [x,y];
-        let characters = self.planner.world.read::<PlayerControl>();
-        let mut rifles = self.planner.world.write::<Rifle>();
-        for (_, rifle) in (&characters, &mut rifles).iter() {
-            let cursor = self.cursor_relative_position();
-            rifle.aim = cursor[1].atan2(cursor[0]);
-        }
     }
     fn update_player_direction(&mut self) {
         use std::f32::consts::PI;

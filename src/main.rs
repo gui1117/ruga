@@ -13,7 +13,6 @@ mod levels;
 mod app;
 mod conf;
 mod event_loop;
-mod weapons;
 mod control;
 mod physic;
 mod entities;
@@ -35,15 +34,9 @@ mod components {
         CollisionBehavior,
     };
     pub use graphics::Color;
-    pub use weapons::{
-        Life,
-        Rifle,
-        RifleState,
-    };
 }
 mod systems {
     pub use physic::PhysicSystem;
-    pub use weapons::WeaponSystem;
 }
 
 pub use conf::{config,snd_effect,music};
