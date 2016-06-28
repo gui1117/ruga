@@ -6,11 +6,6 @@ use std::collections::hash_map::{HashMap, Entry};
 use std::collections::HashSet;
 use std::f32;
 
-// /// time to reach v max is actually time to reach rate*v_max
-// const _RATE: f32 = 0.9;
-// /// length of cell for the spatial hashing
-// const _UNIT: f32 = 10.;
-
 #[derive(Debug,Clone)]
 pub enum Shape {
     Circle(f32),
