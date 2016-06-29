@@ -6,6 +6,18 @@ use std::collections::hash_map::{HashMap, Entry};
 use std::collections::HashSet;
 use std::f32;
 
+pub trait IntoGrid { fn into_grid(&self) -> [f32;2]; }
+impl IntoGrid for [isize;2] {
+    fn into_grid(&self) -> [f32;2] {
+        [self[0] as f32 + 0.5, self[1] as f32 + 0.5]
+    }
+}
+impl IntoGrid for [f32;2] {
+    fn into_grid(&self) -> [f32;2] {
+        self.clone()
+    }
+}
+
 #[derive(Debug,Clone)]
 pub enum Shape {
     Circle(f32),
@@ -21,25 +33,30 @@ pub enum CollisionBehavior {
 }
 
 #[derive(Debug,Clone)]
+pub struct PhysicTrigger {
+    pub active: bool,
+}
+impl specs::Component for PhysicTrigger {
+    type Storage = specs::VecStorage<Self>;
+}
+impl Default for PhysicTrigger {
+    fn default() -> Self {
+        PhysicTrigger {
+            active: false,
+        }
+    }
+}
+
+#[derive(Debug,Clone)]
 pub struct PhysicState {
     pub position: [f32;2],
     pub velocity: [f32;2],
     pub acceleration: [f32;2],
 }
 impl PhysicState {
-    pub fn new(pos: [f32;2]) -> Self {
+    pub fn new<T: IntoGrid>(pos: T) -> Self {
         PhysicState{
-            position: pos,
-            velocity: [0.,0.],
-            acceleration: [0.,0.],
-        }
-    }
-    pub fn new_aligned(pos: [isize;2]) -> Self {
-        PhysicState{
-            position: [
-                pos[0] as f32 + 0.5,
-                pos[1] as f32 + 0.5,
-            ],
+            position: pos.into_grid(),
             velocity: [0.,0.],
             acceleration: [0.,0.],
         }
@@ -157,13 +174,14 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
         use std::f32::consts::PI;
         use specs::Join;
 
-        let (dynamics,mut states,forces,types,mut physic_worlds,entities) = arg.fetch(|world| {
+        let (dynamics,mut states,forces,types,mut physic_worlds,mut triggers,entities) = arg.fetch(|world| {
             (
                 world.read::<PhysicDynamic>(),
                 world.write::<PhysicState>(),
                 world.read::<PhysicForce>(),
                 world.read::<PhysicType>(),
                 world.write::<PhysicWorld>(),
+                world.write::<PhysicTrigger>(),
                 world.entities(),
             )
         });
@@ -174,6 +192,9 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
 
         let mut resolutions = HashMap::<specs::Entity,Resolution>::new();
 
+        for trigger in (&mut triggers).iter() {
+            trigger.active = false;
+        }
         physic_world.movable_hashmap = HashMap::new();
         for (_,entity) in (&dynamics, &entities).iter() {
             let state = states.get_mut(entity).expect("dynamic entity expect state component");
@@ -194,6 +215,13 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
 
             physic_world.apply_on_shape(&state.position, typ.group, &typ.shape, &mut |other_entity,collision| {
                 let other_type = types.get(*other_entity).expect("physic entity expect type component");
+
+                if let Some(trigger) = triggers.get_mut(entity) {
+                    trigger.active = true;
+                }
+                if let Some(trigger) = triggers.get_mut(*other_entity) {
+                    trigger.active = true;
+                }
 
                 let rate = {
                     if other_type.weight == f32::MAX {

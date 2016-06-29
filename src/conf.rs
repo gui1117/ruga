@@ -2,6 +2,7 @@ pub type Effect = [(String, u32);4];
 pub type Music = [String;1];
 pub type Dimension = [u32;2];
 pub type Array4f32 = [f32;4];
+pub type VecF32 = Vec<f32>;
 
 pub mod snd_effect {
     pub const RIFLE_SHOOT_ZERO: usize = 0;
@@ -36,6 +37,15 @@ configure!(
         unit: t f32,
     },
     entity: {
+        ball_group: t u32,
+        ball_killer_group: t u32,
+        laser_group: t u32,
+        laser_killer_group: t u32,
+
+        column_group: t u32,
+        column_radius: t f32,
+        column_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+
         char_group: t u32,
         char_radius: t f32,
         char_velocity: t f32,
@@ -46,6 +56,16 @@ configure!(
         wall_group: t u32,
         wall_radius: t f32,
         wall_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+
+        monster_vision_group: t u32,
+        monster_group: t u32,
+        monster_ranges: t VecF32,
+        monster_velocities: t VecF32,
+        monster_radius: t f32,
+        monster_velocity: t f32,
+        monster_time: t f32,
+        monster_weight: t f32,
+        monster_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
     },
     levels: {
         dir: t String,

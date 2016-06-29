@@ -23,6 +23,7 @@ mod components {
     pub use control::{
         PlayerControl,
         TowardPlayerControl,
+        MonsterControl,
     };
     pub use physic::{
         PhysicState,
@@ -32,11 +33,15 @@ mod components {
         PhysicDynamic,
         PhysicStatic,
         Shape,
+        Ray,
         CollisionBehavior,
+        PhysicTrigger,
     };
     pub use graphics::Color;
     pub use life::{
         Life,
+        Killer,
+        Ball,
     };
 }
 mod systems {
@@ -44,7 +49,9 @@ mod systems {
     pub use life::{
         LifeSystem,
         KillerSystem,
+        BallSystem,
     };
+    pub use control::MonsterSystem;
 }
 
 pub use conf::{config,snd_effect,music};

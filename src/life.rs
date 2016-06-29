@@ -83,3 +83,30 @@ impl specs::System<app::UpdateContext> for KillerSystem {
     }
 }
 
+pub struct Ball {
+    origin: [f32;2],
+}
+impl specs::Component for Ball {
+    type Storage = specs::VecStorage<Self>;
+}
+
+pub struct BallSystem;
+impl specs::System<app::UpdateContext> for BallSystem {
+    fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
+        let (mut states, balls, triggers) = arg.fetch(|world| {
+            (
+                world.write::<PhysicState>(),
+                world.read::<Ball>(),
+                world.read::<PhysicTrigger>(),
+            )
+        });
+        for (ball, trigger, mut state) in (&balls, &triggers, &mut states).iter() {
+            if trigger.active {
+                state.position = ball.origin;
+                state.velocity = [0.,0.];
+                state.acceleration = [0.,0.];
+            }
+        }
+    }
+}
+

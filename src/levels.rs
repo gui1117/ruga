@@ -38,10 +38,15 @@ pub fn load<'l>(level: String, world: &specs::World) -> Result<specs::Entity,Loa
 
     try!(lua.execute_from_reader::<(),_>(file).map_err(|e| LoadError::Lua(e)));
 
-    // init world
+    // add_physic_world
     let master_entity = world.create_now()
         .with::<physic::PhysicWorld>(physic::PhysicWorld::new())
         .build();
+
+    // maintain
+    world.maintain();
+
+    // init_physic_world
     let mut physic_worlds = world.write::<physic::PhysicWorld>();
     physic_worlds.get_mut(master_entity).unwrap().fill(&world);
 

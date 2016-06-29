@@ -196,6 +196,8 @@ BMP file on each pixel a color that correspond to the unit
 
 * window creation catch error and try whitout vsync and then without multisampling
 
+* when iterating in systems when a component is required must do get\_mut(...).expect(.. expect ... component)
+
 * vi-like live configuration:
   * volume
   * switch light dark
@@ -204,3 +206,6 @@ BMP file on each pixel a color that correspond to the unit
   * quit game
   * affiche les touches
 
+##possibilité de mécanique
+
+* si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
