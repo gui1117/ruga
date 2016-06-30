@@ -1,3 +1,5 @@
+use configuration::BitflagU32;
+
 pub type Effect = [(String, u32);4];
 pub type Music = [String;1];
 pub type Dimension = [u32;2];
@@ -36,29 +38,44 @@ configure!(
         rate: t f32,
         unit: t f32,
     },
-    entity: {
-        ball_group: t u32,
-        ball_killer_group: t u32,
-        laser_group: t u32,
-        laser_killer_group: t u32,
+    entities: {
+        ball_group: t BitflagU32,
+        ball_mask: t BitflagU32,
+        ball_killer_mask: t BitflagU32,
+        ball_radius: t f32,
+        ball_velocity: t f32,
+        ball_time: t f32,
+        ball_weight: t f32,
+        ball_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
 
-        column_group: t u32,
+        laser_group: t BitflagU32,
+        laser_mask: t BitflagU32,
+        laser_killer_mask: t BitflagU32,
+        laser_radius: t f32,
+        laser_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+
+        column_group: t BitflagU32,
+        column_mask: t BitflagU32,
         column_radius: t f32,
         column_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
 
-        char_group: t u32,
+        char_group: t BitflagU32,
+        char_mask: t BitflagU32,
         char_radius: t f32,
         char_velocity: t f32,
         char_time: t f32,
         char_weight: t f32,
         char_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
 
-        wall_group: t u32,
+        wall_group: t BitflagU32,
+        wall_mask: t BitflagU32,
         wall_radius: t f32,
         wall_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
 
-        monster_vision_group: t u32,
-        monster_group: t u32,
+        monster_vision_mask: t BitflagU32,
+        monster_killer_mask: t BitflagU32,
+        monster_group: t BitflagU32,
+        monster_mask: t BitflagU32,
         monster_ranges: t VecF32,
         monster_velocities: t VecF32,
         monster_radius: t f32,

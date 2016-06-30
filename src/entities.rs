@@ -2,20 +2,21 @@ use components::*;
 use specs;
 use config;
 
-pub fn add_character(world: &specs::World, pos: [f32;2]) {
+pub fn add_character(world: &specs::World, pos: [isize;2]) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicDynamic>(PhysicDynamic)
         .with::<PhysicType>(PhysicType::new_movable(
-                config.entity.char_group,
-                Shape::Circle(config.entity.char_radius),
+                config.entities.char_group.val,
+                config.entities.char_mask.val,
+                Shape::Circle(config.entities.char_radius),
                 CollisionBehavior::Persist,
-                config.entity.char_velocity,
-                config.entity.char_time,
-                config.entity.char_weight))
+                config.entities.char_velocity,
+                config.entities.char_time,
+                config.entities.char_weight))
         .with::<PhysicForce>(PhysicForce::new())
         .with::<Life>(Life::new())
-        .with::<Color>(Color::from_str(&*config.entity.char_color))
+        .with::<Color>(Color::from_str(&*config.entities.char_color))
         .with::<PlayerControl>(PlayerControl)
         .build();
 }
@@ -25,22 +26,45 @@ pub fn add_wall(world: &specs::World, pos: [isize;2]) {
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
         .with::<PhysicType>(PhysicType::new_static(
-                config.entity.wall_group,
-                Shape::Square(config.entity.wall_radius)))
-        .with::<Color>(Color::from_str(&*config.entity.wall_color))
+                config.entities.wall_group.val,
+                config.entities.wall_mask.val,
+                Shape::Square(config.entities.wall_radius)))
+        .with::<Color>(Color::from_str(&*config.entities.wall_color))
         .build();
 }
 
-pub fn add_colunm(world: &specs::World, pos: [isize;2]) {
+pub fn add_column(world: &specs::World, pos: [isize;2]) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
         .with::<PhysicType>(PhysicType::new_static(
-                config.entity.column_group,
-                Shape::Circle(config.entity.column_radius)))
-        .with::<Color>(Color::from_str(&*config.entity.column_color))
+                config.entities.column_group.val,
+                config.entities.column_mask.val,
+                Shape::Square(config.entities.column_radius)))
+        .with::<Color>(Color::from_str(&*config.entities.column_color))
         .build();
-    //TODO create ball
+    world.create_now()
+        .with::<PhysicState>(PhysicState::new(pos))
+        .with::<Ball>(Ball::new(pos))
+        .with::<PhysicDynamic>(PhysicDynamic)
+        .with::<PhysicType>(PhysicType::new_movable(
+                config.entities.ball_group.val,
+                config.entities.ball_mask.val,
+                Shape::Circle(config.entities.ball_radius),
+                CollisionBehavior::Persist,
+                config.entities.ball_velocity,
+                config.entities.ball_time,
+                config.entities.ball_weight))
+        .with::<PhysicForce>(PhysicForce::new_full())
+        .with::<PhysicTrigger>(PhysicTrigger::new())
+        .with::<Life>(Life::new())
+        .with::<Color>(Color::from_str(&*config.entities.ball_color))
+        .with::<TowardPlayerControl>(TowardPlayerControl)
+        .with::<Killer>(Killer {
+            kamikaze: false,
+            mask: config.entities.ball_killer_mask.val,
+        })
+        .build();
 }
 
 pub fn add_monster(world: &specs::World, pos: [isize;2]) {
@@ -48,20 +72,40 @@ pub fn add_monster(world: &specs::World, pos: [isize;2]) {
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicDynamic>(PhysicDynamic)
         .with::<PhysicType>(PhysicType::new_movable(
-                config.entity.monster_group,
-                Shape::Circle(config.entity.monster_radius),
+                config.entities.monster_group.val,
+                config.entities.monster_mask.val,
+                Shape::Circle(config.entities.monster_radius),
                 CollisionBehavior::Persist,
-                config.entity.monster_velocity,
-                config.entity.monster_time,
-                config.entity.monster_weight))
+                config.entities.monster_velocity,
+                config.entities.monster_time,
+                config.entities.monster_weight))
         .with::<PhysicForce>(PhysicForce::new())
         .with::<Life>(Life::new())
-        .with::<Color>(Color::from_str(&*config.entity.monster_color))
+        .with::<Color>(Color::from_str(&*config.entities.monster_color))
         .with::<MonsterControl>(MonsterControl::new())
+        .with::<Killer>(Killer {
+            kamikaze: true,
+            mask: config.entities.monster_killer_mask.val,
+        })
         .build();
 }
+
 pub fn add_laser(world: &specs::World, pos: [isize;2]) {
+    world.create_now()
+        .with::<PhysicState>(PhysicState::new(pos))
+        .with::<PhysicStatic>(PhysicStatic)
+        .with::<PhysicType>(PhysicType::new_static(
+                config.entities.laser_group.val,
+                config.entities.laser_mask.val,
+                Shape::Square(config.entities.laser_radius)))
+        .with::<Color>(Color::from_str(&*config.entities.laser_color))
+        .with::<Killer>(Killer {
+            kamikaze: false,
+            mask: config.entities.laser_killer_mask.val,
+        })
+        .build();
 }
+
 // pub fn add_begin() {
 // }
 // pub fn add_end() {

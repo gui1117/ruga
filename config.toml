@@ -1,6 +1,63 @@
 [general]
 number_of_thread = 4
 
+[entities]
+#groups
+char_group          = "00000001"
+monster_group       = "00000010"
+ball_group          = "00000100"
+laser_group         = "00001000"
+column_group        = "00010000"
+wall_group          = "00100000"
+
+char_mask           = "00110000"
+monster_mask        = "00110010"
+ball_mask           = "00100000"
+laser_mask          = "00000000"
+column_mask         = "11111111"
+wall_mask           = "11111111"
+
+monster_vision_mask = "00110001"
+
+monster_killer_mask = "00000001"
+ball_killer_mask    = "00000011"
+laser_killer_mask   = "00000110"
+
+#radius
+laser_radius = 0.5
+column_radius = 0.5
+char_radius = 0.5
+wall_radius = 0.5
+ball_radius = 0.5
+monster_radius = 0.5
+
+#velocities
+ball_velocity = 5.0
+char_velocity = 10.0
+monster_velocity = 10.0
+
+#times to reach almost vmax
+char_time = 0.1
+monster_time = 0.1
+ball_time = 0.1
+
+#weight
+ball_weight = 1.0
+monster_weight = 1.0
+char_weight = 1.0
+
+#color
+ball_color = "violet"
+laser_color = "yellow"
+column_color = "red"
+char_color = "blue"
+wall_color = "cyan"
+monster_color = "magenta"
+
+#other
+monster_ranges = [3.0,2.0,1.0]
+monster_velocities = [0.0,0.1,0.2]
+
 [cursor]
 outer_radius = 1.0
 inner_radius = 0.1

@@ -23,28 +23,33 @@ pub fn load<'l>(level: String, world: &specs::World) -> Result<specs::Entity,Loa
     }
     world.maintain();
 
-    let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}{}",level,".lua")));
-
-    let file = try!(File::open(&path).map_err(|e| LoadError::OpenFile(e)));
-
+    // init lua level creation context
     let mut lua: Lua<'l> = Lua::new();
-
-    lua.set("add_character", hlua::function2(|x: f32,y: f32| {
-        entities::add_character(world,[x,y]);
+    lua.set("add_character", hlua::function2(|x: i32,y: i32| {
+        entities::add_character(world,[x as isize,y as isize]);
     }));
     lua.set("add_wall", hlua::function2(|x: i32,y: i32| {
         entities::add_wall(world,[x as isize,y as isize]);
     }));
+    lua.set("add_column", hlua::function2(|x: i32,y: i32| {
+        entities::add_column(world,[x as isize,y as isize]);
+    }));
+    lua.set("add_monster", hlua::function2(|x: i32,y: i32| {
+        entities::add_monster(world,[x as isize,y as isize]);
+    }));
+    lua.set("add_laser", hlua::function2(|x: i32,y: i32| {
+        entities::add_laser(world,[x as isize,y as isize]);
+    }));
 
+    // execute level script
+    let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}{}",level,".lua")));
+    let file = try!(File::open(&path).map_err(|e| LoadError::OpenFile(e)));
     try!(lua.execute_from_reader::<(),_>(file).map_err(|e| LoadError::Lua(e)));
 
     // add_physic_world
     let master_entity = world.create_now()
         .with::<physic::PhysicWorld>(physic::PhysicWorld::new())
         .build();
-
-    // maintain
-    world.maintain();
 
     // init_physic_world
     let mut physic_worlds = world.write::<physic::PhysicWorld>();

@@ -119,18 +119,23 @@ impl App {
 
         // init world
         let mut world = specs::World::new();
-        world.register::<PhysicState>();
-        world.register::<PhysicTrigger>();
-        world.register::<PhysicStatic>();
-        world.register::<PhysicDynamic>();
-        world.register::<PhysicType>();
-        world.register::<PhysicForce>();
         world.register::<PlayerControl>();
         world.register::<TowardPlayerControl>();
         world.register::<MonsterControl>();
-        world.register::<Color>();
+
+        world.register::<PhysicState>();
+        world.register::<PhysicForce>();
+        world.register::<PhysicType>();
         world.register::<PhysicWorld>();
+        world.register::<PhysicDynamic>();
+        world.register::<PhysicStatic>();
+        world.register::<PhysicTrigger>();
+
+        world.register::<Color>();
+
         world.register::<Life>();
+        world.register::<Killer>();
+        world.register::<Ball>();
 
         // load level
         let master_entity = try!(levels::load(config.levels.first_level.clone(),&world)
@@ -138,11 +143,12 @@ impl App {
 
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
-        planner.add_system(PhysicSystem, "physic",  9);
-        planner.add_system(MonsterSystem,"monster", 8);
-        planner.add_system(KillerSystem, "killer",  7);
-        planner.add_system(BallSystem,   "ball",    6);
-        planner.add_system(LifeSystem,   "life",    5);
+        planner.add_system(PhysicSystem, "physic", 10);
+        planner.add_system(MonsterSystem, "monster", 5);
+        planner.add_system(TowardPlayerSystem, "toward_player", 5);
+        planner.add_system(KillerSystem, "killer", 5);
+        planner.add_system(BallSystem, "ball", 5);
+        planner.add_system(LifeSystem, "life", 1);
 
         let cursor = Cursor {
             position: [0.,0.],

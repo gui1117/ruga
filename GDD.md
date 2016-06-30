@@ -191,6 +191,7 @@ BMP file on each pixel a color that correspond to the unit
 
 ##TODO
 
+* color component -> color and layer
 * better circle rectangle collision: use math
 * start/end
 

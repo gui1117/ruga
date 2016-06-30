@@ -39,8 +39,8 @@ pub struct PhysicTrigger {
 impl specs::Component for PhysicTrigger {
     type Storage = specs::VecStorage<Self>;
 }
-impl Default for PhysicTrigger {
-    fn default() -> Self {
+impl PhysicTrigger {
+    pub fn new() -> Self {
         PhysicTrigger {
             active: false,
         }
@@ -74,9 +74,10 @@ pub struct PhysicType {
     pub force: f32,
     pub weight: f32,
     pub group: u32,
+    pub mask: u32,
 }
 impl PhysicType {
-    pub fn new_movable(group: u32, shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
+    pub fn new_movable(group: u32, mask: u32, shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
         let damping = -weight * (1.-config.physic.rate).ln() / time_to_reach_v_max;
         let force = velocity * damping;
         PhysicType {
@@ -86,9 +87,10 @@ impl PhysicType {
             damping: damping,
             force: force,
             group: group,
+            mask: mask,
         }
     }
-    pub fn new_static(group: u32, shape: Shape) -> Self {
+    pub fn new_static(group: u32, mask: u32, shape: Shape) -> Self {
         PhysicType {
             shape: shape,
             collision_behavior: CollisionBehavior::Persist,
@@ -96,6 +98,7 @@ impl PhysicType {
             force: 0.,
             damping: 0.,
             group: group,
+            mask: mask,
         }
     }
 }
@@ -115,6 +118,12 @@ impl PhysicForce {
             intensity: 0.,
         }
     }
+    pub fn new_full() -> Self {
+        PhysicForce {
+            direction: 0.,
+            intensity: 1.,
+        }
+    }
 }
 impl specs::Component for PhysicForce {
     type Storage = specs::VecStorage<Self>;
@@ -132,11 +141,12 @@ impl specs::Component for PhysicStatic {
     type Storage = specs::NullStorage<Self>;
 }
 
+#[derive(Debug,Clone)]
 pub struct Ray {
     pub origin: [f32;2],
     pub angle: f32,
     pub length: f32,
-    pub group: u32,
+    pub mask: u32,
 }
 
 /// if A collide with B then collision must represent
@@ -185,7 +195,7 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
                 world.entities(),
             )
         });
-        let mut physic_world = physic_worlds.get_mut(context.master_entity)
+        let physic_world = physic_worlds.get_mut(context.master_entity)
             .expect("master_entity expect physic_world component");
 
         let dt = context.dt as f32;
@@ -213,45 +223,51 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
             state.position[0] += dt*state.velocity[0];
             state.position[1] += dt*state.velocity[1];
 
-            physic_world.apply_on_shape(&state.position, typ.group, &typ.shape, &mut |other_entity,collision| {
+            if typ.mask == 0 { continue }
+
+            physic_world.apply_on_shape(&state.position, typ.mask, &typ.shape, &mut |other_entity,collision| {
                 let other_type = types.get(*other_entity).expect("physic entity expect type component");
 
-                if let Some(trigger) = triggers.get_mut(entity) {
-                    trigger.active = true;
-                }
-                if let Some(trigger) = triggers.get_mut(*other_entity) {
-                    trigger.active = true;
-                }
+                if other_type.mask & typ.group != 0 {
 
-                let rate = {
-                    if other_type.weight == f32::MAX {
-                        0.
-                    } else if typ.weight == f32::MAX {
-                        1.
-                    } else {
-                        typ.weight/(typ.weight+other_type.weight)
+                    if let Some(trigger) = triggers.get_mut(entity) {
+                        trigger.active = true;
                     }
-                };
+                    if let Some(trigger) = triggers.get_mut(*other_entity) {
+                        trigger.active = true;
+                    }
 
-                if rate != 1. {
-                    let resolution = Resolution {
-                        dx: collision.delta_x*(1.-rate),
-                        dy: collision.delta_y*(1.-rate),
+                    let rate = {
+                        if other_type.weight == f32::MAX {
+                            0.
+                        } else if typ.weight == f32::MAX {
+                            1.
+                        } else {
+                            typ.weight/(typ.weight+other_type.weight)
+                        }
                     };
-                    match resolutions.entry(entity) {
-                        Entry::Occupied(mut entry) => entry.get_mut().push(resolution),
-                        Entry::Vacant(entry) => {entry.insert(resolution);},
+
+                    if rate != 1. {
+                        let resolution = Resolution {
+                            dx: collision.delta_x*(1.-rate),
+                            dy: collision.delta_y*(1.-rate),
+                        };
+                        match resolutions.entry(entity) {
+                            Entry::Occupied(mut entry) => entry.get_mut().push(resolution),
+                            Entry::Vacant(entry) => {entry.insert(resolution);},
+                        }
                     }
-                }
-                if rate != 0. {
-                    let resolution = Resolution {
-                        dx: -collision.delta_x*rate,
-                        dy: -collision.delta_y*rate,
-                    };
-                    match resolutions.entry(entity) {
-                        Entry::Occupied(mut entry) => entry.get_mut().push(resolution),
-                        Entry::Vacant(entry) => {entry.insert(resolution);},
+                    if rate != 0. {
+                        let resolution = Resolution {
+                            dx: -collision.delta_x*rate,
+                            dy: -collision.delta_y*rate,
+                        };
+                        match resolutions.entry(entity) {
+                            Entry::Occupied(mut entry) => entry.get_mut().push(resolution),
+                            Entry::Vacant(entry) => {entry.insert(resolution);},
+                        }
                     }
+
                 }
             });
 
@@ -335,11 +351,11 @@ impl PhysicWorld {
         cells
     }
 
-    pub fn apply_on_shape<F: FnMut(&specs::Entity,&Collision)>(&self, pos: &[f32;2], group: u32, shape: &Shape, callback: &mut F) {
+    pub fn apply_on_shape<F: FnMut(&specs::Entity,&Collision)>(&self, pos: &[f32;2], mask: u32, shape: &Shape, callback: &mut F) {
         let mut visited = HashSet::new();
 
         for cell in self.cells_of_shape(pos,shape) {
-            self.apply_on_index(cell, group, &mut |other_entity, other_pos, other_shape| {
+            self.apply_on_index(cell, mask, &mut |other_entity, other_pos, other_shape| {
                 if visited.contains(other_entity) { return; }
                 visited.insert(*other_entity);
                 if let Some(collision) = shape_collide(pos,shape,other_pos,other_shape) {
@@ -349,13 +365,13 @@ impl PhysicWorld {
         }
     }
 
-    fn apply_on_index<F: FnMut(&specs::Entity,&[f32;2],&Shape)>(&self, cell: [i32;2], group: u32, callback: &mut F) {
+    fn apply_on_index<F: FnMut(&specs::Entity,&[f32;2],&Shape)>(&self, cell: [i32;2], mask: u32, callback: &mut F) {
         let empty_vec = vec!();
         let vec = self.movable_hashmap.get(&cell).unwrap_or(&empty_vec).iter()
             .chain(self.static_hashmap.get(&cell).unwrap_or(&empty_vec));
 
-        for &(ref entity,ref pos, ent_group, ref shape) in vec {
-            if (group & ent_group) != 0 {
+        for &(ref entity,ref pos, group, ref shape) in vec {
+            if (group & mask) != 0 {
                 callback(entity,pos,shape);
             }
         }
@@ -422,10 +438,9 @@ impl PhysicWorld {
                     .chain(self.static_hashmap.get(&cell).unwrap_or(&null_vec).iter());
 
                 for &(entity,ref pos,group,ref shape) in entities {
-                    if (group & ray.group) == 0 { continue; }
+                    if (group & ray.mask) == 0 { continue; }
                     if visited.contains(&entity) { continue; }
 
-                    // let intersections = entity.borrow().body().raycast(a,b,c);
                     let intersections = match *shape {
                         Shape::Circle(radius) => circle_raycast(pos[0],pos[1],radius,a,b,c),
                         Shape::Square(radius) => bounding_box_raycast(pos[0],pos[1],radius*2.,radius*2.,a,b,c),
@@ -436,9 +451,9 @@ impl PhysicWorld {
 
                         // angle is between minus_pi and pi
                         if angle.abs() > PI/2. {
-                            if segment_start <= x_max && x_min <= segment_end {
+                            if segment_start <= x_max && x_min<= segment_end {
                                 visited.insert(entity);
-                                //println!("intersection in segment");
+                                // println!("intersection in segment");
                                 let max = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
                                 let mut min = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
                                 if x_max > segment_end {
@@ -449,7 +464,7 @@ impl PhysicWorld {
                         } else {
                             if segment_start <= x_max && x_min <= segment_end {
                                 visited.insert(entity);
-                                //println!("intersection in segment");
+                                // println!("intersection in segment");
                                 let mut min = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
                                 let max = ((x0-x_max).powi(2) + (y0-y_max).powi(2)).sqrt();
                                 if x_min < segment_start {
@@ -703,8 +718,8 @@ fn circle_raycast(x: f32, y: f32, radius: f32, a: f32, b: f32, c: f32) -> Option
 
         if delta > 0. {
             let (x1,x2) = {
-                let x1 = (e.powi(2) - delta.sqrt())/2.*d;
-                let x2 = (e.powi(2) + delta.sqrt())/2.*d;
+                let x1 = (-e - delta.sqrt())/(2.*d);
+                let x2 = (-e + delta.sqrt())/(2.*d);
                 if x1 > x2 {
                     (x2,x1)
                 } else {
@@ -719,6 +734,18 @@ fn circle_raycast(x: f32, y: f32, radius: f32, a: f32, b: f32, c: f32) -> Option
             None
         }
     }
+}
+
+#[test]
+fn circle_raycast_test() {
+    // for a == 0
+    assert_eq!(Some((-1.,3.,3.,3.)),circle_raycast(1.,3.,2.,0.,-1.,3.));
+
+    // for b == 0
+    assert_eq!(Some((3.,0.,3.,2.)),circle_raycast(3.,1.,1.,-1.,0.,3.));
+
+    // for b != 0 && a != 0
+    assert_eq!(Some((-0.99999994,-0.99999994,0.99999994,0.99999994)),circle_raycast(0.,0.,2f32.sqrt(),1.,-1.,0.));
 }
 
 /// the coordinate of the intersections (if some) of a rectangle of center (x,y) width and height,

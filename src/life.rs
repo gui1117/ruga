@@ -2,6 +2,7 @@ use app;
 use components::*;
 use specs::Join;
 use specs;
+use physic::IntoGrid;
 
 pub struct Life {
     alive: bool,
@@ -43,8 +44,8 @@ impl specs::System<app::UpdateContext> for LifeSystem {
 }
 
 pub struct Killer {
-    kamikaze: bool,
-    group: u32,
+    pub kamikaze: bool,
+    pub mask: u32,
     //TODO kill_snd
 }
 impl specs::Component for Killer {
@@ -70,8 +71,8 @@ impl specs::System<app::UpdateContext> for KillerSystem {
 
         for (killer, state, typ, entity) in (&killers, &states, &types, &entities).iter() {
             let mut kill = false;
-            physic_world.apply_on_shape(&state.position, killer.group, &typ.shape, &mut |other_entity,_| {
-                if let Some(mut life) = lives.get_mut(*other_entity) {
+            physic_world.apply_on_shape(&state.position, killer.mask, &typ.shape, &mut |other_entity,_| {
+                if let Some(life) = lives.get_mut(*other_entity) {
                     life.kill();
                     kill = true;
                 }
@@ -89,18 +90,29 @@ pub struct Ball {
 impl specs::Component for Ball {
     type Storage = specs::VecStorage<Self>;
 }
+impl Ball {
+    pub fn new<T: IntoGrid>(pos: T) -> Ball {
+        Ball {
+            origin: pos.into_grid()
+        }
+    }
+}
 
 pub struct BallSystem;
 impl specs::System<app::UpdateContext> for BallSystem {
     fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
-        let (mut states, balls, triggers) = arg.fetch(|world| {
+        let (mut states, balls, triggers, entities) = arg.fetch(|world| {
             (
                 world.write::<PhysicState>(),
                 world.read::<Ball>(),
                 world.read::<PhysicTrigger>(),
+                world.entities(),
             )
         });
-        for (ball, trigger, mut state) in (&balls, &triggers, &mut states).iter() {
+        for (ball, entity) in (&balls, &entities).iter() {
+            let trigger = triggers.get(entity).expect("ball component expect trigger component");
+            let state = states.get_mut(entity).expect("ball component expect state component");
+
             if trigger.active {
                 state.position = ball.origin;
                 state.velocity = [0.,0.];

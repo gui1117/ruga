@@ -293,3 +293,25 @@ macro_rules! toml_map {
 toml_map!(BTreeMap<String,T>: BTreeMap::new());
 toml_map!(HashMap<String,T>: HashMap::new());
 
+pub struct BitflagU32 {
+    pub val: u32,
+}
+impl FromToml for BitflagU32 {
+    fn from_toml(val: &toml::Value) -> Result<Self,String> {
+        let err = " expect string of 1 and 0 and of length < 32";
+        let mut string = String::from(try!(val.as_str().ok_or(err)));
+        if string.len() > 32 { return Err(String::from(err)) }
+        let mut bitval = 0;
+        while let Some(chr) = string.pop() {
+            match chr {
+                '0' => bitval <<= 1,
+                '1' => bitval = (bitval << 1) + 1,
+                _ => return Err(String::from(err)),
+            }
+        }
+        Ok(BitflagU32 {
+            val: bitval,
+        })
+    }
+}
+
