@@ -29,15 +29,25 @@ impl Life {
 pub struct LifeSystem;
 impl specs::System<app::UpdateContext> for LifeSystem {
     fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
-        let (lives, entities) = arg.fetch(|world| {
+        let (mut lives, mut states, balls, entities) = arg.fetch(|world| {
             (
-                world.read::<Life>(),
+                world.write::<Life>(),
+                world.write::<PhysicState>(),
+                world.read::<Ball>(),
                 world.entities(),
             )
         });
-        for (life, entity) in (&lives, &entities).iter() {
+        for (life, entity) in (&mut lives, &entities).iter() {
             if !life.alive {
-                arg.delete(entity);
+                if let Some(ball) = balls.get(entity) {
+                    let state = states.get_mut(entity).expect("ball expect state component");
+                    state.position = ball.origin;
+                    state.velocity = [0.,0.];
+                    state.acceleration = [0.,0.];
+                    life.alive = true;
+                } else {
+                    arg.delete(entity);
+                }
             }
         }
     }

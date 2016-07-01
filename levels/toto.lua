@@ -10,7 +10,8 @@ for j = 1,99 do
 end
 add_wall(10,10)
 
--- add_column(13,10)
+add_column(13,10)
+add_column(14,10)
 
 add_laser(5,5)
 

@@ -4,7 +4,6 @@ pub type Effect = [(String, u32);4];
 pub type Music = [String;1];
 pub type Dimension = [u32;2];
 pub type Array4f32 = [f32;4];
-pub type VecF32 = Vec<f32>;
 
 pub mod snd_effect {
     pub const RIFLE_SHOOT_ZERO: usize = 0;
@@ -76,8 +75,7 @@ configure!(
         monster_killer_mask: t BitflagU32,
         monster_group: t BitflagU32,
         monster_mask: t BitflagU32,
-        monster_ranges: t VecF32,
-        monster_velocities: t VecF32,
+        monster_vision_time: t f32,
         monster_radius: t f32,
         monster_velocity: t f32,
         monster_time: t f32,

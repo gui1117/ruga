@@ -50,7 +50,6 @@ impl specs::System<app::UpdateContext> for TowardPlayerSystem {
 }
 
 pub struct MonsterControl {
-    state: usize,
     next_lookup: f32,
 }
 impl specs::Component for MonsterControl {
@@ -58,9 +57,10 @@ impl specs::Component for MonsterControl {
 }
 impl MonsterControl {
     pub fn new() -> Self {
+        let mut rng = rand::thread_rng();
+        let range = Range::new(0.,config.entities.monster_vision_time);
         MonsterControl {
-            state: 0,
-            next_lookup: 0.,
+            next_lookup: range.ind_sample(&mut rng),
         }
     }
 }
@@ -87,17 +87,19 @@ impl specs::System<app::UpdateContext> for MonsterSystem {
             break;
         }
 
-        let mut rng = rand::thread_rng();
         if let Some(player_pos) = player_pos {
             for (mut monster, entity) in (&mut monsters, &entities).iter() {
                 let state = states.get(entity).expect("monster expect state component");
                 let force = forces.get_mut(entity).expect("monster expect force component");
 
+                let pos = state.position;
+                let angle = (player_pos[1] - pos[1]).atan2(player_pos[0] - pos[0]);
+
+                force.direction = angle;
+
                 monster.next_lookup -= context.dt as f32;
 
                 if monster.next_lookup <= 0. {
-                    let pos = state.position;
-                    let angle = (player_pos[1] - pos[1]).atan2(player_pos[0] - pos[0]);
                     let length = ((player_pos[1] - pos[1]).powi(2) + (player_pos[0] - pos[0]).powi(2)).sqrt();
                     let ray = Ray {
                         origin: pos,
@@ -114,17 +116,12 @@ impl specs::System<app::UpdateContext> for MonsterSystem {
                         true
                     });
                     if player_visible {
-                        if monster.state != config.entities.monster_velocities.len()-1 {
-                            monster.state += 1;
-                        }
-                        force.direction = angle;
-                    } else if monster.state != 0 {
-                        monster.state -= 1;
+                        force.intensity = 1.;
+                    } else {
+                        force.intensity = 0.;
                     }
-                    force.intensity = config.entities.monster_velocities[monster.state];
 
-                    let range = Range::new(0.,config.entities.monster_ranges[monster.state]);
-                    monster.next_lookup = range.ind_sample(&mut rng);
+                    monster.next_lookup = config.entities.monster_vision_time;
                 }
             }
         }
