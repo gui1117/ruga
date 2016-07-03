@@ -32,14 +32,14 @@ ball_radius = 0.5
 monster_radius = 0.5
 
 #velocities
-ball_velocity = 80.0
-char_velocity = 8.0
+ball_velocity = 60.0
+char_velocity = 10.0
 monster_velocity = 10.0
 
 #times to reach almost vmax
 char_time = 0.1
 monster_time = 1.0
-ball_time = 10.0
+ball_time = 2.0
 
 #weight
 ball_weight = 1.0
