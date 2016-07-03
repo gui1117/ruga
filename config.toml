@@ -57,11 +57,6 @@ monster_color = "magenta"
 #other
 monster_vision_time = 0.5
 
-[cursor]
-outer_radius = 1.0
-inner_radius = 0.1
-color = "base5"
-
 [physic]
 rate = 0.9
 unit = 2.0

@@ -28,11 +28,6 @@ configure!(
         right: t u8,
         quit: t u8,
     },
-    cursor: {
-        outer_radius: t f32,
-        inner_radius: t f32,
-        color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
-    },
     physic: {
         rate: t f32,
         unit: t f32,

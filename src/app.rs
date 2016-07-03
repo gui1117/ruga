@@ -53,13 +53,6 @@ impl Effect {
     }
 }
 
-struct Cursor {
-    position: [f32;2],
-    inner_radius: f32,
-    outer_radius: f32,
-    color: graphics::Color,
-}
-
 #[derive(Clone)]
 pub struct UpdateContext {
     pub effect_tx: mpsc::Sender<Effect>,
@@ -70,7 +63,6 @@ pub struct UpdateContext {
 pub struct App {
     camera: graphics::Camera,
     graphics: graphics::Graphics,
-    cursor: Cursor,
     planner: specs::Planner<UpdateContext>,
     player_dir: Vec<Direction>,
     effect_rx: mpsc::Receiver<Effect>,
@@ -150,20 +142,12 @@ impl App {
         planner.add_system(BallSystem, "ball", 5);
         planner.add_system(LifeSystem, "life", 1);
 
-        let cursor = Cursor {
-            position: [0.,0.],
-            inner_radius: config.cursor.inner_radius,
-            outer_radius: config.cursor.outer_radius,
-            color: graphics::Color::from_string(&config.cursor.color),
-        };
-
         let (effect_tx, effect_rx) = mpsc::channel();
 
         Ok(App {
             effect_storage: Vec::new(),
             camera: camera,
             graphics: graphics,
-            cursor: cursor,
             planner: planner,
             player_dir: vec!(),
             master_entity: master_entity,
@@ -210,27 +194,6 @@ impl App {
                     Shape::Square(radius) => frame.draw_square(x,y,radius,graphics::Layer::Middle,*color),
                 }
             }
-        }
-
-        // draw cursor
-        {
-            let cursor = self.cursor_absolute_position();
-
-            frame.draw_rectangle(
-                cursor[0],
-                cursor[1],
-                self.cursor.outer_radius,
-                self.cursor.inner_radius,
-                graphics::Layer::Ceil,
-                self.cursor.color);
-
-            frame.draw_rectangle(
-                cursor[0],
-                cursor[1],
-                self.cursor.inner_radius,
-                self.cursor.outer_radius,
-                graphics::Layer::Ceil,
-                self.cursor.color);
         }
 
         // draw effects
@@ -291,26 +254,6 @@ impl App {
             self.player_dir.retain(|dir| &Direction::Right != dir);
             self.update_player_direction();
         }
-    }
-    fn cursor_relative_position(&self) -> [f32;2] {
-        [self.cursor.position[0]/self.camera.zoom, self.cursor.position[1]/self.camera.zoom/self.camera.ratio]
-    }
-    fn cursor_absolute_position(&self) -> [f32;2] {
-        let rel = self.cursor_relative_position();
-        [rel[0] + self.camera.x, rel[1] + self.camera.y]
-    }
-    pub fn mouse_pressed(&mut self, button: MouseButton) {
-        match button {
-            _ => (),
-        }
-    }
-    pub fn mouse_released(&mut self, button: MouseButton) {
-        match button {
-            _ => (),
-        }
-    }
-    pub fn mouse_moved(&mut self, x: f32, y: f32) {
-        self.cursor.position = [x,y];
     }
     fn update_player_direction(&mut self) {
         use std::f32::consts::PI;

@@ -152,22 +152,6 @@ fn main() {
                     app.key_released(keycode);
                 }
             },
-            Event::Input(InputEvent::MouseInput(state,button)) => {
-                if state == ElementState::Pressed {
-                    app.mouse_pressed(button);
-                } else {
-                    app.mouse_released(button);
-                }
-            },
-            Event::Input(InputEvent::MouseMoved(x,y)) => {
-                let dimension = window.get_framebuffer_dimensions();
-
-                let dimension = [dimension.0 as f32, dimension.1 as f32];
-                let x = x as f32;
-                let y = y as f32;
-
-                app.mouse_moved((x-dimension[0]/2.)/dimension[0]*2., (-y+dimension[1]/2.)/dimension[1]*2.);
-            },
             Event::Input(InputEvent::Resized(width,height)) => {
                 app.resize(width,height);
             },
