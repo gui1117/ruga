@@ -18,6 +18,7 @@ mod physic;
 mod entities;
 mod utils;
 mod life;
+mod portal;
 
 mod components {
     pub use control::{
@@ -43,6 +44,7 @@ mod components {
         Killer,
         Ball,
     };
+    pub use portal::Portal;
 }
 mod systems {
     pub use physic::PhysicSystem;
@@ -55,6 +57,7 @@ mod systems {
         MonsterSystem,
         TowardPlayerSystem,
     };
+    pub use portal::PortalSystem;
 }
 
 pub use conf::{config,snd_effect,music};

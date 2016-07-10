@@ -129,6 +129,8 @@ impl App {
         world.register::<Killer>();
         world.register::<Ball>();
 
+        world.register::<Portal>();
+
         // load level
         let master_entity = try!(levels::load(config.levels.first_level.clone(),&world)
                                  .map_err(|e| format!("ERROR: level load failed: {:#?}",e)));
@@ -140,6 +142,7 @@ impl App {
         planner.add_system(TowardPlayerSystem, "toward_player", 5);
         planner.add_system(KillerSystem, "killer", 5);
         planner.add_system(BallSystem, "ball", 5);
+        planner.add_system(PortalSystem, "portal", 5);
         planner.add_system(LifeSystem, "life", 1);
 
         let (effect_tx, effect_rx) = mpsc::channel();
