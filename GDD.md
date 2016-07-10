@@ -148,64 +148,40 @@ graphics:
 
 other:
   Life: boolean
-  <!-- Door: size three, ball cannot pass through -->
   Column: through ball once at a time
   Killer: kill when touch (on a mask): require Type and State
   Kamikaze: kill and die when touch (on a mask): require Type and State and Life and
   Laser: kill balls and monsters but not players
   <!-- Trap -->
 
-##monster
-
-à partir d'une certaine distance il regarde régulièrement (loi exponentielle) si il voit le héros
-si oui il avance un coup et passe dans l'état superieur (loi eexponentielle de param supérieur)
-ainsi de suite jusqu'a palier max
-s'il ne voit pas il descend d'un palier
-
-reglage: nombre de palier, palier max, palier min, force du coup ...
-
 ##begin/end
 
-area 3 square long
+3 square long
 
 ###begin
-an aera you must rest on during a certain time
-a sound is played on enter and on exit
-
-you must be entirely on this area
+you appear at the middle
 
 ###end
-same area as end you teleport at the same position
-
-##map
-
-BMP file on each pixel a color that correspond to the unit
-
-* empty
-* wall
-* monster
-* column
-* laser
-* begin
-* end
+you disappear if pass through
 
 ##TODO
 
+* start/end
 * color component -> color and layer
 * better circle rectangle collision: use math
-* start/end
-
+* sound
+* input : zqsd + up/down/left/right + joysticks ...
 * window creation catch error and try whitout vsync and then without multisampling
 
-* when iterating in systems when a component is required must do get\_mut(...).expect(.. expect ... component)
-
-* vi-like live configuration:
-  * volume
-  * switch light dark
-  * luminosity
+* command line: integrate glutin configuration in, allow set the config file
+* menu:
+  * volumes
+  * graphism
+    * switch light dark
+    * luminosity
   * reset game
   * quit game
-  * affiche les touches
+  * modifier les touches
 
 ##possibilité de mécanique
 
