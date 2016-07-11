@@ -17,6 +17,7 @@ add_column(13,10)
 add_column(15,10)
 
 add_laser(5,5)
+add_portal(5,4,"tata")
 
 add_monster(40,40)
 add_monster(40,40)

@@ -16,7 +16,7 @@ pub enum LoadError {
     Lua(hlua::LuaError),
 }
 
-pub fn load<'l>(level: String, world: &specs::World) -> Result<specs::Entity,LoadError>{
+pub fn load<'l>(level: &str, world: &specs::World) -> Result<specs::Entity,LoadError>{
     // flush world
     for entity in world.entities().iter() {
         world.delete_later(entity);
@@ -39,6 +39,9 @@ pub fn load<'l>(level: String, world: &specs::World) -> Result<specs::Entity,Loa
     }));
     lua.set("add_laser", hlua::function2(|x: i32,y: i32| {
         entities::add_laser(world,[x as isize,y as isize]);
+    }));
+    lua.set("add_portal", hlua::function3(|x: i32,y: i32,dest: String| {
+        entities::add_portal(world,[x as isize,y as isize],dest);
     }));
 
     // execute level script

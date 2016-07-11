@@ -3,7 +3,6 @@ use specs;
 use utils::Direction;
 use event_loop;
 use config;
-use glium::glutin::MouseButton;
 use glium;
 use specs::Join;
 use levels;
@@ -53,18 +52,27 @@ impl Effect {
     }
 }
 
+pub enum Control {
+    GotoLevel(String),
+    ResetLevel,
+}
+
 #[derive(Clone)]
 pub struct UpdateContext {
     pub effect_tx: mpsc::Sender<Effect>,
+    pub control_tx: mpsc::Sender<Control>,
     pub dt: f64,
     pub master_entity: specs::Entity,
 }
 
 pub struct App {
+    current_level: String,
     camera: graphics::Camera,
     graphics: graphics::Graphics,
     planner: specs::Planner<UpdateContext>,
     player_dir: Vec<Direction>,
+    control_rx: mpsc::Receiver<Control>,
+    control_tx: mpsc::Sender<Control>,
     effect_rx: mpsc::Receiver<Effect>,
     effect_storage: Vec<Effect>,
     effect_tx: mpsc::Sender<Effect>,
@@ -132,12 +140,13 @@ impl App {
         world.register::<Portal>();
 
         // load level
-        let master_entity = try!(levels::load(config.levels.first_level.clone(),&world)
+        let master_entity = try!(levels::load(&*config.levels.first_level,&world)
                                  .map_err(|e| format!("ERROR: level load failed: {:#?}",e)));
 
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
         planner.add_system(PhysicSystem, "physic", 10);
+        planner.add_system(PlayerSystem, "player", 5);
         planner.add_system(MonsterSystem, "monster", 5);
         planner.add_system(TowardPlayerSystem, "toward_player", 5);
         planner.add_system(KillerSystem, "killer", 5);
@@ -146,8 +155,10 @@ impl App {
         planner.add_system(LifeSystem, "life", 1);
 
         let (effect_tx, effect_rx) = mpsc::channel();
+        let (control_tx, control_rx) = mpsc::channel();
 
         Ok(App {
+            current_level: config.levels.first_level.clone(),
             effect_storage: Vec::new(),
             camera: camera,
             graphics: graphics,
@@ -156,6 +167,8 @@ impl App {
             master_entity: master_entity,
             effect_rx: effect_rx,
             effect_tx: effect_tx,
+            control_rx: control_rx,
+            control_tx: control_tx,
         })
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
@@ -163,10 +176,33 @@ impl App {
             dt: args.dt,
             master_entity: self.master_entity,
             effect_tx: self.effect_tx.clone(),
+            control_tx: self.control_tx.clone(),
         };
 
         self.planner.dispatch(context);
         self.planner.wait();
+
+        while let Ok(control) = self.control_rx.try_recv() {
+            match control {
+                Control::GotoLevel(level) => self.goto_level(level),
+                Control::ResetLevel => {
+                    let level = self.current_level.clone();
+                    self.goto_level(level);
+                }
+            }
+        }
+    }
+    pub fn goto_level(&mut self, destination: String) {
+        //TODO keep the velocity and acceleration if set on argument
+        while let Ok(_) = self.control_rx.try_recv() {}
+        while let Ok(_) = self.effect_rx.try_recv() {}
+
+        self.master_entity = match levels::load(&*destination,&*self.planner.world) {
+            Err(e) => panic!(format!("ERROR: level load failed: {:#?}",e)),
+            Ok(m) => m,
+        };
+
+        self.current_level = destination;
     }
     pub fn render(&mut self, args: event_loop::RenderArgs) {
         let dt = 1. / config.event_loop.max_fps as f32;

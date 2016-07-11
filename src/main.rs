@@ -54,6 +54,7 @@ mod systems {
         BallSystem,
     };
     pub use control::{
+        PlayerSystem,
         MonsterSystem,
         TowardPlayerSystem,
     };

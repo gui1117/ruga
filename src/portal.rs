@@ -1,24 +1,35 @@
 use app;
+use physic::IntoGrid;
 use components::*;
 use specs::Join;
 use specs;
 use conf::config;
 
 #[derive(Clone,Default)]
-pub struct Portal;
+pub struct Portal {
+    destination: String,
+    position: [f32;2],
+}
 impl specs::Component for Portal {
-    type Storage = specs::NullStorage<Self>;
+    type Storage = specs::VecStorage<Self>;
+}
+impl Portal {
+    pub fn new<T: IntoGrid>(pos: T, destination: String) -> Self {
+        Portal {
+            destination: destination,
+            position: pos.into_grid(),
+        }
+    }
 }
 
 pub struct PortalSystem;
 impl specs::System<app::UpdateContext> for PortalSystem {
-    fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
-        let (players, states, portals, entities) = arg.fetch(|world| {
+    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
+        let (players, states, portals) = arg.fetch(|world| {
             (
                 world.read::<PlayerControl>(),
                 world.read::<PhysicState>(),
                 world.read::<Portal>(),
-                world.entities(),
             )
         });
 
@@ -29,11 +40,9 @@ impl specs::System<app::UpdateContext> for PortalSystem {
         }
 
         if let Some(player_pos) = player_pos {
-            for (portal, entity) in (&portals, &entities).iter() {
-                let state = states.get(entity).expect("portal component expect physic state component");
-
-                if (player_pos[0] - state.position[0]).powi(2) + (player_pos[1] - state.position[1]).powi(2) < config.physic.unit {
-                    //TODO end level
+            for portal in (&portals).iter() {
+                if (player_pos[0] - portal.position[0]).powi(2) + (player_pos[1] - portal.position[1]).powi(2) < (config.physic.unit/2.).powi(2) {
+                    context.control_tx.send(app::Control::GotoLevel(portal.destination.clone())).unwrap();
                 }
             }
         }

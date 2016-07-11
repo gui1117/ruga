@@ -106,7 +106,10 @@ pub fn add_laser(world: &specs::World, pos: [isize;2]) {
         .build();
 }
 
-// pub fn add_begin() {
-// }
-// pub fn add_end() {
-// }
+pub fn add_portal(world: &specs::World, pos: [isize;2], destination: String) {
+    world.create_now()
+        .with::<Portal>(Portal::new(pos,destination))
+        .with::<Color>(Color::from_str(&*config.entities.laser_color))
+        .build();
+}
+

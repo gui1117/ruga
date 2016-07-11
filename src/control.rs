@@ -11,6 +11,16 @@ pub struct PlayerControl;
 impl specs::Component for PlayerControl {
     type Storage = specs::NullStorage<Self>;
 }
+pub struct PlayerSystem;
+impl specs::System<app::UpdateContext> for PlayerSystem {
+    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
+        let players = arg.fetch(|world| world.read::<PlayerControl>());
+
+        if (&players).iter().nth(0).is_none() {
+            context.control_tx.send(app::Control::ResetLevel).unwrap();
+        }
+    }
+}
 
 #[derive(Debug,Clone,Default)]
 pub struct TowardPlayerControl;
