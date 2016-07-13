@@ -95,6 +95,11 @@ fn test_levels() {
             }
         }));
 
+        // execute common script
+        let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}{}",config.levels.common,".lua")));
+        let file = File::open(&path).map_err(|e| LoadError::OpenFile(e)).unwrap();
+        lua.execute_from_reader::<(),_>(file).map_err(|e| LoadError::Lua(e)).unwrap();
+
         // execute level script
         let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}{}",level,".lua")));
         let file = File::open(&path).map_err(|e| LoadError::OpenFile(e)).unwrap();
