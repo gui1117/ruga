@@ -19,6 +19,10 @@ pub fn add_character(world: &specs::World, pos: [isize;2]) {
         .with::<Color>(Color::from_str(&*config.entities.char_color))
         .with::<PlayerControl>(PlayerControl)
         .build();
+    world.create_now()
+        .with::<GridSquare>(GridSquare::new(pos))
+        .with::<Color>(Color::from_str(&*config.entities.portal_end_color))
+        .build();
 }
 
 pub fn add_wall(world: &specs::World, pos: [isize;2]) {
@@ -108,8 +112,9 @@ pub fn add_laser(world: &specs::World, pos: [isize;2]) {
 
 pub fn add_portal(world: &specs::World, pos: [isize;2], destination: String) {
     world.create_now()
-        .with::<Portal>(Portal::new(pos,destination))
-        .with::<Color>(Color::from_str(&*config.entities.laser_color))
+        .with::<Portal>(Portal::new(destination))
+        .with::<GridSquare>(GridSquare::new(pos))
+        .with::<Color>(Color::from_str(&*config.entities.portal_start_color))
         .build();
 }
 

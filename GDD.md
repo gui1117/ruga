@@ -154,19 +154,8 @@ other:
   Laser: kill balls and monsters but not players
   <!-- Trap -->
 
-##begin/end
-
-3 square long
-
-###begin
-you appear at the middle
-
-###end
-you disappear if pass through
-
 ##TODO
 
-* start/end
 * color component -> color and layer
 * better circle rectangle collision: use math
 * sound

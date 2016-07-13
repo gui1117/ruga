@@ -18,6 +18,20 @@ impl IntoGrid for [f32;2] {
     }
 }
 
+pub struct GridSquare {
+    pub position: [f32;2],
+}
+impl specs::Component for GridSquare {
+    type Storage = specs::VecStorage<Self>;
+}
+impl GridSquare {
+    pub fn new<T: IntoGrid>(pos: T) -> Self {
+        GridSquare {
+            position: pos.into_grid(),
+        }
+    }
+}
+
 #[derive(Debug,Clone)]
 pub enum Shape {
     Circle(f32),

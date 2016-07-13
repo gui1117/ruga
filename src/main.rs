@@ -27,6 +27,7 @@ mod components {
         MonsterControl,
     };
     pub use physic::{
+        GridSquare,
         PhysicState,
         PhysicType,
         PhysicForce,

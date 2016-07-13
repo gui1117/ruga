@@ -4,6 +4,7 @@ pub type Effect = [(String, u32);4];
 pub type Music = [String;1];
 pub type Dimension = [u32;2];
 pub type Array4f32 = [f32;4];
+pub type Array3u8 = [u8;3];
 
 pub mod snd_effect {
     pub const RIFLE_SHOOT_ZERO: usize = 0;
@@ -76,6 +77,9 @@ configure!(
         monster_time: t f32,
         monster_weight: t f32,
         monster_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+
+        portal_end_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        portal_start_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
     },
     levels: {
         dir: t String,

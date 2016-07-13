@@ -130,6 +130,7 @@ impl App {
         world.register::<PhysicDynamic>();
         world.register::<PhysicStatic>();
         world.register::<PhysicTrigger>();
+        world.register::<GridSquare>();
 
         world.register::<Color>();
 
@@ -203,6 +204,16 @@ impl App {
         };
 
         self.current_level = destination;
+        let mut player_dir = vec!();
+        player_dir.append(&mut self.player_dir);
+        for k in player_dir {
+            match k {
+                Direction::Up => self.key_pressed(config.keys.up),
+                Direction::Down => self.key_pressed(config.keys.down),
+                Direction::Right => self.key_pressed(config.keys.right),
+                Direction::Left => self.key_pressed(config.keys.left),
+            }
+        }
     }
     pub fn render(&mut self, args: event_loop::RenderArgs) {
         let dt = 1. / config.event_loop.max_fps as f32;
@@ -223,7 +234,13 @@ impl App {
         {
             let states = self.planner.world.read::<PhysicState>();
             let types = self.planner.world.read::<PhysicType>();
-            let colors = self.planner.world.read::<graphics::Color>();
+            let colors = self.planner.world.read::<Color>();
+            let squares = self.planner.world.read::<GridSquare>();
+
+            for (square, color) in (&squares, &colors).iter() {
+                let p = square.position;
+                frame.draw_square(p[0],p[1],0.5,graphics::Layer::Middle,*color);
+            }
 
             for (state, typ, color) in (&states, &types, &colors).iter() {
                 let x = state.position[0];
@@ -234,6 +251,7 @@ impl App {
                 }
             }
         }
+
 
         // draw effects
         for effect in &self.effect_storage {

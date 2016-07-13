@@ -53,6 +53,8 @@ column_color = "red"
 char_color = "blue"
 wall_color = "cyan"
 monster_color = "magenta"
+portal_start_color = "green"
+portal_end_color = "orange"
 
 #other
 monster_vision_time = 0.5
