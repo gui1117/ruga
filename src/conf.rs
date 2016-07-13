@@ -85,6 +85,7 @@ configure!(
     levels: {
         dir: t String,
         first_level: t String,
+        common: t String,
     },
     // audio: {
     //     channels: t i32,

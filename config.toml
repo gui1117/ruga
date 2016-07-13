@@ -66,6 +66,7 @@ unit = 2.0
 [levels]
 dir = "./levels"
 first_level = "toto"
+common = "common"
 
 [keys]
 up = 25

@@ -45,6 +45,11 @@ pub fn load<'l>(level: &str, world: &specs::World) -> Result<specs::Entity,LoadE
         entities::add_portal(world,[x as isize,y as isize],dest);
     }));
 
+    // execute common script
+    let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}{}",config.levels.common,".lua")));
+    let file = try!(File::open(&path).map_err(|e| LoadError::OpenFile(e)));
+    try!(lua.execute_from_reader::<(),_>(file).map_err(|e| LoadError::Lua(e)));
+
     // execute level script
     let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}{}",level,".lua")));
     let file = try!(File::open(&path).map_err(|e| LoadError::OpenFile(e)));
