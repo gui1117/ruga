@@ -157,6 +157,7 @@ other:
 ##TODO
 
 * require in levels
+* licence -> AGPL
 * color component -> color and layer
 * better circle rectangle collision: use math
 * sound
