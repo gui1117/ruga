@@ -7,7 +7,8 @@ use std::collections::HashMap;
 #[macro_export]
 macro_rules! configure {
     (
-        path = $path:expr;
+        file = $file:expr;
+        debug_file = $debug_file:expr;
         $($table:ident: {
             $($key:ident: $(e $string:ident[$($variante:ident),*])* $(t $value:ident)*,)*
         },)*
@@ -30,9 +31,17 @@ macro_rules! configure {
             use toml;
             use configuration::FromToml;
 
-            let mut config_file = try!(File::open($path).map_err(|e| {
+            let file = {
+                let mut file = $file;
+                debug_assert!({
+                    file = $debug_file;
+                    true
+                });
+                file
+            };
+            let mut config_file = try!(File::open(file).map_err(|e| {
                 format!("ERROR: an error occured when openning configuration file at {}{}{}",
-                        $path,
+                        file,
                         format!("\n\tdescription: {}",e.description()),
                         if let Some(cause) = e.cause() { format!("\n\tcause: {}",cause.description()) } else { String::from("") })
             }));

@@ -17,7 +17,8 @@ pub mod music {
 }
 
 configure!(
-    path = "config.toml";
+    file = "config.toml";
+    debug_file = "config.toml";
 
     general: {
         number_of_thread: t usize,
