@@ -9,6 +9,7 @@ use std::path::Path;
 use std::io;
 use specs::Join;
 use physic;
+use std::collections::HashSet;
 
 #[derive(Debug)]
 pub enum LoadError {
@@ -61,3 +62,39 @@ pub fn load<'l>(level: &str, world: &specs::World) -> Result<specs::Entity,LoadE
     Ok(master_entity)
 }
 
+#[test]
+fn test_levels() {
+    let mut visited = HashSet::new();
+    let mut to_visit = vec!(config.levels.first_level.clone());
+
+    loop {
+        let level = match to_visit.pop() {
+            Some(level) => level,
+            None => break,
+        };
+        // init lua level creation context
+        let mut lua = Lua::new();
+        lua.set("add_character", hlua::function2(|_: i32,_: i32| {
+        }));
+        lua.set("add_wall", hlua::function2(|_: i32,_: i32| {
+        }));
+        lua.set("add_column", hlua::function2(|_: i32,_: i32| {
+        }));
+        lua.set("add_monster", hlua::function2(|_: i32,_: i32| {
+        }));
+        lua.set("add_laser", hlua::function2(|_: i32,_: i32| {
+        }));
+        lua.set("add_portal", hlua::function3(|_: i32,_: i32,dest: String| {
+            if !visited.contains(&dest) {
+                to_visit.push(dest);
+            }
+        }));
+
+        // execute level script
+        let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}{}",level,".lua")));
+        let file = File::open(&path).map_err(|e| LoadError::OpenFile(e)).unwrap();
+        lua.execute_from_reader::<(),_>(file).map_err(|e| LoadError::Lua(e)).unwrap();
+
+        visited.insert(level);
+    }
+}
