@@ -156,6 +156,7 @@ other:
 
 ##TODO
 
+* require in levels
 * color component -> color and layer
 * better circle rectangle collision: use math
 * sound
@@ -175,3 +176,4 @@ other:
 ##possibilité de mécanique
 
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
+* inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
