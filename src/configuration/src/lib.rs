@@ -9,6 +9,7 @@ macro_rules! configure {
     (
         file = $file:expr;
         debug_file = $debug_file:expr;
+        constraint = $constraint:ident;
         $($table:ident: {
             $($key:ident: $(e $string:ident[$($variante:ident),*])* $(t $value:ident)*,)*
         },)*
@@ -125,6 +126,7 @@ macro_rules! configure {
                 }
                 return Err(error);
             }
+            try!($constraint(&res));
             Ok(res)
         }
 

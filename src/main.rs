@@ -149,7 +149,7 @@ fn main() {
             Event::Render(args) => app.render(args),
             Event::Input(InputEvent::Closed) => break,
             Event::Input(InputEvent::KeyboardInput(state,keycode,_)) => {
-                if keycode == config.keys.quit { break; }
+                if config.keys.quit.contains(&keycode) { break; }
 
                 if state == ElementState::Pressed {
                     app.key_pressed(keycode);

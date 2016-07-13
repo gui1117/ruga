@@ -208,10 +208,10 @@ impl App {
         player_dir.append(&mut self.player_dir);
         for k in player_dir {
             match k {
-                Direction::Up => self.key_pressed(config.keys.up),
-                Direction::Down => self.key_pressed(config.keys.down),
-                Direction::Right => self.key_pressed(config.keys.right),
-                Direction::Left => self.key_pressed(config.keys.left),
+                Direction::Up => self.key_pressed(config.keys.up[0]),
+                Direction::Down => self.key_pressed(config.keys.down[0]),
+                Direction::Right => self.key_pressed(config.keys.right[0]),
+                Direction::Left => self.key_pressed(config.keys.left[0]),
             }
         }
     }
@@ -275,22 +275,22 @@ impl App {
         frame.finish().unwrap();
     }
     pub fn key_pressed(&mut self, key: u8) {
-        if key == config.keys.up {
+        if config.keys.up.contains(&key) {
             if !self.player_dir.contains(&Direction::Up) {
                 self.player_dir.push(Direction::Up);
                 self.update_player_direction();
             }
-        } else if key == config.keys.down {
+        } else if config.keys.down.contains(&key) {
             if !self.player_dir.contains(&Direction::Down) {
                 self.player_dir.push(Direction::Down);
                 self.update_player_direction();
             }
-        } else if key == config.keys.left {
+        } else if config.keys.left.contains(&key) {
             if !self.player_dir.contains(&Direction::Left) {
                 self.player_dir.push(Direction::Left);
                 self.update_player_direction();
             }
-        } else if key == config.keys.right {
+        } else if config.keys.right.contains(&key) {
             if !self.player_dir.contains(&Direction::Right) {
                 self.player_dir.push(Direction::Right);
                 self.update_player_direction();
@@ -298,16 +298,16 @@ impl App {
         }
     }
     pub fn key_released(&mut self, key: u8) {
-        if key == config.keys.up {
+        if config.keys.up.contains(&key) {
             self.player_dir.retain(|dir| &Direction::Up != dir);
             self.update_player_direction();
-        } else if key == config.keys.down {
+        } else if config.keys.down.contains(&key) {
             self.player_dir.retain(|dir| &Direction::Down != dir);
             self.update_player_direction();
-        } else if key == config.keys.left {
+        } else if config.keys.left.contains(&key) {
             self.player_dir.retain(|dir| &Direction::Left != dir);
             self.update_player_direction();
-        } else if key == config.keys.right {
+        } else if config.keys.right.contains(&key) {
             self.player_dir.retain(|dir| &Direction::Right != dir);
             self.update_player_direction();
         }

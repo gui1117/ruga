@@ -69,11 +69,11 @@ first_level = "toto"
 common = "common"
 
 [keys]
-up = 25
-down = 39
-left = 38
-right = 40
-quit = 9
+up = [25,37]
+down = [39,51]
+left = [38,50]
+right = [40,52]
+quit = [9]
 
 # [audio]
 # check_level = always

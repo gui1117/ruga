@@ -3,8 +3,8 @@ use configuration::BitflagU32;
 pub type Effect = [(String, u32);4];
 pub type Music = [String;1];
 pub type Dimension = [u32;2];
-pub type Array4f32 = [f32;4];
-pub type Array3u8 = [u8;3];
+pub type Array4F32 = [f32;4];
+pub type VecU8 = Vec<u8>;
 
 pub mod snd_effect {
     pub const RIFLE_SHOOT_ZERO: usize = 0;
@@ -16,19 +16,32 @@ pub mod music {
     pub const BACKGROUND: usize = 0;
 }
 
+fn config_constraint(conf: &Config) -> Result<(),String> {
+    if conf.keys.up.len() == 0
+       || conf.keys.down.len() == 0
+       || conf.keys.left.len() == 0
+       || conf.keys.right.len() == 0 {
+           return Err("ERROR: configuration file invalid: keys mustn't be empty".into());
+    }
+
+    Ok(())
+}
+
 configure!(
     file = "config.toml";
     debug_file = "config.toml";
+
+    constraint = config_constraint;
 
     general: {
         number_of_thread: t usize,
     },
     keys: {
-        up: t u8,
-        down: t u8,
-        left: t u8,
-        right: t u8,
-        quit: t u8,
+        up: t VecU8,
+        down: t VecU8,
+        left: t VecU8,
+        right: t VecU8,
+        quit: t VecU8,
     },
     physic: {
         rate: t f32,
@@ -110,22 +123,22 @@ configure!(
         multisampling: t u16,
     },
     graphics: {
-        base03: t Array4f32,
-        base02: t Array4f32,
-        base01: t Array4f32,
-        base00: t Array4f32,
-        base0: t Array4f32,
-        base1: t Array4f32,
-        base2: t Array4f32,
-        base3: t Array4f32,
-        yellow: t Array4f32,
-        orange: t Array4f32,
-        red: t Array4f32,
-        magenta: t Array4f32,
-        violet: t Array4f32,
-        blue: t Array4f32,
-        cyan: t Array4f32,
-        green: t Array4f32,
+        base03: t Array4F32,
+        base02: t Array4F32,
+        base01: t Array4F32,
+        base00: t Array4F32,
+        base0: t Array4F32,
+        base1: t Array4F32,
+        base2: t Array4F32,
+        base3: t Array4F32,
+        yellow: t Array4F32,
+        orange: t Array4F32,
+        red: t Array4F32,
+        magenta: t Array4F32,
+        violet: t Array4F32,
+        blue: t Array4F32,
+        cyan: t Array4F32,
+        green: t Array4F32,
         mode: e String [light,dark],
         luminosity: t f32,
         circle_precision: t usize,
