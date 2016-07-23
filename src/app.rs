@@ -157,7 +157,7 @@ impl App {
         world.register::<Portal>();
 
         // load level
-        let master_entity = try!(levels::load(&*config.levels.first_level,&world)
+        let master_entity = try!(levels::load(&*config.levels.first_level,&mut world)
                                  .map_err(|e| format!("ERROR: level load failed: {:#?}",e)));
 
         // init planner
@@ -214,7 +214,7 @@ impl App {
         while let Ok(_) = self.control_rx.try_recv() {}
         while let Ok(_) = self.effect_rx.try_recv() {}
 
-        self.master_entity = match levels::load(&*destination,&*self.planner.world) {
+        self.master_entity = match levels::load(&*destination,self.planner.mut_world()) {
             Err(e) => panic!(format!("ERROR: level load failed: {:#?}",e)),
             Ok(m) => m,
         };
@@ -233,11 +233,12 @@ impl App {
     }
     pub fn render(&mut self, args: event_loop::RenderArgs) {
         let dt = 1. / config.event_loop.max_fps as f32;
+        let world = self.planner.mut_world();
 
         // update camera
         {
-            let characters = self.planner.world.read::<PlayerControl>();
-            let states = self.planner.world.read::<PhysicState>();
+            let characters = world.read::<PlayerControl>();
+            let states = world.read::<PhysicState>();
             for (_, state) in (&characters, &states).iter() {
                 self.camera.x = state.position[0];
                 self.camera.y = state.position[1];
@@ -248,10 +249,10 @@ impl App {
 
         // draw entities
         {
-            let states = self.planner.world.read::<PhysicState>();
-            let types = self.planner.world.read::<PhysicType>();
-            let graphics = self.planner.world.read::<Graphic>();
-            let squares = self.planner.world.read::<GridSquare>();
+            let states = world.read::<PhysicState>();
+            let types = world.read::<PhysicType>();
+            let graphics = world.read::<Graphic>();
+            let squares = world.read::<GridSquare>();
 
             for (square, graphic) in (&squares, &graphics).iter() {
                 let p = square.position;
@@ -331,6 +332,8 @@ impl App {
     fn update_player_direction(&mut self) {
         use std::f32::consts::PI;
 
+        let world = self.planner.mut_world();
+
         if let Some(dir) = self.player_dir.last() {
 
             let mut last_perpendicular: Option<&Direction> = None;
@@ -371,15 +374,15 @@ impl App {
                 },
             };
 
-            let characters = self.planner.world.read::<PlayerControl>();
-            let mut forces = self.planner.world.write::<PhysicForce>();
+            let characters = world.read::<PlayerControl>();
+            let mut forces = world.write::<PhysicForce>();
             for (_, force) in (&characters, &mut forces).iter() {
                 force.direction = angle;
                 force.intensity = 1.;
             }
         } else {
-            let characters = self.planner.world.read::<PlayerControl>();
-            let mut forces = self.planner.world.write::<PhysicForce>();
+            let characters = world.read::<PlayerControl>();
+            let mut forces = world.write::<PhysicForce>();
             for (_, force) in (&characters, &mut forces).iter() {
                 force.intensity = 0.;
             }

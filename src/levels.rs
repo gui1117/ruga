@@ -27,7 +27,7 @@ enum Cell {
     Portal(String),
 }
 
-pub fn load<'l>(level: &str, world: &specs::World) -> Result<specs::Entity,LoadError>{
+pub fn load<'l>(level: &str, world: &mut specs::World) -> Result<specs::Entity,LoadError> {
     // flush world
     for entity in world.entities().iter() {
         world.delete_later(entity);

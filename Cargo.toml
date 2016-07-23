@@ -17,4 +17,5 @@ time = "*"
 lazy_static = "*"
 toml = "*"
 rand = "*"
+bmp = "*"
 

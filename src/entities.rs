@@ -3,7 +3,7 @@ use specs;
 use graphics::{Color, Layer};
 use config;
 
-pub fn add_character(world: &specs::World, pos: [isize;2]) {
+pub fn add_character(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicDynamic>(PhysicDynamic)
@@ -30,7 +30,7 @@ pub fn add_character(world: &specs::World, pos: [isize;2]) {
         .build();
 }
 
-pub fn add_wall(world: &specs::World, pos: [isize;2]) {
+pub fn add_wall(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
@@ -44,7 +44,7 @@ pub fn add_wall(world: &specs::World, pos: [isize;2]) {
         .build();
 }
 
-pub fn add_column(world: &specs::World, pos: [isize;2]) {
+pub fn add_column(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
@@ -83,7 +83,7 @@ pub fn add_column(world: &specs::World, pos: [isize;2]) {
         .build();
 }
 
-pub fn add_monster(world: &specs::World, pos: [isize;2]) {
+pub fn add_monster(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicDynamic>(PhysicDynamic)
@@ -109,7 +109,7 @@ pub fn add_monster(world: &specs::World, pos: [isize;2]) {
         .build();
 }
 
-pub fn add_laser(world: &specs::World, pos: [isize;2]) {
+pub fn add_laser(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
@@ -128,7 +128,7 @@ pub fn add_laser(world: &specs::World, pos: [isize;2]) {
         .build();
 }
 
-pub fn add_portal(world: &specs::World, pos: [isize;2], destination: String) {
+pub fn add_portal(world: &mut specs::World, pos: [isize;2], destination: String) {
     world.create_now()
         .with::<Portal>(Portal::new(destination))
         .with::<GridSquare>(GridSquare::new(pos))
