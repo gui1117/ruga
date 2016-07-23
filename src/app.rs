@@ -10,6 +10,22 @@ use systems::*;
 use components::*;
 use std::sync::mpsc;
 
+pub struct Graphic {
+    color: graphics::Color,
+    layer: graphics::Layer,
+}
+impl Graphic {
+    pub fn new(color: graphics::Color, layer: graphics::Layer) -> Self {
+        Graphic {
+            color: color,
+            layer: layer,
+        }
+    }
+}
+impl specs::Component for Graphic {
+    type Storage = specs::VecStorage<Self>;
+}
+
 pub enum Effect {
     Line {
         origin: [f32;2],
@@ -132,7 +148,7 @@ impl App {
         world.register::<PhysicTrigger>();
         world.register::<GridSquare>();
 
-        world.register::<Color>();
+        world.register::<Graphic>();
 
         world.register::<Life>();
         world.register::<Killer>();
@@ -234,20 +250,20 @@ impl App {
         {
             let states = self.planner.world.read::<PhysicState>();
             let types = self.planner.world.read::<PhysicType>();
-            let colors = self.planner.world.read::<Color>();
+            let graphics = self.planner.world.read::<Graphic>();
             let squares = self.planner.world.read::<GridSquare>();
 
-            for (square, color) in (&squares, &colors).iter() {
+            for (square, graphic) in (&squares, &graphics).iter() {
                 let p = square.position;
-                frame.draw_square(p[0],p[1],0.5,graphics::Layer::Middle,*color);
+                frame.draw_square(p[0],p[1],0.5,graphic.layer,graphic.color);
             }
 
-            for (state, typ, color) in (&states, &types, &colors).iter() {
+            for (state, typ, graphic) in (&states, &types, &graphics).iter() {
                 let x = state.position[0];
                 let y = state.position[1];
                 match typ.shape {
-                    Shape::Circle(radius) => frame.draw_circle(x,y,radius,graphics::Layer::Middle,*color),
-                    Shape::Square(radius) => frame.draw_square(x,y,radius,graphics::Layer::Middle,*color),
+                    Shape::Circle(radius) => frame.draw_circle(x,y,radius,graphic.layer,graphic.color),
+                    Shape::Square(radius) => frame.draw_square(x,y,radius,graphic.layer,graphic.color),
                 }
             }
         }

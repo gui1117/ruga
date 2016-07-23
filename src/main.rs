@@ -39,13 +39,13 @@ mod components {
         Ray,
         CollisionBehavior,
     };
-    pub use graphics::Color;
     pub use life::{
         Life,
         Killer,
         Ball,
     };
     pub use portal::Portal;
+    pub use app::Graphic;
 }
 mod systems {
     pub use physic::PhysicSystem;

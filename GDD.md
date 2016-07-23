@@ -156,14 +156,15 @@ other:
 
 ##TODO
 
-* require in levels
 * licence -> AGPL
+* level: bitmap and config.toml define dungeon, first level created from config
 * color component -> color and layer
 * better circle rectangle collision: use math
 * sound
-* input : zqsd + up/down/left/right + joysticks ...
 * window creation catch error and try whitout vsync and then without multisampling
+* input : + joysticks
 
+* event loop: ups=fps ?
 * command line: integrate glutin configuration in, allow set the config file
 * menu:
   * volumes
@@ -178,3 +179,4 @@ other:
 
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
+

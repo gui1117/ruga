@@ -56,17 +56,20 @@ configure!(
         ball_time: t f32,
         ball_weight: t f32,
         ball_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        ball_layer: e String [floor,middle,ceil],
 
         laser_group: t BitflagU32,
         laser_mask: t BitflagU32,
         laser_killer_mask: t BitflagU32,
         laser_radius: t f32,
         laser_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        laser_layer: e String [floor,middle,ceil],
 
         column_group: t BitflagU32,
         column_mask: t BitflagU32,
         column_radius: t f32,
         column_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        column_layer: e String [floor,middle,ceil],
 
         char_group: t BitflagU32,
         char_mask: t BitflagU32,
@@ -75,11 +78,13 @@ configure!(
         char_time: t f32,
         char_weight: t f32,
         char_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        char_layer: e String [floor,middle,ceil],
 
         wall_group: t BitflagU32,
         wall_mask: t BitflagU32,
         wall_radius: t f32,
         wall_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        wall_layer: e String [floor,middle,ceil],
 
         monster_vision_mask: t BitflagU32,
         monster_killer_mask: t BitflagU32,
@@ -91,9 +96,12 @@ configure!(
         monster_time: t f32,
         monster_weight: t f32,
         monster_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        monster_layer: e String [floor,middle,ceil],
 
         portal_end_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        portal_end_layer: e String [floor,middle,ceil],
         portal_start_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        portal_start_layer: e String [floor,middle,ceil],
     },
     levels: {
         dir: t String,

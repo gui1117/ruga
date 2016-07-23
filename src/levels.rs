@@ -10,11 +10,21 @@ use specs::Join;
 use physic;
 use rand;
 use rand::distributions::{IndependentSample, Range};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum LoadError {
     OpenFile(io::Error),
     Lua(hlua::LuaError),
+}
+
+enum Cell {
+    Character,
+    Wall,
+    Column,
+    Monster,
+    Laser,
+    Portal(String),
 }
 
 pub fn load<'l>(level: &str, world: &specs::World) -> Result<specs::Entity,LoadError>{
@@ -24,25 +34,27 @@ pub fn load<'l>(level: &str, world: &specs::World) -> Result<specs::Entity,LoadE
     }
     world.maintain();
 
+    let mut cells = HashMap::new();
+
     // init lua level creation context
     let mut lua: Lua<'l> = Lua::new();
     lua.set("add_character", hlua::function2(|x: i32,y: i32| {
-        entities::add_character(world,[x as isize,y as isize]);
+        cells.insert((x,y),Cell::Character);
     }));
     lua.set("add_wall", hlua::function2(|x: i32,y: i32| {
-        entities::add_wall(world,[x as isize,y as isize]);
+        cells.insert((x,y),Cell::Wall);
     }));
     lua.set("add_column", hlua::function2(|x: i32,y: i32| {
-        entities::add_column(world,[x as isize,y as isize]);
+        cells.insert((x,y),Cell::Column);
     }));
     lua.set("add_monster", hlua::function2(|x: i32,y: i32| {
-        entities::add_monster(world,[x as isize,y as isize]);
+        cells.insert((x,y),Cell::Monster);
     }));
     lua.set("add_laser", hlua::function2(|x: i32,y: i32| {
-        entities::add_laser(world,[x as isize,y as isize]);
+        cells.insert((x,y),Cell::Laser);
     }));
     lua.set("add_portal", hlua::function3(|x: i32,y: i32,dest: String| {
-        entities::add_portal(world,[x as isize,y as isize],dest);
+        cells.insert((x,y),Cell::Portal(dest));
     }));
     lua.set("generate_kruskal", hlua::function3(|width: i32, height: i32, percent: f64| -> Vec<Vec<bool>> {
         assert!(width >= 0);
@@ -59,6 +71,18 @@ pub fn load<'l>(level: &str, world: &specs::World) -> Result<specs::Entity,LoadE
     let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}{}",level,".lua")));
     let file = try!(File::open(&path).map_err(|e| LoadError::OpenFile(e)));
     try!(lua.execute_from_reader::<(),_>(file).map_err(|e| LoadError::Lua(e)));
+
+    // fill world
+    for ((x,y),cell) in cells.drain() {
+        match cell {
+            Cell::Character => entities::add_character(world,[x as isize,y as isize]),
+            Cell::Portal(dest) => entities::add_portal(world,[x as isize,y as isize],dest),
+            Cell::Laser => entities::add_laser(world,[x as isize,y as isize]),
+            Cell::Monster => entities::add_monster(world,[x as isize,y as isize]),
+            Cell::Column => entities::add_column(world,[x as isize,y as isize]),
+            Cell::Wall=> entities::add_wall(world,[x as isize,y as isize]),
+        }
+    }
 
     // add_physic_world
     let master_entity = world.create_now()

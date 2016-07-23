@@ -56,6 +56,16 @@ monster_color = "magenta"
 portal_start_color = "green"
 portal_end_color = "orange"
 
+#layer
+ball_layer = "middle"
+laser_layer = "ceil"
+column_layer = "ceil"
+char_layer = "middle"
+wall_layer = "ceil"
+monster_layer = "middle"
+portal_start_layer = "floor"
+portal_end_layer = "floor"
+
 #other
 monster_vision_time = 0.5
 
@@ -65,14 +75,14 @@ unit = 2.0
 
 [levels]
 dir = "./levels"
-first_level = "toto"
+first_level = "one"
 common = "common"
 
 [keys]
-up = [25,37]
-down = [39,51]
-left = [38,50]
-right = [40,52]
+up = [25,111]
+down = [39,116]
+left = [38,113]
+right = [40,114]
 quit = [9]
 
 # [audio]

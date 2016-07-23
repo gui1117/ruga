@@ -3,7 +3,6 @@ extern crate glium;
 extern crate vecmath;
 extern crate glium_text;
 extern crate yaml_rust;
-extern crate specs;
 
 use glium::{
     SwapBuffersError,
@@ -637,15 +636,22 @@ impl Color {
         }
     }
 }
-impl specs::Component for Color {
-    type Storage = specs::VecStorage<Self>;
-}
 
 #[derive(Debug,Clone,Copy)]
 pub enum Layer {
     Floor,
     Middle,
     Ceil,
+}
+impl Layer {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "floor" => Layer::Floor,
+            "middle" => Layer::Middle,
+            "ceil" => Layer::Ceil,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl Into<f32> for Layer {
