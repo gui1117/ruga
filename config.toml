@@ -23,6 +23,16 @@ monster_killer_mask = "00000001"
 ball_killer_mask    = "00000011"
 laser_killer_mask   = "00000110"
 
+#sounds
+ball_kill_snd = 0
+ball_create_snd = 0
+ball_die_snd = 0
+laser_kill_snd = 0
+char_die_snd = 0
+monster_kill_snd = 0
+monster_die_snd = 0
+portal_snd = 0
+
 #radius
 laser_radius = 0.5
 column_radius = 0.5
@@ -41,12 +51,12 @@ char_time = 0.1
 monster_time = 1.0
 ball_time = 2.0
 
-#weight
+#weights
 ball_weight = 1.0
 monster_weight = 1.0
 char_weight = 1.0
 
-#color
+#colors
 ball_color = "violet"
 laser_color = "yellow"
 column_color = "red"
@@ -56,7 +66,7 @@ monster_color = "magenta"
 portal_start_color = "green"
 portal_end_color = "orange"
 
-#layer
+#layers
 ball_layer = "middle"
 laser_layer = "ceil"
 column_layer = "ceil"
@@ -66,7 +76,7 @@ monster_layer = "middle"
 portal_start_layer = "floor"
 portal_end_layer = "floor"
 
-#other
+#others
 monster_vision_time = 0.5
 
 [physic]
@@ -85,33 +95,36 @@ left = [38,113]
 right = [40,114]
 quit = [9]
 
-# [audio]
-# check_level = always
+[audio]
+check_level = "always"
 
-# channels = 2
-# sample_rate = 44100.
-# frames_per_buffer = 64
+channels = 2
+sample_rate = 44100.0
+frames_per_buffer = 64
 
-# effect_dir = "assets/effects"
-# music_dir = "assets/musics"
+effect_dir = "assets/effects"
+music_dir = "assets/musics"
 
-# global_volume = 0.5
-# music_volume = 0.8
-# effect_volume = 0.3
+global_volume = 0.5
+music_volume = 0.8
+effect_volume = 0.3
 
-# distance_model = "pow2"
-# distance_model_min = 10
-# distance_model_max = 110
-# music_loop = true
+distance_model = "pow2"
+distance_model_min = 10.0
+distance_model_max = 110.0
+music_loop = true
 
-# effect = []
-# music = []
+musics = ["todo.ogg"]
+effects_name = ["todo.ogg"]
+effects_number = [10]
 
 [window]
 dimension = [640,480]
 vsync = true
 multisampling = 4
-# fullscreen = false
+fullscreen = false
+fullscreen_on_primary_monitor = true
+fullscreen_monitor = 0
 
 [camera]
 zoom = 0.1

@@ -16,7 +16,7 @@ pub fn add_character(world: &specs::World, pos: [isize;2]) {
                 config.entities.char_time,
                 config.entities.char_weight))
         .with::<PhysicForce>(PhysicForce::new())
-        .with::<Life>(Life::new())
+        .with::<Life>(Life::new(config.entities.char_die_snd))
         .with::<Graphic>(Graphic::new(
                 Color::from_str(&*config.entities.char_color),
                 Layer::from_str(&*config.entities.char_layer)))
@@ -58,7 +58,7 @@ pub fn add_column(world: &specs::World, pos: [isize;2]) {
         .build();
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
-        .with::<Ball>(Ball::new(pos))
+        .with::<Ball>(Ball::new(pos,config.entities.ball_create_snd))
         .with::<PhysicDynamic>(PhysicDynamic)
         .with::<PhysicType>(PhysicType::new_movable(
                 config.entities.ball_group.val,
@@ -70,7 +70,7 @@ pub fn add_column(world: &specs::World, pos: [isize;2]) {
                 config.entities.ball_weight))
         .with::<PhysicForce>(PhysicForce::new_full())
         .with::<PhysicTrigger>(PhysicTrigger::new())
-        .with::<Life>(Life::new())
+        .with::<Life>(Life::new(config.entities.ball_die_snd))
         .with::<Graphic>(Graphic::new(
                 Color::from_str(&*config.entities.ball_color),
                 Layer::from_str(&*config.entities.ball_layer)))
@@ -78,6 +78,7 @@ pub fn add_column(world: &specs::World, pos: [isize;2]) {
         .with::<Killer>(Killer {
             kamikaze: false,
             mask: config.entities.ball_killer_mask.val,
+            kill_snd: config.entities.ball_kill_snd,
         })
         .build();
 }
@@ -95,7 +96,7 @@ pub fn add_monster(world: &specs::World, pos: [isize;2]) {
                 config.entities.monster_time,
                 config.entities.monster_weight))
         .with::<PhysicForce>(PhysicForce::new())
-        .with::<Life>(Life::new())
+        .with::<Life>(Life::new(config.entities.monster_die_snd))
         .with::<Graphic>(Graphic::new(
                 Color::from_str(&*config.entities.monster_color),
                 Layer::from_str(&*config.entities.monster_layer)))
@@ -103,6 +104,7 @@ pub fn add_monster(world: &specs::World, pos: [isize;2]) {
         .with::<Killer>(Killer {
             kamikaze: true,
             mask: config.entities.monster_killer_mask.val,
+            kill_snd: config.entities.monster_kill_snd,
         })
         .build();
 }
@@ -121,6 +123,7 @@ pub fn add_laser(world: &specs::World, pos: [isize;2]) {
         .with::<Killer>(Killer {
             kamikaze: false,
             mask: config.entities.laser_killer_mask.val,
+            kill_snd: config.entities.laser_kill_snd,
         })
         .build();
 }

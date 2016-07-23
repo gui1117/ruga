@@ -3,10 +3,12 @@ use components::*;
 use specs::Join;
 use specs;
 use physic::IntoGrid;
+use utils::Into3D;
+use baal;
 
 pub struct Life {
     alive: bool,
-    //TODO die_snd: usize,
+    die_snd: usize,
 }
 
 impl specs::Component for Life {
@@ -14,15 +16,14 @@ impl specs::Component for Life {
 }
 
 impl Life {
-    pub fn new() -> Self {
+    pub fn new(die_snd: usize) -> Self {
         Life {
             alive: true,
-            // die_snd: die_snd,
+            die_snd: die_snd,
         }
     }
     pub fn kill(&mut self) {
         self.alive = false;
-        //TODO play die_snd
     }
 }
 
@@ -39,12 +40,15 @@ impl specs::System<app::UpdateContext> for LifeSystem {
         });
         for (life, entity) in (&mut lives, &entities).iter() {
             if !life.alive {
+                let state = states.get_mut(entity).expect("life expect state component");
+                baal::effect::play(life.die_snd,&state.position.into_3d());
+
                 if let Some(ball) = balls.get(entity) {
-                    let state = states.get_mut(entity).expect("ball expect state component");
                     state.position = ball.origin;
                     state.velocity = [0.,0.];
                     state.acceleration = [0.,0.];
                     life.alive = true;
+                    baal::effect::play(ball.create_snd,&state.position.into_3d());
                 } else {
                     arg.delete(entity);
                 }
@@ -56,7 +60,7 @@ impl specs::System<app::UpdateContext> for LifeSystem {
 pub struct Killer {
     pub kamikaze: bool,
     pub mask: u32,
-    //TODO kill_snd
+    pub kill_snd: usize
 }
 impl specs::Component for Killer {
     type Storage = specs::VecStorage<Self>;
@@ -83,6 +87,7 @@ impl specs::System<app::UpdateContext> for KillerSystem {
             let mut kill = false;
             physic_world.apply_on_shape(&state.position, killer.mask, &typ.shape, &mut |other_entity,_| {
                 if let Some(life) = lives.get_mut(*other_entity) {
+                    baal::effect::play(killer.kill_snd,&state.position.into_3d());
                     life.kill();
                     kill = true;
                 }
@@ -96,14 +101,16 @@ impl specs::System<app::UpdateContext> for KillerSystem {
 
 pub struct Ball {
     origin: [f32;2],
+    create_snd: usize,
 }
 impl specs::Component for Ball {
     type Storage = specs::VecStorage<Self>;
 }
 impl Ball {
-    pub fn new<T: IntoGrid>(pos: T) -> Ball {
+    pub fn new<T: IntoGrid>(pos: T,create_snd: usize) -> Ball {
         Ball {
-            origin: pos.into_grid()
+            origin: pos.into_grid(),
+            create_snd: create_snd,
         }
     }
 }
@@ -111,22 +118,20 @@ impl Ball {
 pub struct BallSystem;
 impl specs::System<app::UpdateContext> for BallSystem {
     fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
-        let (mut states, balls, triggers, entities) = arg.fetch(|world| {
+        let (mut lifes, balls, triggers, entities) = arg.fetch(|world| {
             (
-                world.write::<PhysicState>(),
+                world.write::<Life>(),
                 world.read::<Ball>(),
                 world.read::<PhysicTrigger>(),
                 world.entities(),
             )
         });
-        for (ball, entity) in (&balls, &entities).iter() {
+        for (_, entity) in (&balls, &entities).iter() {
             let trigger = triggers.get(entity).expect("ball component expect trigger component");
-            let state = states.get_mut(entity).expect("ball component expect state component");
+            let life = lifes.get_mut(entity).expect("ball component expect life component");
 
             if trigger.active {
-                state.position = ball.origin;
-                state.velocity = [0.,0.];
-                state.acceleration = [0.,0.];
+                life.kill();
             }
         }
     }

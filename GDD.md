@@ -156,14 +156,14 @@ other:
 
 ##TODO
 
+* TEST sound
+* first level from config
 * licence -> AGPL
-* level: bitmap and config.toml define dungeon, first level created from config
-* color component -> color and layer
-* better circle rectangle collision: use math
-* sound
+* level: bitmap and config.toml define dungeon
+
 * window creation catch error and try whitout vsync and then without multisampling
 * input : + joysticks
-
+* better circle rectangle collision: use math
 * event loop: ups=fps ?
 * command line: integrate glutin configuration in, allow set the config file
 * menu:

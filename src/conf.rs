@@ -1,20 +1,11 @@
 use configuration::BitflagU32;
 
-pub type Effect = [(String, u32);4];
-pub type Music = [String;1];
+pub type EffectsName = Vec<String>;
+pub type EffectsNumber = Vec<u32>;
+pub type Musics = Vec<String>;
 pub type Dimension = [u32;2];
 pub type Array4F32 = [f32;4];
 pub type VecU8 = Vec<u8>;
-
-pub mod snd_effect {
-    pub const RIFLE_SHOOT_ZERO: usize = 0;
-    pub const RIFLE_SHOOT_ONE: usize = 1;
-    pub const RIFLE_SHOOT_LOTS: usize = 2;
-    pub const RIFLE_RELOAD: usize = 3;
-}
-pub mod music {
-    pub const BACKGROUND: usize = 0;
-}
 
 fn config_constraint(conf: &Config) -> Result<(),String> {
     if conf.keys.up.len() == 0
@@ -23,6 +14,12 @@ fn config_constraint(conf: &Config) -> Result<(),String> {
        || conf.keys.right.len() == 0 {
            return Err("ERROR: configuration file invalid: keys mustn't be empty".into());
     }
+
+    if conf.audio.effects_name.len() != conf.audio.effects_number.len() {
+        return Err("ERROR: configuration file invalid: audio effects name and audio effects number arrays must be of the same length".into());
+    }
+
+    //TODO audio constraint
 
     Ok(())
 }
@@ -51,6 +48,9 @@ configure!(
         ball_group: t BitflagU32,
         ball_mask: t BitflagU32,
         ball_killer_mask: t BitflagU32,
+        ball_kill_snd: t usize,
+        ball_create_snd: t usize,
+        ball_die_snd: t usize,
         ball_radius: t f32,
         ball_velocity: t f32,
         ball_time: t f32,
@@ -61,6 +61,7 @@ configure!(
         laser_group: t BitflagU32,
         laser_mask: t BitflagU32,
         laser_killer_mask: t BitflagU32,
+        laser_kill_snd: t usize,
         laser_radius: t f32,
         laser_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
         laser_layer: e String [floor,middle,ceil],
@@ -79,6 +80,8 @@ configure!(
         char_weight: t f32,
         char_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
         char_layer: e String [floor,middle,ceil],
+        char_die_snd: t usize,
+        //TODO char_restart_snd: t usize,
 
         wall_group: t BitflagU32,
         wall_mask: t BitflagU32,
@@ -88,6 +91,8 @@ configure!(
 
         monster_vision_mask: t BitflagU32,
         monster_killer_mask: t BitflagU32,
+        monster_kill_snd: t usize,
+        monster_die_snd: t usize,
         monster_group: t BitflagU32,
         monster_mask: t BitflagU32,
         monster_vision_time: t f32,
@@ -102,33 +107,38 @@ configure!(
         portal_end_layer: e String [floor,middle,ceil],
         portal_start_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
         portal_start_layer: e String [floor,middle,ceil],
+        portal_snd: t usize,
     },
     levels: {
         dir: t String,
         first_level: t String,
         common: t String,
     },
-    // audio: {
-    //     channels: t i32,
-    //     sample_rate: t f64,
-    //     frames_per_buffer: t u32,
-    //     effect_dir: t String,
-    //     music_dir: t String,
-    //     global_volume: t f32,
-    //     music_volume: t f32,
-    //     effect_volume: t f32,
-    //     distance_model: e String [linear,pow2],
-    //     distance_model_min: t f64,
-    //     distance_model_max: t f64,
-    //     music_loop: t bool,
-    //     effect: t Effect,
-    //     music: t Music,
-    //     check_level: e String [always,debug,never],
-    // },
+    audio: {
+        channels: t i32,
+        sample_rate: t f64,
+        frames_per_buffer: t u32,
+        effect_dir: t String,
+        music_dir: t String,
+        global_volume: t f32,
+        music_volume: t f32,
+        effect_volume: t f32,
+        distance_model: e String [linear,pow2],
+        distance_model_min: t f64,
+        distance_model_max: t f64,
+        music_loop: t bool,
+        effects_name: t EffectsName,
+        effects_number: t EffectsNumber,
+        musics: t Musics,
+        check_level: e String [always,debug,never],
+    },
     window: {
         dimension: t Dimension,
         vsync: t bool,
         multisampling: t u16,
+        fullscreen: t bool,
+        fullscreen_on_primary_monitor: t bool,
+        fullscreen_monitor: t usize,
     },
     graphics: {
         base03: t Array4F32,
