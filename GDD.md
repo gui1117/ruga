@@ -156,9 +156,7 @@ other:
 
 ##TODO
 
-* TEST sound
 * first level from config
-* licence -> AGPL
 * level: bitmap and config.toml define dungeon
 
 * window creation catch error and try whitout vsync and then without multisampling
