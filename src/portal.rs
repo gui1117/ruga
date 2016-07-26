@@ -2,16 +2,17 @@ use app;
 use components::*;
 use specs::Join;
 use specs;
+use levels;
 
-#[derive(Clone,Default)]
+#[derive(Clone)]
 pub struct Portal {
-    destination: String,
+    destination: levels::Level,
 }
 impl specs::Component for Portal {
     type Storage = specs::VecStorage<Self>;
 }
 impl Portal {
-    pub fn new(destination: String) -> Self {
+    pub fn new(destination: levels::Level) -> Self {
         Portal {
             destination: destination,
         }

@@ -85,8 +85,17 @@ unit = 2.0
 
 [levels]
 dir = "./levels"
-first_level = "one"
-common = "common"
+entry_music = 1
+
+empty_col = [0,0,0]
+char_col = [0,0,0]
+portal_col = [0,0,0]
+laser_col = [0,0,0]
+monster_col = [0,0,0]
+column_col = [0,0,0]
+wall_col = [0,0,0]
+
+dungeons = []
 
 [keys]
 up = [25,111]
@@ -121,8 +130,8 @@ effects_number = [10]
 [window]
 dimension = [640,480]
 vsync = true
-multisampling = 4
-fullscreen = false
+multisampling = 8
+fullscreen = true
 fullscreen_on_primary_monitor = true
 fullscreen_monitor = 0
 

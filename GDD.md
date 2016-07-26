@@ -156,6 +156,8 @@ other:
 
 ##TODO
 
+* use rust decodable derive in configuration
+* toml struct -> snd is array of table idem for levels
 * first level from config
 * level: bitmap and config.toml define dungeon
 

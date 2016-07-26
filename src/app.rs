@@ -69,7 +69,7 @@ impl Effect {
 }
 
 pub enum Control {
-    GotoLevel(String),
+    GotoLevel(levels::Level),
     ResetLevel,
 }
 
@@ -82,7 +82,7 @@ pub struct UpdateContext {
 }
 
 pub struct App {
-    current_level: String,
+    current_level: levels::Level,
     camera: graphics::Camera,
     graphics: graphics::Graphics,
     planner: specs::Planner<UpdateContext>,
@@ -157,7 +157,7 @@ impl App {
         world.register::<Portal>();
 
         // load level
-        let master_entity = try!(levels::load(&*config.levels.first_level,&mut world)
+        let master_entity = try!(levels::load(&levels::Level::Entry,&mut world)
                                  .map_err(|e| format!("ERROR: level load failed: {:#?}",e)));
 
         // init planner
@@ -175,7 +175,7 @@ impl App {
         let (control_tx, control_rx) = mpsc::channel();
 
         Ok(App {
-            current_level: config.levels.first_level.clone(),
+            current_level: levels::Level::Entry,
             effect_storage: Vec::new(),
             camera: camera,
             graphics: graphics,
@@ -209,17 +209,17 @@ impl App {
             }
         }
     }
-    pub fn goto_level(&mut self, destination: String) {
+    pub fn goto_level(&mut self, level: levels::Level) {
         //TODO keep the velocity and acceleration if set on argument
         while let Ok(_) = self.control_rx.try_recv() {}
         while let Ok(_) = self.effect_rx.try_recv() {}
 
-        self.master_entity = match levels::load(&*destination,self.planner.mut_world()) {
+        self.master_entity = match levels::load(&level,self.planner.mut_world()) {
             Err(e) => panic!(format!("ERROR: level load failed: {:#?}",e)),
             Ok(m) => m,
         };
 
-        self.current_level = destination;
+        self.current_level = level;
         let mut player_dir = vec!();
         player_dir.append(&mut self.player_dir);
         for k in player_dir {

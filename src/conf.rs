@@ -1,4 +1,5 @@
 use configuration::BitflagU32;
+use levels as levelss;
 
 pub type EffectsName = Vec<String>;
 pub type EffectsNumber = Vec<u32>;
@@ -6,6 +7,8 @@ pub type Musics = Vec<String>;
 pub type Dimension = [u32;2];
 pub type Array4F32 = [f32;4];
 pub type VecU8 = Vec<u8>;
+pub type Dungeons = Vec<levelss::Dungeon>;
+pub type Array3U8 = [u8;3];
 
 fn config_constraint(conf: &Config) -> Result<(),String> {
     if conf.keys.up.len() == 0
@@ -111,8 +114,16 @@ configure!(
     },
     levels: {
         dir: t String,
-        first_level: t String,
-        common: t String,
+        entry_music: t usize,
+        dungeons: t Dungeons,
+
+        empty_col: t Array3U8,
+        char_col: t Array3U8,
+        portal_col: t Array3U8,
+        laser_col: t Array3U8,
+        monster_col: t Array3U8,
+        column_col: t Array3U8,
+        wall_col: t Array3U8,
     },
     audio: {
         channels: t i32,

@@ -2,6 +2,7 @@ use components::*;
 use specs;
 use graphics::{Color, Layer};
 use config;
+use levels;
 
 pub fn add_character(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
@@ -128,7 +129,7 @@ pub fn add_laser(world: &mut specs::World, pos: [isize;2]) {
         .build();
 }
 
-pub fn add_portal(world: &mut specs::World, pos: [isize;2], destination: String) {
+pub fn add_portal(world: &mut specs::World, pos: [isize;2], destination: levels::Level) {
     world.create_now()
         .with::<Portal>(Portal::new(destination))
         .with::<GridSquare>(GridSquare::new(pos))

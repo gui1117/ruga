@@ -8,6 +8,7 @@ extern crate specs;
 extern crate time;
 extern crate toml;
 extern crate rand;
+extern crate bmp;
 
 mod levels;
 mod app;
