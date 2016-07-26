@@ -112,9 +112,7 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
     // init window
     // TODO if fail then disable vsync and then multisampling and then vsync and multisamping
     let window = {
-        let mut builder = glium::glutin::WindowBuilder::new()
-            .with_dimensions(config.window.dimension[0], config.window.dimension[1])
-            .with_title(format!("ruga"));
+        let mut builder = glium::glutin::WindowBuilder::new();
 
         if config.window.vsync {
             builder = builder.with_vsync();
@@ -129,6 +127,9 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
                 builder = builder.with_fullscreen(try!(glutin::get_available_monitors().nth(config.window.fullscreen_monitor)
                                                   .ok_or("ERROR: window init failed: fullsceen monitor specified unavailable")));
             }
+        } else {
+            builder = builder.with_dimensions(config.window.dimension[0], config.window.dimension[1])
+                .with_title(format!("ruga"));
         }
         try!(builder.build_glium().map_err(|e| format!("ERROR: window init failed: {}",e)))
     };
