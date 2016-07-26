@@ -6,6 +6,7 @@ use specs::Join;
 use physic;
 use toml;
 use bmp;
+use baal;
 use configuration;
 
 #[derive(Clone)]
@@ -99,8 +100,14 @@ pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity
 
     // read level file
     if let &Level::Dungeon(dungeon,room) = level {
-        //TODO play music if different
         let dungeon = try!(config.levels.dungeons.get(dungeon).ok_or(LoadError::ComputeLevel(dungeon,room)));
+
+        if let Some(music) = baal::music::status().id {
+            if music != dungeon.music {
+                baal::music::play(dungeon.music);
+            }
+        }
+
         let path = Path::new(&*config.levels.dir).join(Path::new(&*dungeon.name).join(Path::new(&*format!("{}{}",room,".bmp"))));
         let image = try!(bmp::open(&*path.to_string_lossy()).map_err(|e| LoadError::OpenBmp(e)));
         for (x,y) in image.coordinates() {
@@ -124,6 +131,12 @@ pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity
             }
         }
     } else {
+        if let Some(music) = baal::music::status().id {
+            if music != config.levels.entry_music {
+                baal::music::play(config.levels.entry_music);
+            }
+        }
+
         entities::add_character(world,[0,0]);
 
         entities::add_wall(world,[-1,-1]);
