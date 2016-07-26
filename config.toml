@@ -88,14 +88,22 @@ dir = "./levels"
 entry_music = 1
 
 empty_col = [0,0,0]
-char_col = [0,0,0]
-portal_col = [0,0,0]
-laser_col = [0,0,0]
-monster_col = [0,0,0]
-column_col = [0,0,0]
-wall_col = [0,0,0]
+char_col = [0,255,255]
+portal_col = [0,255,0]
+laser_col = [255,255,0]
+monster_col = [255,0,0]
+column_col = [255,0,255]
+wall_col = [255,255,255]
 
-dungeons = []
+[[levels.dungeons]]
+name = "dungeon_test"
+music = 0
+rooms = ["level_test","level_test"]
+
+[[levels.dungeons]]
+name = "dungeon_test"
+music = 0
+rooms = ["level_test","level_test"]
 
 [keys]
 up = [25,111]

@@ -99,8 +99,8 @@ pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity
     world.maintain();
 
     // read level file
-    if let &Level::Dungeon(dungeon,room) = level {
-        let dungeon = try!(config.levels.dungeons.get(dungeon).ok_or(LoadError::ComputeLevel(dungeon,room)));
+    if let &Level::Dungeon(dungeon_id,room_id) = level {
+        let dungeon = try!(config.levels.dungeons.get(dungeon_id).ok_or(LoadError::ComputeLevel(dungeon_id,room_id)));
 
         if let Some(music) = baal::music::status().id {
             if music != dungeon.music {
@@ -108,6 +108,7 @@ pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity
             }
         }
 
+        let room = try!(dungeon.rooms.get(room_id).ok_or(LoadError::ComputeLevel(dungeon_id,room_id)));
         let path = Path::new(&*config.levels.dir).join(Path::new(&*dungeon.name).join(Path::new(&*format!("{}{}",room,".bmp"))));
         let image = try!(bmp::open(&*path.to_string_lossy()).map_err(|e| LoadError::OpenBmp(e)));
         for (x,y) in image.coordinates() {
@@ -163,16 +164,21 @@ pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity
         if config.levels.dungeons.len() != 0 {
             entities::add_portal(world,[4,0],Level::Dungeon(0,0));
         }
-        for i in (1..config.levels.dungeons.len()).map(|x| (x*2) as isize) {
-            entities::add_wall(world,[1,-i]);
-            entities::add_wall(world,[1,-1-i]);
-            entities::add_wall(world,[3,-1-i]);
-            entities::add_wall(world,[4,-1-i]);
-            entities::add_wall(world,[5,-1-i]);
-            entities::add_wall(world,[5,-i]);
-            entities::add_laser(world,[3,-i]);
+        for i in 1..config.levels.dungeons.len() {
+            let y = -((i*2) as isize);
+            entities::add_wall(world,[1,y]);
+            entities::add_wall(world,[1,y-1]);
+            entities::add_wall(world,[3,y-1]);
+            entities::add_wall(world,[4,y-1]);
+            entities::add_wall(world,[5,y-1]);
+            entities::add_wall(world,[5,y]);
+            entities::add_laser(world,[3,y]);
+
+            if config.levels.dungeons[i].rooms.len() > 0 {
+                entities::add_portal(world,[4,y],Level::Dungeon(i,0));
+            }
         }
-        entities::add_wall(world,[2,-1-(config.levels.dungeons.len() as isize)*2]);
+        entities::add_wall(world,[2,1-(config.levels.dungeons.len() as isize)*2]);
     }
 
     // add_physic_world
