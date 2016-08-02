@@ -157,26 +157,44 @@ other:
 ##TODO
 
 * use rust decodable derive in configuration
-* toml struct -> snd is array of table idem for levels
-* first level from config
-* level: bitmap and config.toml define dungeon
 
-* window creation catch error and try whitout vsync and then without multisampling
 * input : + joysticks
 * better circle rectangle collision: use math
-* event loop: ups=fps ?
-* command line: integrate glutin configuration in, allow set the config file
 * menu:
   * volumes
   * graphism
     * switch light dark
     * luminosity
-  * reset game
+  * reset dungeon
+  * reset castle
+  * note castle
+  * change level
+  * donate
   * quit game
-  * modifier les touches
+* event loop: ups=fps ?
+
+* castle definition independant from config.toml and assets
+
+* window creation catch error and try whitout vsync and then without multisampling
 
 ##possibilité de mécanique
 
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
 
+##menu
+
+menu is like in valdmor or ligo it doesn't use more keys than the fourth directions + escape
+on key pressed the > or < change color and on release it do the action
+
+< global volume [%v] >
+< music volume [%v] >
+< effects volume [%v] >
+< switch dark/light [%s] >
+< luminosity [%l] >
+< reset dungeon >
+< reset castle > 
+< note castle [%n] >
+< donate > page with link to paypal
+< credit > page with credit
+< quit >
