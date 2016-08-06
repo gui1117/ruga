@@ -12,7 +12,6 @@ configuration = { path = "src/configuration" }
 baal = "*"
 glium = "*"
 specs = "*"
-hlua = "*"
 time = "*"
 lazy_static = "*"
 toml = "*"

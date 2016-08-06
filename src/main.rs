@@ -3,7 +3,6 @@
 extern crate baal;
 extern crate graphics;
 extern crate glium;
-extern crate hlua;
 extern crate specs;
 extern crate time;
 extern crate toml;
@@ -108,6 +107,12 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
             "debug" => baal::CheckLevel::Debug,
             _ => unreachable!(),
         },
+        music_transition: match &*config.audio.transition_type {
+            "instant" => baal::music::MusicTransition::Instant,
+            "smooth" => baal::music::MusicTransition::Smooth(config.audio.transition_time),
+            "overlap" => baal::music::MusicTransition::Overlap(config.audio.transition_time),
+            _ => unreachable!(),
+        },
     }).map_err(|e| format!("ERROR: audio init failed: {:#?}",e)));
 
     // init window
@@ -166,8 +171,6 @@ fn main() {
             Event::Render(args) => app.render(args),
             Event::Input(InputEvent::Closed) => break,
             Event::Input(InputEvent::KeyboardInput(state,keycode,_)) => {
-                if config.keys.quit.contains(&keycode) { break; }
-
                 if state == ElementState::Pressed {
                     app.key_pressed(keycode);
                 } else {
@@ -179,6 +182,10 @@ fn main() {
             },
             Event::Input(_) => (),
             Event::Idle(args) => thread::sleep(Duration::from_millis(args.dt as u64)),
+        }
+
+        if app.quit {
+            break;
         }
     }
 }

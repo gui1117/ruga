@@ -102,7 +102,7 @@ pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity
     if let &Level::Dungeon(dungeon_id,room_id) = level {
         let dungeon = try!(config.levels.dungeons.get(dungeon_id).ok_or(LoadError::ComputeLevel(dungeon_id,room_id)));
 
-        if let Some(music) = baal::music::status().id {
+        if let Some(music) = baal::music::index() {
             if music != dungeon.music {
                 baal::music::play(dungeon.music);
             }
@@ -132,7 +132,7 @@ pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity
             }
         }
     } else {
-        if let Some(music) = baal::music::status().id {
+        if let Some(music) = baal::music::index() {
             if music != config.levels.entry_music {
                 baal::music::play(config.levels.entry_music);
             }

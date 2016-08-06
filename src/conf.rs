@@ -41,7 +41,7 @@ configure!(
         down: t VecU8,
         left: t VecU8,
         right: t VecU8,
-        quit: t VecU8,
+        escape: t VecU8,
     },
     physic: {
         rate: t f32,
@@ -142,6 +142,8 @@ configure!(
         effects_number: t EffectsNumber,
         musics: t Musics,
         check_level: e String [always,debug,never],
+        transition_type: e String [instant,smooth,overlap],
+        transition_time: t f32,
     },
     window: {
         dimension: t Dimension,

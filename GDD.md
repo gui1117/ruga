@@ -156,10 +156,8 @@ other:
 
 ##TODO
 
-* use rust decodable derive in configuration
 
 * input : + joysticks
-* better circle rectangle collision: use math
 * menu:
   * volumes
   * graphism
@@ -171,10 +169,12 @@ other:
   * change level
   * donate
   * quit game
+* better circle rectangle collision: use math
 * event loop: ups=fps ?
 
 * castle definition independant from config.toml and assets
 
+* use rust decodable derive in configuration
 * window creation catch error and try whitout vsync and then without multisampling
 
 ##possibilité de mécanique
@@ -193,8 +193,13 @@ on key pressed the > or < change color and on release it do the action
 < switch dark/light [%s] >
 < luminosity [%l] >
 < reset dungeon >
-< reset castle > 
-< note castle [%n] >
+< reset castle >
+< reset level >
+<!-- note castle [%n] -->
 < donate > page with link to paypal
 < credit > page with credit
 < quit >
+
+maybe print at top left the castle / dungeon / room
+
+donate and credit from DONATE and CREDIT

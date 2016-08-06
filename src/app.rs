@@ -9,6 +9,7 @@ use levels;
 use systems::*;
 use components::*;
 use std::sync::mpsc;
+use baal;
 
 pub struct Graphic {
     color: graphics::Color,
@@ -68,6 +69,7 @@ impl Effect {
     }
 }
 
+// ajouter
 pub enum Control {
     GotoLevel(levels::Level),
     ResetLevel,
@@ -81,7 +83,32 @@ pub struct UpdateContext {
     pub master_entity: specs::Entity,
 }
 
+#[derive(PartialEq)]
+enum State {
+    Game,
+    Menu(usize),
+    Text(usize,String),
+}
+
+struct MenuEntry {
+    name: Box<Fn(&App)->String>,
+    left: Box<Fn(&mut App)>,
+    right: Box<Fn(&mut App)>,
+}
+
+impl MenuEntry {
+    fn new(name: Box<Fn(&App)->String>, left: Box<Fn(&mut App)>, right: Box<Fn(&mut App)>) -> Self {
+        MenuEntry {
+            name: name,
+            left: left,
+            right: right,
+        }
+    }
+}
+
 pub struct App {
+    menu: Vec<MenuEntry>,
+    state: State,
     current_level: levels::Level,
     camera: graphics::Camera,
     graphics: graphics::Graphics,
@@ -93,6 +120,7 @@ pub struct App {
     effect_storage: Vec<Effect>,
     effect_tx: mpsc::Sender<Effect>,
     master_entity: specs::Entity,
+    pub quit: bool,
 }
 
 impl App {
@@ -174,7 +202,75 @@ impl App {
         let (effect_tx, effect_rx) = mpsc::channel();
         let (control_tx, control_rx) = mpsc::channel();
 
+        let menu = vec!(
+            MenuEntry::new(
+                Box::new(|_| format!("global volume: {}",baal::volume())),
+                Box::new(|_| baal::set_volume((baal::volume()-0.1).max(0.0))),
+                Box::new(|_| baal::set_volume((baal::volume()+0.1).min(1.0)))),
+            MenuEntry::new(
+                Box::new(|_| format!("music volume: {}",baal::music::volume())),
+                Box::new(|_| baal::music::set_volume((baal::music::volume()-0.1).max(0.0))),
+                Box::new(|_| baal::music::set_volume((baal::music::volume()+0.1).min(1.0)))),
+            MenuEntry::new(
+                Box::new(|_| format!("effects volume: {}",baal::effect::volume())),
+                Box::new(|_| baal::effect::set_volume((baal::effect::volume()-0.1).max(0.0))),
+                Box::new(|_| baal::effect::set_volume((baal::effect::volume()+0.1).min(1.0)))),
+            MenuEntry::new(
+                Box::new(|app| format!("switch: {}", match app.graphics.mode() {
+                    graphics::Mode::Dark => "dark",
+                    graphics::Mode::Light => "light",
+                })),
+                Box::new(|app| app.graphics.toggle_mode()),
+                Box::new(|app| app.graphics.toggle_mode())),
+            MenuEntry::new(
+                Box::new(|app| format!("luminosity: {}", app.graphics.luminosity())),
+                Box::new(|app| {
+                    let l = app.graphics.luminosity();
+                    app.graphics.set_luminosity((l-0.1).max(0.0));
+                }),
+                Box::new(|app| {
+                    let l = app.graphics.luminosity();
+                    app.graphics.set_luminosity((l+0.1).min(1.0));
+                })),
+            MenuEntry::new(
+                Box::new(|_| "reset level".into()),
+                Box::new(|app| {
+                    app.control_tx.send(Control::ResetLevel).unwrap();
+                    app.state = State::Game;
+                }),
+                Box::new(|app| {
+                    app.control_tx.send(Control::ResetLevel).unwrap();
+                    app.state = State::Game;
+                })),
+            MenuEntry::new(
+                Box::new(|_| "donate".into()),
+                Box::new(|app| {
+                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
+                    app.state = State::Text(entry,"TODO donation text".into());
+                }),
+                Box::new(|app| {
+                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
+                    app.state = State::Text(entry,"TODO donation text".into());
+                })),
+            MenuEntry::new(
+                Box::new(|_| "credit".into()),
+                Box::new(|app| {
+                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
+                    app.state = State::Text(entry,"TODO credit text".into());
+                }),
+                Box::new(|app| {
+                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
+                    app.state = State::Text(entry,"TODO credit text".into());
+                })),
+            MenuEntry::new(
+                Box::new(|_| "quit".into()),
+                Box::new(|app| app.quit = true),
+                Box::new(|app| app.quit = true)),
+            );
+
         Ok(App {
+            menu: menu,
+            state: State::Game,
             current_level: levels::Level::Entry,
             effect_storage: Vec::new(),
             camera: camera,
@@ -186,31 +282,34 @@ impl App {
             effect_tx: effect_tx,
             control_rx: control_rx,
             control_tx: control_tx,
+            quit: false,
         })
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
-        let context = UpdateContext {
-            dt: args.dt,
-            master_entity: self.master_entity,
-            effect_tx: self.effect_tx.clone(),
-            control_tx: self.control_tx.clone(),
-        };
+        if self.state == State::Game {
+            let context = UpdateContext {
+                dt: args.dt,
+                master_entity: self.master_entity,
+                effect_tx: self.effect_tx.clone(),
+                control_tx: self.control_tx.clone(),
+            };
 
-        self.planner.dispatch(context);
-        self.planner.wait();
+            self.planner.dispatch(context);
+            self.planner.wait();
 
-        while let Ok(control) = self.control_rx.try_recv() {
-            match control {
-                Control::GotoLevel(level) => self.goto_level(level),
-                Control::ResetLevel => {
-                    let level = self.current_level.clone();
-                    self.goto_level(level);
+            while let Ok(control) = self.control_rx.try_recv() {
+                match control {
+                    Control::GotoLevel(level) => self.goto_level(level),
+                    Control::ResetLevel => {
+                        let level = self.current_level.clone();
+                        self.goto_level(level);
+                        self.state = State::Game;
+                    }
                 }
             }
         }
     }
     pub fn goto_level(&mut self, level: levels::Level) {
-        //TODO keep the velocity and acceleration if set on argument
         while let Ok(_) = self.control_rx.try_recv() {}
         while let Ok(_) = self.effect_rx.try_recv() {}
 
@@ -269,64 +368,105 @@ impl App {
             }
         }
 
-
         // draw effects
         for effect in &self.effect_storage {
             effect.draw(&mut frame);
         }
 
-        let old_effect_storage = self.effect_storage.drain(..).collect::<Vec<Effect>>();;
-        for effect in old_effect_storage {
-            if let Some(effect) = effect.next(dt) {
-                self.effect_storage.push(effect)
-            }
-        }
+        match self.state {
+            State::Game => {
+                let old_effect_storage = self.effect_storage.drain(..).collect::<Vec<Effect>>();;
+                for effect in old_effect_storage {
+                    effect.draw(&mut frame);
+                    if let Some(effect) = effect.next(dt) {
+                        self.effect_storage.push(effect)
+                    }
+                }
 
-        while let Ok(effect) = self.effect_rx.try_recv() {
-            effect.draw(&mut frame);
-            if let Some(effect) = effect.next(dt) {
-                self.effect_storage.push(effect);
+                while let Ok(effect) = self.effect_rx.try_recv() {
+                    effect.draw(&mut frame);
+                    if let Some(effect) = effect.next(dt) {
+                        self.effect_storage.push(effect);
+                    }
+                }
+            },
+            State::Menu(entry) => {
+                //TODO draw menu
+                for effect in &self.effect_storage {
+                    effect.draw(&mut frame);
+                }
+            }
+            State::Text(_,ref text) => {
+                //TODO draw text
+                for effect in &self.effect_storage {
+                    effect.draw(&mut frame);
+                }
             }
         }
 
         frame.finish().unwrap();
     }
     pub fn key_pressed(&mut self, key: u8) {
-        if config.keys.up.contains(&key) {
-            if !self.player_dir.contains(&Direction::Up) {
-                self.player_dir.push(Direction::Up);
-                self.update_player_direction();
-            }
+        let direction = if config.keys.up.contains(&key) {
+            Some(Direction::Up)
         } else if config.keys.down.contains(&key) {
-            if !self.player_dir.contains(&Direction::Down) {
-                self.player_dir.push(Direction::Down);
-                self.update_player_direction();
-            }
+            Some(Direction::Down)
         } else if config.keys.left.contains(&key) {
-            if !self.player_dir.contains(&Direction::Left) {
-                self.player_dir.push(Direction::Left);
-                self.update_player_direction();
-            }
+            Some(Direction::Left)
         } else if config.keys.right.contains(&key) {
-            if !self.player_dir.contains(&Direction::Right) {
-                self.player_dir.push(Direction::Right);
-                self.update_player_direction();
+            Some(Direction::Right)
+        } else {
+            None
+        };
+
+        if let Some(direction) = direction {
+            match self.state {
+                State::Game => {
+                    if !self.player_dir.contains(&direction) {
+                        self.player_dir.push(direction);
+                        self.update_player_direction();
+                    }
+                },
+                State::Menu(entry) => {
+                    //TODO key pressed in menu
+                    // match direction {
+                    //     Direction::Left
+                    // }
+                    // self.state = State::Menu(entry modulo vec)
+                }
+                State::Text(entry,_) => {
+                    self.state = State::Menu(entry)
+                }
             }
         }
+
+        if config.keys.escape.contains(&key) {
+            match self.state {
+                State::Game => self.state = State::Menu(0),
+                State::Menu(_) => self.state = State::Game,
+                State::Text(entry,_) => self.state = State::Menu(entry),
+            }
+        }
+
     }
     pub fn key_released(&mut self, key: u8) {
-        if config.keys.up.contains(&key) {
-            self.player_dir.retain(|dir| &Direction::Up != dir);
-            self.update_player_direction();
+        let direction = if config.keys.up.contains(&key) {
+            Some(Direction::Up)
         } else if config.keys.down.contains(&key) {
-            self.player_dir.retain(|dir| &Direction::Down != dir);
-            self.update_player_direction();
+            Some(Direction::Down)
         } else if config.keys.left.contains(&key) {
-            self.player_dir.retain(|dir| &Direction::Left != dir);
-            self.update_player_direction();
+            Some(Direction::Left)
         } else if config.keys.right.contains(&key) {
-            self.player_dir.retain(|dir| &Direction::Right != dir);
-            self.update_player_direction();
+            Some(Direction::Right)
+        } else {
+            None
+        };
+
+        if let Some(direction) = direction {
+            if self.state == State::Game {
+                self.player_dir.retain(|dir| &direction != dir);
+                self.update_player_direction();
+            }
         }
     }
     fn update_player_direction(&mut self) {
@@ -392,4 +532,3 @@ impl App {
         self.camera.ratio = width as f32 / height as f32;
     }
 }
-

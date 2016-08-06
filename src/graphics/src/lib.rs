@@ -2,7 +2,6 @@
 extern crate glium;
 extern crate vecmath;
 extern crate glium_text;
-extern crate yaml_rust;
 
 use glium::{
     SwapBuffersError,
@@ -18,7 +17,6 @@ use glium::backend::Facade;
 use glium::program::ProgramCreationError;
 use glium::vertex::BufferCreationError;
 use glium::draw_parameters::Smooth;
-use yaml_rust::yaml::Yaml;
 use glium_text::{
     TextSystem,
     FontTexture,
@@ -82,86 +80,6 @@ pub struct GraphicsSetting {
     pub font_ratio: f32,
 }
 
-macro_rules! color_from_yaml {
-    ( $colors_hash:expr, $name:expr ) => {
-        {
-            let vec = try!(try!($colors_hash.get(&Yaml::String(String::from($name)))
-                .ok_or_else(|| format!("colors map must have a {} key",$name))).as_vec()
-                .ok_or_else(|| format!("{} must be a vector",$name)));
-            assert_eq!(vec.len(),4);
-            [
-                try!(vec[0].as_f64().ok_or_else(|| format!("{} first element must a float",$name))) as f32,
-                try!(vec[1].as_f64().ok_or_else(|| format!("{} second element must a float",$name))) as f32,
-                try!(vec[2].as_f64().ok_or_else(|| format!("{} third element must a float",$name))) as f32,
-                try!(vec[3].as_f64().ok_or_else(|| format!("{} fourth element must a float",$name))) as f32,
-            ]
-        }
-    }
-}
-
-impl GraphicsSetting {
-    pub fn from_yaml(code: &Yaml) -> Result<Self,String> {
-        let hash = try!(code.as_hash().ok_or_else(|| "config must be an associative array"));
-        let mode = {
-            let s: &str = try!(try!(hash.get(&Yaml::String(String::from("mode")))
-                .ok_or_else(|| "config map must have mode key")).as_str()
-                .ok_or_else(|| "mode must be a string"));
-            match s {
-                "dark" => Mode::Dark,
-                "light" => Mode::Light,
-                _ => panic!("mode must be \"dark\" or \"light\""),
-            }
-        };
-        let luminosity = try!(try!(hash.get(&Yaml::String(String::from("luminosity")))
-                .ok_or_else(|| "config map must have a luminosity key")).as_f64()
-                .ok_or_else(|| "luminosity must be a float")) as f32;
-        let font_precision = try!(try!(hash.get(&Yaml::String(String::from("font_precision")))
-                .ok_or_else(|| "config map must have a font_precision key")).as_i64()
-                .ok_or_else(|| "font_precision must be an integer")) as u32;
-        let font_ratio = try!(try!(hash.get(&Yaml::String(String::from("font_ratio")))
-                .ok_or_else(|| "config map must have a font_ratio key")).as_f64()
-                .ok_or_else(|| "font_ratio must be a float")) as f32;
-        let font_file: String = try!(try!(hash.get(&Yaml::String(String::from("font_file")))
-                .ok_or_else(|| "config map must have font_file key")).as_str()
-                .ok_or_else(|| "font_file must be a string")).into();
-        let circle_precision = try!(try!(hash.get(&Yaml::String(String::from("circle_precision")))
-                .ok_or_else(|| "config map must have a circle_precision key")).as_i64()
-                .ok_or_else(|| "circle_precision must be an integer")) as usize;
-        let colors = {
-            let colors_hash = try!(try!(hash.get(&Yaml::String(String::from("colors")))
-                .ok_or_else(|| "config map must have a colors key")).as_hash()
-                .ok_or_else(|| "colors must be an associative array"));
-            ColorsValue {
-                base03: color_from_yaml!(colors_hash, "base03"),
-                base02: color_from_yaml!(colors_hash, "base02"),
-                base01: color_from_yaml!(colors_hash, "base01"),
-                base00: color_from_yaml!(colors_hash, "base00"),
-                base0: color_from_yaml!(colors_hash, "base0"),
-                base1: color_from_yaml!(colors_hash, "base1"),
-                base2: color_from_yaml!(colors_hash, "base2"),
-                base3: color_from_yaml!(colors_hash, "base3"),
-                yellow: color_from_yaml!(colors_hash, "yellow"),
-                orange: color_from_yaml!(colors_hash, "orange"),
-                red: color_from_yaml!(colors_hash, "red"),
-                magenta: color_from_yaml!(colors_hash, "magenta"),
-                violet: color_from_yaml!(colors_hash, "violet"),
-                blue: color_from_yaml!(colors_hash, "blue"),
-                cyan: color_from_yaml!(colors_hash, "cyan"),
-                green: color_from_yaml!(colors_hash, "green"),
-            }
-        };
-
-        Ok(GraphicsSetting {
-            colors: colors,
-            mode: mode,
-            luminosity: luminosity,
-            circle_precision: circle_precision,
-            font_precision: font_precision,
-            font_file: font_file,
-            font_ratio: font_ratio,
-        })
-    }
-}
 
 #[derive(Clone,Copy)]
 struct Vertex {
@@ -322,17 +240,6 @@ pub struct Frame<'a> {
 #[derive(Clone,Debug)]
 pub struct CameraSetting {
     pub zoom: f32,
-}
-impl CameraSetting {
-    pub fn from_yaml(code: &Yaml) -> Result<Self,String> {
-        let hash = try!(code.as_hash().ok_or_else(|| "config must be an associative array"));
-        let zoom = try!(try!(hash.get(&Yaml::String(String::from("zoom")))
-                .ok_or_else(|| "config map must have a zoom key")).as_f64()
-                .ok_or_else(|| "zoom must be a float")) as f32;
-        Ok(CameraSetting {
-            zoom: zoom,
-        })
-    }
 }
 
 #[derive(Clone,Debug)]
@@ -714,42 +621,40 @@ impl ColorsValue {
 #[test]
 fn main_test() {
     use glium::DisplayBuild;
-    use yaml_rust::YamlLoader;
 
     let display = glium::glutin::WindowBuilder::new()
         .with_dimensions(640,480)
         .build_glium()
         .unwrap();
 
-    let yaml_config = YamlLoader::load_from_str(
-"---
-colors:
-    base03: [ 0., 0.16862746, 0.21176471, 1. ]
-    base02: [ 0.02745098, 0.21176471, 0.25882354, 1. ]
-    base01: [ 0.34509805, 0.43137255, 0.45882353, 1. ]
-    base00: [ 0.39607844, 0.48235294, 0.5137255, 1. ]
-    base0: [ 0.5137255, 0.5803922, 0.5882353, 1. ]
-    base1: [ 0.5764706, 0.6313726, 0.6313726, 1. ]
-    base2: [ 0.93333334, 0.9098039, 0.8352941, 1. ]
-    base3: [ 0.99215686, 0.9647059, 0.8901961, 1. ]
-    yellow: [ 0.70980394, 0.5372549, 0., 1. ]
-    orange: [ 0.79607844, 0.29411766, 0.08627451, 1. ]
-    red: [ 0.8627451, 0.19607843, 0.18431373, 1. ]
-    magenta: [ 0.827451, 0.21176471, 0.50980395, 1. ]
-    violet: [ 0.42352942, 0.44313726, 0.76862746, 1. ]
-    blue: [ 0.14901961, 0.54509807, 0.8235294, 1. ]
-    cyan: [ 0.16470589, 0.6313726, 0.59607846, 1. ]
-    green: [ 0.52156866, 0.6, 0., 1. ]
-mode: dark
-luminosity: 0.5
-circle_precision: 32
-font_file: assets/DejaVuSansMono-Bold.ttf
-font_precision: 24
-font_ratio: 1.5
-...
-").unwrap();
+    let colors_value = ColorsValue {
+        base03: [ 0., 0.16862746, 0.21176471, 1. ],
+        base02: [ 0.02745098, 0.21176471, 0.25882354, 1. ],
+        base01: [ 0.34509805, 0.43137255, 0.45882353, 1. ],
+        base00: [ 0.39607844, 0.48235294, 0.5137255, 1. ],
+        base0: [ 0.5137255, 0.5803922, 0.5882353, 1. ],
+        base1: [ 0.5764706, 0.6313726, 0.6313726, 1. ],
+        base2: [ 0.93333334, 0.9098039, 0.8352941, 1. ],
+        base3: [ 0.99215686, 0.9647059, 0.8901961, 1. ],
+        yellow: [ 0.70980394, 0.5372549, 0., 1. ],
+        orange: [ 0.79607844, 0.29411766, 0.08627451, 1. ],
+        red: [ 0.8627451, 0.19607843, 0.18431373, 1. ],
+        magenta: [ 0.827451, 0.21176471, 0.50980395, 1. ],
+        violet: [ 0.42352942, 0.44313726, 0.76862746, 1. ],
+        blue: [ 0.14901961, 0.54509807, 0.8235294, 1. ],
+        cyan: [ 0.16470589, 0.6313726, 0.59607846, 1. ],
+        green: [ 0.52156866, 0.6, 0., 1. ],
+    };
 
-    let setting = GraphicsSetting::from_yaml(&yaml_config[0]).unwrap();
+    let setting = GraphicsSetting {
+        colors: colors_value,
+        mode: Mode::Dark,
+        luminosity: 0.5,
+        circle_precision: 32,
+        font_precision: 24,
+        font_file: "assets/DejaVuSansMono-Bold.ttf".into(),
+        font_ratio: 1.5,
+    };
 
     let graphics = Graphics::new(&display,setting).unwrap();
 

@@ -4,8 +4,15 @@ extern crate toml;
 
 pub type array3 = [u8;3];
 
+fn config_constraint(conf: &Config) -> Result<(),String> {
+    Ok(())
+}
+
 configure!(
-    path = "config.toml";
+    file = "config.toml";
+    debug_file = "config.toml";
+
+    constraint = config_constraint;
 
     general: {
         view: t f32,

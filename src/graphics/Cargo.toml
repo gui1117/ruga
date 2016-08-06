@@ -6,5 +6,4 @@ authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 [dependencies]
 glium = "*"
 vecmath = "*"
-yaml-rust = "*"
 glium_text = { path = "src/glium_text" }
