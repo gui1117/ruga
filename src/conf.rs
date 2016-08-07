@@ -47,6 +47,14 @@ configure!(
         rate: t f32,
         unit: t f32,
     },
+    menu:{
+        entry_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        cursor_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+        background_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
+
+        background_width: t f32,
+        background_height: t f32,
+    },
     entities: {
         ball_group: t BitflagU32,
         ball_mask: t BitflagU32,
@@ -176,6 +184,8 @@ configure!(
         font_precision: t u32,
         font_file: t String,
         font_ratio: t f32,
+        billboard_font_length: t f32,
+        billboard_font_interline: t f32,
     },
     camera: {
         zoom: t f32,

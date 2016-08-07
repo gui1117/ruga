@@ -10,6 +10,20 @@ use systems::*;
 use components::*;
 use std::sync::mpsc;
 use baal;
+use std::rc::Rc;
+
+static CREDIT: &'static str = "
+thiolliere - thiolliere.org
+
+";
+
+static DONATE: &'static str = "
+if you want to
+please consider donate to:
+
+TODO paypal
+
+";
 
 pub struct Graphic {
     color: graphics::Color,
@@ -92,12 +106,12 @@ enum State {
 
 struct MenuEntry {
     name: Box<Fn(&App)->String>,
-    left: Box<Fn(&mut App)>,
-    right: Box<Fn(&mut App)>,
+    left: Rc<Box<Fn(&mut App)>>,
+    right: Rc<Box<Fn(&mut App)>>,
 }
 
 impl MenuEntry {
-    fn new(name: Box<Fn(&App)->String>, left: Box<Fn(&mut App)>, right: Box<Fn(&mut App)>) -> Self {
+    fn new(name: Box<Fn(&App)->String>, left: Rc<Box<Fn(&mut App)>>, right: Rc<Box<Fn(&mut App)>>) -> Self {
         MenuEntry {
             name: name,
             left: left,
@@ -155,6 +169,8 @@ impl App {
             font_precision: config.graphics.font_precision,
             font_file: config.graphics.font_file.clone(),
             font_ratio: config.graphics.font_ratio,
+            billboard_font_length: config.graphics.billboard_font_length,
+            billboard_font_interline: config.graphics.billboard_font_interline,
         }).map_err(|e| format!("ERRROR: graphics init failed: {:#?}",e)));
         // init camera
         let camera = try!(graphics::Camera::new(facade, graphics::CameraSetting {
@@ -202,70 +218,75 @@ impl App {
         let (effect_tx, effect_rx) = mpsc::channel();
         let (control_tx, control_rx) = mpsc::channel();
 
+        // create menu
         let menu = vec!(
             MenuEntry::new(
-                Box::new(|_| format!("global volume: {}",baal::volume())),
-                Box::new(|_| baal::set_volume((baal::volume()-0.1).max(0.0))),
-                Box::new(|_| baal::set_volume((baal::volume()+0.1).min(1.0)))),
+                Box::new(|_| "continue".into()),
+                Rc::new(Box::new(|app| app.state = State::Game)),
+                Rc::new(Box::new(|app| app.state = State::Game))),
             MenuEntry::new(
-                Box::new(|_| format!("music volume: {}",baal::music::volume())),
-                Box::new(|_| baal::music::set_volume((baal::music::volume()-0.1).max(0.0))),
-                Box::new(|_| baal::music::set_volume((baal::music::volume()+0.1).min(1.0)))),
+                Box::new(|_| format!("global volume: {}",(baal::volume()*10.) as usize)),
+                Rc::new(Box::new(|_| baal::set_volume((baal::volume()-0.1).max(0.0)))),
+                Rc::new(Box::new(|_| baal::set_volume((baal::volume()+0.1).min(1.0))))),
             MenuEntry::new(
-                Box::new(|_| format!("effects volume: {}",baal::effect::volume())),
-                Box::new(|_| baal::effect::set_volume((baal::effect::volume()-0.1).max(0.0))),
-                Box::new(|_| baal::effect::set_volume((baal::effect::volume()+0.1).min(1.0)))),
+                Box::new(|_| format!("music volume: {}",(baal::music::volume()*10.) as usize)),
+                Rc::new(Box::new(|_| baal::music::set_volume((baal::music::volume()-0.1).max(0.0)))),
+                Rc::new(Box::new(|_| baal::music::set_volume((baal::music::volume()+0.1).min(1.0))))),
+            MenuEntry::new(
+                Box::new(|_| format!("effects volume: {}",(baal::effect::volume()*10.) as usize)),
+                Rc::new(Box::new(|_| baal::effect::set_volume((baal::effect::volume()-0.1).max(0.0)))),
+                Rc::new(Box::new(|_| baal::effect::set_volume((baal::effect::volume()+0.1).min(1.0))))),
             MenuEntry::new(
                 Box::new(|app| format!("switch: {}", match app.graphics.mode() {
                     graphics::Mode::Dark => "dark",
                     graphics::Mode::Light => "light",
                 })),
-                Box::new(|app| app.graphics.toggle_mode()),
-                Box::new(|app| app.graphics.toggle_mode())),
+                Rc::new(Box::new(|app| app.graphics.toggle_mode())),
+                Rc::new(Box::new(|app| app.graphics.toggle_mode()))),
             MenuEntry::new(
-                Box::new(|app| format!("luminosity: {}", app.graphics.luminosity())),
-                Box::new(|app| {
+                Box::new(|app| format!("luminosity: {}", (app.graphics.luminosity()*10.) as usize)),
+                Rc::new(Box::new(|app| {
                     let l = app.graphics.luminosity();
                     app.graphics.set_luminosity((l-0.1).max(0.0));
-                }),
-                Box::new(|app| {
+                })),
+                Rc::new(Box::new(|app| {
                     let l = app.graphics.luminosity();
                     app.graphics.set_luminosity((l+0.1).min(1.0));
-                })),
+                }))),
             MenuEntry::new(
                 Box::new(|_| "reset level".into()),
-                Box::new(|app| {
-                    app.control_tx.send(Control::ResetLevel).unwrap();
-                    app.state = State::Game;
-                }),
-                Box::new(|app| {
+                Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetLevel).unwrap();
                     app.state = State::Game;
                 })),
+                Rc::new(Box::new(|app| {
+                    app.control_tx.send(Control::ResetLevel).unwrap();
+                    app.state = State::Game;
+                }))),
             MenuEntry::new(
                 Box::new(|_| "donate".into()),
-                Box::new(|app| {
+                Rc::new(Box::new(|app| {
                     let entry = if let State::Menu(e) = app.state { e } else { 0 };
-                    app.state = State::Text(entry,"TODO donation text".into());
-                }),
-                Box::new(|app| {
-                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
-                    app.state = State::Text(entry,"TODO donation text".into());
+                    app.state = State::Text(entry,DONATE.into());
                 })),
+                Rc::new(Box::new(|app| {
+                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
+                    app.state = State::Text(entry,DONATE.into());
+                }))),
             MenuEntry::new(
                 Box::new(|_| "credit".into()),
-                Box::new(|app| {
+                Rc::new(Box::new(|app| {
                     let entry = if let State::Menu(e) = app.state { e } else { 0 };
-                    app.state = State::Text(entry,"TODO credit text".into());
-                }),
-                Box::new(|app| {
-                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
-                    app.state = State::Text(entry,"TODO credit text".into());
+                    app.state = State::Text(entry,CREDIT.into());
                 })),
+                Rc::new(Box::new(|app| {
+                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
+                    app.state = State::Text(entry,CREDIT.into());
+                }))),
             MenuEntry::new(
                 Box::new(|_| "quit".into()),
-                Box::new(|app| app.quit = true),
-                Box::new(|app| app.quit = true)),
+                Rc::new(Box::new(|app| app.quit = true)),
+                Rc::new(Box::new(|app| app.quit = true))),
             );
 
         Ok(App {
@@ -332,52 +353,51 @@ impl App {
     }
     pub fn render(&mut self, args: event_loop::RenderArgs) {
         let dt = 1. / config.event_loop.max_fps as f32;
-        let world = self.planner.mut_world();
-
-        // update camera
-        {
-            let characters = world.read::<PlayerControl>();
-            let states = world.read::<PhysicState>();
-            for (_, state) in (&characters, &states).iter() {
-                self.camera.x = state.position[0];
-                self.camera.y = state.position[1];
-            }
-        }
-
-        let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
-
-        // draw entities
-        {
-            let states = world.read::<PhysicState>();
-            let types = world.read::<PhysicType>();
-            let graphics = world.read::<Graphic>();
-            let squares = world.read::<GridSquare>();
-
-            for (square, graphic) in (&squares, &graphics).iter() {
-                let p = square.position;
-                frame.draw_square(p[0],p[1],0.5,graphic.layer,graphic.color);
-            }
-
-            for (state, typ, graphic) in (&states, &types, &graphics).iter() {
-                let x = state.position[0];
-                let y = state.position[1];
-                match typ.shape {
-                    Shape::Circle(radius) => frame.draw_circle(x,y,radius,graphic.layer,graphic.color),
-                    Shape::Square(radius) => frame.draw_square(x,y,radius,graphic.layer,graphic.color),
-                }
-            }
-        }
-
-        // draw effects
-        for effect in &self.effect_storage {
-            effect.draw(&mut frame);
-        }
 
         match self.state {
             State::Game => {
+                let world = self.planner.mut_world();
+
+                // update camera
+                {
+                    let characters = world.read::<PlayerControl>();
+                    let states = world.read::<PhysicState>();
+                    for (_, state) in (&characters, &states).iter() {
+                        self.camera.x = state.position[0];
+                        self.camera.y = state.position[1];
+                    }
+                }
+
+                let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
+
+                // draw entities
+                {
+                    let states = world.read::<PhysicState>();
+                    let types = world.read::<PhysicType>();
+                    let graphics = world.read::<Graphic>();
+                    let squares = world.read::<GridSquare>();
+
+                    for (square, graphic) in (&squares, &graphics).iter() {
+                        let p = square.position;
+                        frame.draw_square(p[0],p[1],0.5,graphic.layer,graphic.color);
+                    }
+
+                    for (state, typ, graphic) in (&states, &types, &graphics).iter() {
+                        let x = state.position[0];
+                        let y = state.position[1];
+                        match typ.shape {
+                            Shape::Circle(radius) => frame.draw_circle(x,y,radius,graphic.layer,graphic.color),
+                            Shape::Square(radius) => frame.draw_square(x,y,radius,graphic.layer,graphic.color),
+                        }
+                    }
+                }
+
+                // draw effects
+                for effect in &self.effect_storage {
+                    effect.draw(&mut frame);
+                }
                 let old_effect_storage = self.effect_storage.drain(..).collect::<Vec<Effect>>();;
                 for effect in old_effect_storage {
-                    effect.draw(&mut frame);
                     if let Some(effect) = effect.next(dt) {
                         self.effect_storage.push(effect)
                     }
@@ -389,24 +409,38 @@ impl App {
                         self.effect_storage.push(effect);
                     }
                 }
+                frame.finish().unwrap();
             },
             State::Menu(entry) => {
-                //TODO draw menu
-                for effect in &self.effect_storage {
-                    effect.draw(&mut frame);
+                let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
+                let mut menu = String::new();
+                let mut cursor = String::new();
+                for (index,menu_entry) in self.menu.iter().enumerate() {
+                    if index == entry {
+                        cursor.push_str("<<                     >>\n");
+                    } else {
+                        cursor.push('\n');
+                    }
+                    menu.push_str(&*(*menu_entry.name)(&self));
+                    menu.push('\n');
                 }
+                frame.draw_rectangle(0.,0.,config.menu.background_width,config.menu.background_height,graphics::Layer::BillBoard,graphics::Color::from_string(&config.menu.background_color));
+                frame.draw_billboard_centered_text(&*cursor,graphics::Color::from_string(&config.menu.cursor_color));
+                frame.draw_billboard_centered_text(&*menu,graphics::Color::from_string(&config.menu.entry_color));
+                frame.finish().unwrap();
             }
             State::Text(_,ref text) => {
-                //TODO draw text
-                for effect in &self.effect_storage {
-                    effect.draw(&mut frame);
-                }
+                let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
+                frame.draw_rectangle(0.,0.,25.0,18.0,graphics::Layer::BillBoard,graphics::Color::from_string(&config.menu.background_color));
+                frame.draw_billboard_centered_text(&*text,graphics::Color::from_string(&config.menu.entry_color));
+                frame.finish().unwrap();
             }
         }
 
-        frame.finish().unwrap();
     }
     pub fn key_pressed(&mut self, key: u8) {
+        use std::ops::Rem;
+
         let direction = if config.keys.up.contains(&key) {
             Some(Direction::Up)
         } else if config.keys.down.contains(&key) {
@@ -428,11 +462,12 @@ impl App {
                     }
                 },
                 State::Menu(entry) => {
-                    //TODO key pressed in menu
-                    // match direction {
-                    //     Direction::Left
-                    // }
-                    // self.state = State::Menu(entry modulo vec)
+                    match direction {
+                        Direction::Up => self.state = State::Menu(if entry == 0 { self.menu.len()-1 } else { entry-1 }),
+                        Direction::Down => self.state = State::Menu((entry+1).rem(self.menu.len())),
+                        Direction::Right => (*self.menu[entry].right.clone())(self),
+                        Direction::Left => (*self.menu[entry].left.clone())(self),
+                    }
                 }
                 State::Text(entry,_) => {
                     self.state = State::Menu(entry)

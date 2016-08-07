@@ -79,6 +79,14 @@ portal_end_layer = "floor"
 #others
 monster_vision_time = 0.5
 
+[menu]
+entry_color = "base1"
+cursor_color = "base1"
+background_color = "violet"
+
+background_width = 25.0
+background_height = 22.0
+
 [physic]
 rate = 0.9
 unit = 2.0
@@ -176,3 +184,5 @@ circle_precision = 32
 font_file = "assets/fonts/DejaVuSansMono-Bold.ttf"
 font_precision = 24
 font_ratio = 1.5
+billboard_font_length = 0.04
+billboard_font_interline = 1.2

@@ -174,6 +174,7 @@ other:
 
 * castle definition independant from config.toml and assets
 
+* color with transparency for portal
 * use rust decodable derive in configuration
 * window creation catch error and try whitout vsync and then without multisampling
 

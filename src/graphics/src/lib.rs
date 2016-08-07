@@ -78,6 +78,8 @@ pub struct GraphicsSetting {
     /// should be mono
     pub font_file: String,
     pub font_ratio: f32,
+    pub billboard_font_length: f32,
+    pub billboard_font_interline: f32,
 }
 
 
@@ -101,6 +103,8 @@ pub struct Graphics {
     text_system: TextSystem,
     font: FontTexture,
     font_ratio: f32,
+    billboard_font_length: f32,
+    billboard_font_interline: f32,
     luminosity: f32,
 }
 
@@ -201,6 +205,8 @@ impl Graphics {
             font: font,
             font_ratio: setting.font_ratio,
             luminosity: setting.luminosity,
+            billboard_font_length: setting.billboard_font_length,
+            billboard_font_interline: setting.billboard_font_interline,
         })
     }
 
@@ -234,6 +240,7 @@ pub struct Frame<'a> {
     frame: glium::Frame,
     t_graphics: &'a Graphics,
     camera: [[f32;4];4],
+    billboard_camera: [[f32;4];4],
     draw_parameters: DrawParameters<'a>,
 }
 
@@ -284,6 +291,16 @@ impl<'a> Frame<'a> {
                 [kx*dx, ky*dy, 0., 1.]
             ]
         };
+        let billboard_camera = {
+            let kx = t_graphics.billboard_font_length;
+            let ky = kx*camera.ratio;
+            [
+                [   kx,    0., 0., 0.],
+                [   0.,    ky, 0., 0.],
+                [   0.,    0., 1., 0.],
+                [   0.,    0., 0., 1.]
+            ]
+        };
 
         let background = Color::Base1.into_vec4(t_graphics.mode,&t_graphics.colors);
         frame.clear_color_and_depth((background[0],background[1],background[2],background[3]),0f32);;
@@ -299,6 +316,7 @@ impl<'a> Frame<'a> {
         };
 
         Frame {
+            billboard_camera: billboard_camera,
             camera: camera_matrix,
             frame: frame,
             t_graphics: t_graphics,
@@ -319,9 +337,10 @@ impl<'a> Frame<'a> {
                 [        x,         y, layer.into(), 1.]
             ]
         };
+
         let uniform = uniform!{
             trans: trans,
-            camera: self.camera,
+            camera: if layer == Layer::BillBoard { self.billboard_camera } else { self.camera },
             color: color.into_vec4(self.t_graphics.mode,&self.t_graphics.colors),
         };
 
@@ -355,6 +374,34 @@ impl<'a> Frame<'a> {
             &self.t_graphics.program,
             &uniform,
             &self.draw_parameters).unwrap();
+    }
+
+    pub fn draw_billboard_centered_text(&mut self, text: &str, color: Color) {
+        let color = {
+            let c = color.into_vec4(self.t_graphics.mode,&self.t_graphics.colors);
+            (c[0],c[2],c[2],c[3])
+        };
+
+        let number_of_line = text.lines().count();
+
+        for (index,line) in text.lines().enumerate() {
+            let dx = -(line.len() as f32 / 2.0)*0.75;
+            let dy = (number_of_line as f32 / 2.0 - 1.0 - index as f32) * self.t_graphics.font_ratio * self.t_graphics.billboard_font_interline;
+            let dz = Layer::BillBoard.into();
+
+            let text_display = glium_text::TextDisplay::new(&self.t_graphics.text_system, &self.t_graphics.font, line);
+
+            let ratio = self.t_graphics.font_ratio;
+            let trans = [
+                [ 1.,    0., 0., 0.],
+                [ 0., ratio, 0., 0.],
+                [ 0.,    0., 1., 0.],
+                [ dx,    dy, dz, 1.]
+            ];
+
+            let matrix = vecmath::row_mat4_mul(trans,self.billboard_camera);
+            glium_text::draw(&text_display, &self.t_graphics.text_system, &mut self.frame, matrix, color);
+        }
     }
 
     pub fn draw_text(&mut self, text: &str, lines: &Vec<Line>, layer: Layer, color: Color) {
@@ -544,11 +591,12 @@ impl Color {
     }
 }
 
-#[derive(Debug,Clone,Copy)]
+#[derive(Debug,Clone,Copy,PartialEq)]
 pub enum Layer {
     Floor,
     Middle,
     Ceil,
+    BillBoard,
 }
 impl Layer {
     pub fn from_str(s: &str) -> Self {
@@ -556,6 +604,7 @@ impl Layer {
             "floor" => Layer::Floor,
             "middle" => Layer::Middle,
             "ceil" => Layer::Ceil,
+            "billboard" => Layer::BillBoard,
             _ => unreachable!(),
         }
     }
@@ -564,9 +613,10 @@ impl Layer {
 impl Into<f32> for Layer {
     fn into(self) -> f32 {
         match self {
-            Layer::Floor => 0.,
-            Layer::Middle => 0.5,
-            Layer::Ceil => 1.,
+            Layer::Floor => 0.1,
+            Layer::Middle => 0.2,
+            Layer::Ceil => 0.3,
+            Layer::BillBoard => 1.0,
         }
     }
 }
@@ -654,6 +704,8 @@ fn main_test() {
         font_precision: 24,
         font_file: "assets/DejaVuSansMono-Bold.ttf".into(),
         font_ratio: 1.5,
+        billboard_font_length: 0.1,
+        billboard_font_interline: 1.4,
     };
 
     let graphics = Graphics::new(&display,setting).unwrap();
@@ -671,9 +723,11 @@ fn main_test() {
         let mut target = Frame::new(&graphics,display.draw(),&camera);
         target.draw_rectangle(0.,0.,1.,1.,Layer::Floor,Color::Base2);
         target.draw_circle(0.,0.,10.,Layer::Middle,Color::Base3);
+        target.draw_rectangle(0.,0.,1.1,0.4,Layer::BillBoard,Color::Yellow);
         target.draw_quad(trans,Layer::Ceil,Color::Base4);
         target.draw_line(0.,0.,1.,10.,1.,Layer::Ceil,Color::Base5);
         target.draw_text("target.draw_text",&vec!(Line {x:0,y:0,length:10}),Layer::Ceil,Color::Base5);
+        target.draw_billboard_centered_text("_\n_\ntoto\nest\na\nla\nplage",Color::Green);
         target.finish().unwrap();
         for ev in display.poll_events() {
             match ev {
@@ -681,6 +735,6 @@ fn main_test() {
                 _ => ()
             }
         }
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 }
