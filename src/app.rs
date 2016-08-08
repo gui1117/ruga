@@ -11,6 +11,8 @@ use components::*;
 use std::sync::mpsc;
 use baal;
 use std::rc::Rc;
+use std::sync::Arc;
+use entities;
 
 static CREDIT: &'static str = "
 thiolliere - thiolliere.org
@@ -87,6 +89,7 @@ impl Effect {
 pub enum Control {
     GotoLevel(levels::Level),
     ResetLevel,
+    CreateBall([f32;2],Arc<()>),
 }
 
 #[derive(Clone)]
@@ -197,6 +200,7 @@ impl App {
         world.register::<Life>();
         world.register::<Killer>();
         world.register::<Ball>();
+        world.register::<Column>();
 
         world.register::<Portal>();
 
@@ -213,6 +217,7 @@ impl App {
         planner.add_system(KillerSystem, "killer", 5);
         planner.add_system(BallSystem, "ball", 5);
         planner.add_system(PortalSystem, "portal", 5);
+        planner.add_system(ColumnSystem, "column", 5);
         planner.add_system(LifeSystem, "life", 1);
 
         let (effect_tx, effect_rx) = mpsc::channel();
@@ -261,6 +266,16 @@ impl App {
                 })),
                 Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetLevel).unwrap();
+                    app.state = State::Game;
+                }))),
+            MenuEntry::new(
+                Box::new(|_| "reset game".into()),
+                Rc::new(Box::new(|app| {
+                    app.control_tx.send(Control::GotoLevel(levels::Level::Entry)).unwrap();
+                    app.state = State::Game;
+                })),
+                Rc::new(Box::new(|app| {
+                    app.control_tx.send(Control::GotoLevel(levels::Level::Entry)).unwrap();
                     app.state = State::Game;
                 }))),
             MenuEntry::new(
@@ -326,6 +341,7 @@ impl App {
                         self.goto_level(level);
                         self.state = State::Game;
                     }
+                    Control::CreateBall(pos,arc) => entities::add_ball(self.planner.mut_world(),pos,arc),
                 }
             }
         }

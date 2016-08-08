@@ -156,26 +156,18 @@ other:
 
 ##TODO
 
+* column system
+* use rust decodable derive in configuration (no from string in entities creation
+* castle definition independant from config.toml and assets
 
 * input : + joysticks
 * menu:
-  * volumes
-  * graphism
-    * switch light dark
-    * luminosity
-  * reset dungeon
-  * reset castle
   * note castle
-  * change level
-  * donate
-  * quit game
 * better circle rectangle collision: use math
 * event loop: ups=fps ?
 
-* castle definition independant from config.toml and assets
 
 * color with transparency for portal
-* use rust decodable derive in configuration
 * window creation catch error and try whitout vsync and then without multisampling
 
 ##possibilité de mécanique

@@ -25,13 +25,13 @@ laser_killer_mask   = "00000110"
 
 #sounds
 ball_kill_snd = 0
-ball_create_snd = 0
 ball_die_snd = 0
 laser_kill_snd = 0
 char_die_snd = 0
 monster_kill_snd = 0
 monster_die_snd = 0
 portal_snd = 0
+column_spawn_snd = 0
 
 #radius
 laser_radius = 0.5
@@ -78,6 +78,7 @@ portal_end_layer = "floor"
 
 #others
 monster_vision_time = 0.5
+column_cooldown = 1.0
 
 [menu]
 entry_color = "base1"
@@ -117,7 +118,7 @@ rooms = ["level_test","level_test"]
 up = [25,111]
 down = [39,116]
 left = [38,113]
-right = [40,114]
+right = [40,114,36]
 escape = [9]
 
 [audio]

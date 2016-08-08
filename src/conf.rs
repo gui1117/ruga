@@ -60,7 +60,6 @@ configure!(
         ball_mask: t BitflagU32,
         ball_killer_mask: t BitflagU32,
         ball_kill_snd: t usize,
-        ball_create_snd: t usize,
         ball_die_snd: t usize,
         ball_radius: t f32,
         ball_velocity: t f32,
@@ -82,6 +81,8 @@ configure!(
         column_radius: t f32,
         column_color: e String [base5,base4,base3,base2,base1,yellow,orange,red,magenta,violet,blue,cyan,green],
         column_layer: e String [floor,middle,ceil],
+        column_cooldown: t f32,
+        column_spawn_snd: t usize,
 
         char_group: t BitflagU32,
         char_mask: t BitflagU32,

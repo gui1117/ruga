@@ -2,9 +2,10 @@ use app;
 use components::*;
 use specs::Join;
 use specs;
-use physic::IntoGrid;
 use utils::Into3D;
 use baal;
+use config;
+use std::sync::Arc;
 
 pub struct Life {
     alive: bool,
@@ -30,28 +31,19 @@ impl Life {
 pub struct LifeSystem;
 impl specs::System<app::UpdateContext> for LifeSystem {
     fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
-        let (mut lives, mut states, balls, entities) = arg.fetch(|world| {
+        let (mut lives, mut states, entities) = arg.fetch(|world| {
             (
                 world.write::<Life>(),
                 world.write::<PhysicState>(),
-                world.read::<Ball>(),
                 world.entities(),
             )
         });
         for (life, entity) in (&mut lives, &entities).iter() {
             if !life.alive {
                 let state = states.get_mut(entity).expect("life expect state component");
-                baal::effect::play(life.die_snd,&state.position.into_3d());
 
-                if let Some(ball) = balls.get(entity) {
-                    state.position = ball.origin;
-                    state.velocity = [0.,0.];
-                    state.acceleration = [0.,0.];
-                    life.alive = true;
-                    baal::effect::play(ball.create_snd,&state.position.into_3d());
-                } else {
-                    arg.delete(entity);
-                }
+                baal::effect::play(life.die_snd,&state.position.into_3d());
+                arg.delete(entity);
             }
         }
     }
@@ -79,7 +71,6 @@ impl specs::System<app::UpdateContext> for KillerSystem {
                 world.entities(),
             )
         });
-
         let physic_world = physic_worlds.get(context.master_entity)
             .expect("master_entity expect physic_world component");
 
@@ -100,17 +91,15 @@ impl specs::System<app::UpdateContext> for KillerSystem {
 }
 
 pub struct Ball {
-    origin: [f32;2],
-    create_snd: usize,
+    _arc: Arc<()>,
 }
 impl specs::Component for Ball {
     type Storage = specs::VecStorage<Self>;
 }
 impl Ball {
-    pub fn new<T: IntoGrid>(pos: T,create_snd: usize) -> Ball {
+    pub fn new(arc: Arc<()>) -> Ball {
         Ball {
-            origin: pos.into_grid(),
-            create_snd: create_snd,
+            _arc: arc,
         }
     }
 }
@@ -118,7 +107,7 @@ impl Ball {
 pub struct BallSystem;
 impl specs::System<app::UpdateContext> for BallSystem {
     fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
-        let (mut lifes, balls, triggers, entities) = arg.fetch(|world| {
+        let (mut lives, balls, triggers, entities) = arg.fetch(|world| {
             (
                 world.write::<Life>(),
                 world.read::<Ball>(),
@@ -128,7 +117,7 @@ impl specs::System<app::UpdateContext> for BallSystem {
         });
         for (_, entity) in (&balls, &entities).iter() {
             let trigger = triggers.get(entity).expect("ball component expect trigger component");
-            let life = lifes.get_mut(entity).expect("ball component expect life component");
+            let life = lives.get_mut(entity).expect("ball component expect life component");
 
             if trigger.active {
                 life.kill();
@@ -137,3 +126,48 @@ impl specs::System<app::UpdateContext> for BallSystem {
     }
 }
 
+pub struct Column {
+    spawn_snd: usize,
+    cooldown: Option<f32>,
+    arc: Arc<()>,
+}
+impl specs::Component for Column {
+    type Storage = specs::VecStorage<Self>;
+}
+impl Column {
+    pub fn new(snd: usize) -> Column {
+        Column {
+            spawn_snd: snd,
+            cooldown: Some(0.),
+            arc: Arc::new(()),
+        }
+    }
+}
+pub struct ColumnSystem;
+impl specs::System<app::UpdateContext> for ColumnSystem {
+    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
+        let (mut columns, states, entities) = arg.fetch(|world| {
+            (
+                world.write::<Column>(),
+                world.read::<PhysicState>(),
+                world.entities(),
+            )
+        });
+        for (column, entity) in (&mut columns, &entities).iter() {
+            column.cooldown = if let Some(cooldown) = column.cooldown {
+                if cooldown > 0. {
+                    Some(cooldown - context.dt as f32)
+                } else {
+                    let state = states.get(entity).expect("column component expect state component");
+                    context.control_tx.send(app::Control::CreateBall(state.position,column.arc.clone())).unwrap();
+                    baal::effect::play(column.spawn_snd,&state.position.into_3d());
+                    None
+                }
+            } else if let Some(_) = Arc::get_mut(&mut column.arc) {
+                Some(config.entities.column_cooldown)
+            } else {
+                column.cooldown
+            }
+        }
+    }
+}

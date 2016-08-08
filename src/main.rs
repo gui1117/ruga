@@ -40,6 +40,7 @@ mod components {
         CollisionBehavior,
     };
     pub use life::{
+        Column,
         Life,
         Killer,
         Ball,
@@ -53,6 +54,7 @@ mod systems {
         LifeSystem,
         KillerSystem,
         BallSystem,
+        ColumnSystem,
     };
     pub use control::{
         PlayerSystem,

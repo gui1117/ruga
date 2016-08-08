@@ -3,6 +3,7 @@ use specs;
 use graphics::{Color, Layer};
 use config;
 use levels;
+use std::sync::Arc;
 
 pub fn add_character(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
@@ -47,6 +48,7 @@ pub fn add_wall(world: &mut specs::World, pos: [isize;2]) {
 
 pub fn add_column(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
+        .with::<Column>(Column::new(config.entities.column_spawn_snd))
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
         .with::<PhysicType>(PhysicType::new_static(
@@ -57,9 +59,12 @@ pub fn add_column(world: &mut specs::World, pos: [isize;2]) {
                 Color::from_str(&*config.entities.column_color),
                 Layer::from_str(&*config.entities.column_layer)))
         .build();
+}
+
+pub fn add_ball(world: &mut specs::World, pos: [f32;2], arc: Arc<()>) {
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
-        .with::<Ball>(Ball::new(pos,config.entities.ball_create_snd))
+        .with::<Ball>(Ball::new(arc))
         .with::<PhysicDynamic>(PhysicDynamic)
         .with::<PhysicType>(PhysicType::new_movable(
                 config.entities.ball_group.val,
