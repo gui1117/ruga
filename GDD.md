@@ -59,12 +59,6 @@ check if autonomous are OK if false then replay from the snapshot
 
 ##vrac
 
-levels function for create
-
-wall
-start room
-end room
-
 monsters:
 
 chaman/peon as diablo 1 and 2
@@ -127,67 +121,22 @@ entree sortie:
 
 there is no gun anymore for the player, he can only move and maybe some other action like teleport or sth like this.
 
-##Component
-
-control:
-  Player: require Force
-  MoveTowardPlayer: require Force
-  Monster: require Force
-
-physic:
-  State
-  Type
-  Force
-  Dynamic
-  Static
-  World
-  TODO collision: vec of entity and the collision related
-
-graphics:
-  Color for dynamic entities
-
-other:
-  Life: boolean
-  Column: through ball once at a time
-  Killer: kill when touch (on a mask): require Type and State
-  Kamikaze: kill and die when touch (on a mask): require Type and State and Life and
-  Laser: kill balls and monsters but not players
-  <!-- Trap -->
-
 ##TODO
 
 * castle definition independant from config.toml and assets
-* better circle rectangle collision: use math
 * event loop: ups=fps ?
 
 * input : + joysticks
+
+* better circle rectangle collision: use math
 * menu:
   * note castle
-
 * color with transparency for portal
 * window creation catch error and try whitout vsync and then without multisampling
+* maybe print at top left the castle / dungeon / room
 
-##possibilité de mécanique
+##possibilité de mécanique trop complexe
 
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
 
-##menu
-
-menu is like in valdmor or ligo it doesn't use more keys than the fourth directions + escape
-on key pressed the > or < change color and on release it do the action
-
-< global volume [%v] >
-< music volume [%v] >
-< effects volume [%v] >
-< switch dark/light [%s] >
-< luminosity [%l] >
-< reset dungeon >
-< reset castle >
-< reset level >
-<!-- note castle [%n] -->
-< donate > page with link to paypal
-< credit > page with credit
-< quit >
-
-maybe print at top left the castle / dungeon / room
