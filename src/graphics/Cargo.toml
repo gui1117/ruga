@@ -6,5 +6,6 @@ authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 [dependencies]
 glium = "*"
 vecmath = "*"
+toml = "*"
 glium_text = { path = "src/glium_text" }
-rustc-serialize = "*"
+configuration = { path = "../configuration" }

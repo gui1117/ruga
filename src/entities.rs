@@ -1,6 +1,5 @@
 use components::*;
 use specs;
-use graphics::{Color, Layer};
 use config;
 use levels;
 use std::sync::Arc;
@@ -20,15 +19,15 @@ pub fn add_character(world: &mut specs::World, pos: [isize;2]) {
         .with::<PhysicForce>(PhysicForce::new())
         .with::<Life>(Life::new(config.entities.char_die_snd))
         .with::<Graphic>(Graphic::new(
-                Color::from_str(&*config.entities.char_color),
-                Layer::from_str(&*config.entities.char_layer)))
+                config.entities.char_color,
+                config.entities.char_layer))
         .with::<PlayerControl>(PlayerControl)
         .build();
     world.create_now()
         .with::<GridSquare>(GridSquare::new(pos))
         .with::<Graphic>(Graphic::new(
-                Color::from_str(&*config.entities.portal_end_color),
-                Layer::from_str(&*config.entities.portal_end_layer)))
+                config.entities.portal_end_color,
+                config.entities.portal_end_layer))
         .build();
 }
 
@@ -41,8 +40,8 @@ pub fn add_wall(world: &mut specs::World, pos: [isize;2]) {
                 config.entities.wall_mask.val,
                 Shape::Square(config.entities.wall_radius)))
         .with::<Graphic>(Graphic::new(
-                Color::from_str(&*config.entities.wall_color),
-                Layer::from_str(&*config.entities.wall_layer)))
+                config.entities.wall_color,
+                config.entities.wall_layer))
         .build();
 }
 
@@ -56,8 +55,8 @@ pub fn add_column(world: &mut specs::World, pos: [isize;2]) {
                 config.entities.column_mask.val,
                 Shape::Square(config.entities.column_radius)))
         .with::<Graphic>(Graphic::new(
-                Color::from_str(&*config.entities.column_color),
-                Layer::from_str(&*config.entities.column_layer)))
+                config.entities.column_color,
+                config.entities.column_layer))
         .build();
 }
 
@@ -78,8 +77,8 @@ pub fn add_ball(world: &mut specs::World, pos: [f32;2], arc: Arc<()>) {
         .with::<PhysicTrigger>(PhysicTrigger::new())
         .with::<Life>(Life::new(config.entities.ball_die_snd))
         .with::<Graphic>(Graphic::new(
-                Color::from_str(&*config.entities.ball_color),
-                Layer::from_str(&*config.entities.ball_layer)))
+                config.entities.ball_color,
+                config.entities.ball_layer))
         .with::<TowardPlayerControl>(TowardPlayerControl)
         .with::<Killer>(Killer {
             kamikaze: false,
@@ -104,8 +103,8 @@ pub fn add_monster(world: &mut specs::World, pos: [isize;2]) {
         .with::<PhysicForce>(PhysicForce::new())
         .with::<Life>(Life::new(config.entities.monster_die_snd))
         .with::<Graphic>(Graphic::new(
-                Color::from_str(&*config.entities.monster_color),
-                Layer::from_str(&*config.entities.monster_layer)))
+                config.entities.monster_color,
+                config.entities.monster_layer))
         .with::<MonsterControl>(MonsterControl::new())
         .with::<Killer>(Killer {
             kamikaze: true,
@@ -124,8 +123,8 @@ pub fn add_laser(world: &mut specs::World, pos: [isize;2]) {
                 config.entities.laser_mask.val,
                 Shape::Square(config.entities.laser_radius)))
         .with::<Graphic>(Graphic::new(
-                Color::from_str(&*config.entities.laser_color),
-                Layer::from_str(&*config.entities.laser_layer)))
+                config.entities.laser_color,
+                config.entities.laser_layer))
         .with::<Killer>(Killer {
             kamikaze: false,
             mask: config.entities.laser_killer_mask.val,
@@ -139,8 +138,8 @@ pub fn add_portal(world: &mut specs::World, pos: [isize;2], destination: levels:
         .with::<Portal>(Portal::new(destination))
         .with::<GridSquare>(GridSquare::new(pos))
         .with::<Graphic>(Graphic::new(
-                Color::from_str(&*config.entities.portal_start_color),
-                Layer::from_str(&*config.entities.portal_start_layer)))
+                config.entities.portal_start_color,
+                config.entities.portal_start_layer))
         .build();
 }
 

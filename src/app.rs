@@ -440,15 +440,15 @@ impl App {
                     menu.push_str(&*(*menu_entry.name)(&self));
                     menu.push('\n');
                 }
-                frame.draw_rectangle(0.,0.,config.menu.background_width,config.menu.background_height,graphics::Layer::BillBoard,graphics::Color::from_string(&config.menu.background_color));
-                frame.draw_billboard_centered_text(&*cursor,graphics::Color::from_string(&config.menu.cursor_color));
-                frame.draw_billboard_centered_text(&*menu,graphics::Color::from_string(&config.menu.entry_color));
+                frame.draw_rectangle(0.,0.,config.menu.background_width,config.menu.background_height,graphics::Layer::BillBoard,config.menu.background_color);
+                frame.draw_billboard_centered_text(&*cursor,config.menu.cursor_color);
+                frame.draw_billboard_centered_text(&*menu,config.menu.entry_color);
                 frame.finish().unwrap();
             }
             State::Text(_,ref text) => {
                 let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
-                frame.draw_rectangle(0.,0.,25.0,18.0,graphics::Layer::BillBoard,graphics::Color::from_string(&config.menu.background_color));
-                frame.draw_billboard_centered_text(&*text,graphics::Color::from_string(&config.menu.entry_color));
+                frame.draw_rectangle(0.,0.,25.0,18.0,graphics::Layer::BillBoard,config.menu.background_color);
+                frame.draw_billboard_centered_text(&*text,config.menu.entry_color);
                 frame.finish().unwrap();
             }
         }

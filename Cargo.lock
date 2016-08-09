@@ -290,9 +290,10 @@ dependencies = [
 name = "graphics"
 version = "0.1.0"
 dependencies = [
+ "configuration 0.1.0",
  "glium 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium_text 0.8.0",
- "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "vecmath 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

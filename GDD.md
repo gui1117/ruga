@@ -156,7 +156,6 @@ other:
 
 ##TODO
 
-* impl enum in configuration from_toml ...
 * castle definition independant from config.toml and assets
 * better circle rectangle collision: use math
 * event loop: ups=fps ?

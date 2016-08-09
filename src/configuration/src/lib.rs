@@ -153,6 +153,36 @@ pub trait FromToml: Sized {
     fn from_toml(&toml::Value) -> Result<Self,String>;
 }
 
+#[macro_export]
+macro_rules! impl_from_toml_for_enum {
+    ($ty:ident {
+        $($variant:ident,)*
+    }) => {
+        impl_from_toml_for_enum!($ty {
+            $($variant),*
+        });
+    };
+    ($ty:ident {
+        $($variant:ident),*
+    }) => {
+        impl configuration::FromToml for $ty {
+            fn from_toml(val: &toml::Value) -> Result<Self,String> {
+                if let &toml::Value::String(ref val) = val {
+                    if false {
+                        unreachable!()
+                    } $(else if val.to_lowercase() == stringify!($variant).to_lowercase() {
+                        Ok($ty::$variant)
+                    })* else {
+                        Err(" unexpected variante".into())
+                    }
+                } else {
+                    Err(" expect string".into())
+                }
+            }
+        }
+    };
+}
+
 macro_rules! toml_integer {
     ($ty:ty) => {
         impl FromToml for $ty {

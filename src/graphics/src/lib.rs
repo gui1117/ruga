@@ -1,8 +1,8 @@
-#[macro_use]
-extern crate glium;
+#[macro_use] extern crate glium;
 extern crate vecmath;
 extern crate glium_text;
-extern crate rustc_serialize;
+extern crate toml;
+#[macro_use] extern crate configuration;
 
 use glium::{
     SwapBuffersError,
@@ -504,7 +504,7 @@ impl<'a> Frame<'a> {
     }
 }
 
-#[derive(Debug,Clone,Copy,RustcEncodable,RustcDecodable)]
+#[derive(Debug,Clone,Copy)]
 pub enum Color {
     Base1,
     Base2,
@@ -519,6 +519,24 @@ pub enum Color {
     Blue,
     Cyan,
     Green,
+}
+
+impl_from_toml_for_enum!{
+    Color {
+        Base1,
+        Base2,
+        Base3,
+        Base4,
+        Base5,
+        Yellow,
+        Orange,
+        Red,
+        Magenta,
+        Violet,
+        Blue,
+        Cyan,
+        Green,
+    }
 }
 
 impl Color {
@@ -592,13 +610,23 @@ impl Color {
     }
 }
 
-#[derive(Debug,Clone,Copy,PartialEq,RustcDecodable,RustcEncodable)]
+#[derive(Debug,Clone,Copy,PartialEq)]
 pub enum Layer {
     Floor,
     Middle,
     Ceil,
     BillBoard,
 }
+
+impl_from_toml_for_enum!{
+    Layer {
+        Floor,
+        Middle,
+        Ceil,
+        BillBoard,
+    }
+}
+
 impl Layer {
     pub fn from_str(s: &str) -> Self {
         match s {
