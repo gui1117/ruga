@@ -156,16 +156,14 @@ other:
 
 ##TODO
 
-* column system
-* use rust decodable derive in configuration (no from string in entities creation
+* impl enum in configuration from_toml ...
 * castle definition independant from config.toml and assets
+* better circle rectangle collision: use math
+* event loop: ups=fps ?
 
 * input : + joysticks
 * menu:
   * note castle
-* better circle rectangle collision: use math
-* event loop: ups=fps ?
-
 
 * color with transparency for portal
 * window creation catch error and try whitout vsync and then without multisampling
@@ -194,5 +192,3 @@ on key pressed the > or < change color and on release it do the action
 < quit >
 
 maybe print at top left the castle / dungeon / room
-
-donate and credit from DONATE and CREDIT

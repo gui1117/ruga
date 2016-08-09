@@ -2,6 +2,7 @@
 extern crate glium;
 extern crate vecmath;
 extern crate glium_text;
+extern crate rustc_serialize;
 
 use glium::{
     SwapBuffersError,
@@ -503,7 +504,7 @@ impl<'a> Frame<'a> {
     }
 }
 
-#[derive(Debug,Clone,Copy)]
+#[derive(Debug,Clone,Copy,RustcEncodable,RustcDecodable)]
 pub enum Color {
     Base1,
     Base2,
@@ -591,7 +592,7 @@ impl Color {
     }
 }
 
-#[derive(Debug,Clone,Copy,PartialEq)]
+#[derive(Debug,Clone,Copy,PartialEq,RustcDecodable,RustcEncodable)]
 pub enum Layer {
     Floor,
     Middle,
