@@ -9,22 +9,54 @@ use bmp;
 use baal;
 use configuration;
 
+// type VecDungeonSetting = Vec<DungeonSetting>;
+type VecString = Vec<String>;
+// pub struct CastleSetting {
+//     music: String,
+//     dungeons: Vec<DungeonSetting>,
+// }
+// impl_from_toml_for_struct!( CastleSetting {
+//     music: String,
+//     dungeons: VecDungeonSetting,
+// });
+// pub struct DungeonSetting {
+//     name: String,
+//     music: String,
+//     rooms: VecString,
+// }
+// impl_from_toml_for_struct!( DungeonSetting {
+//     name: String,
+//     music: String,
+//     rooms: VecString,
+// });
+
 #[derive(Clone)]
 pub enum Level {
-    Dungeon(usize,usize),
+    Room {
+        castle: usize,
+        dungeon: usize,
+        room: usize,
+    },
+    Corridor {
+        castle: usize,
+    },
     Entry,
 }
 impl Level {
-    fn next(&self) -> Self {
-        if let Level::Dungeon(dungeon_id,room_id) = *self {
-            let dungeon = config.levels.dungeons.get(dungeon_id).expect("INTERN ERROR: false dungeon)");
+    fn next(&self, castles: &Vec<Castle>) -> Self {
+        if let Level::Room { castle: castle_id, dungeon: dungeon_id, room: room_id } = *self {
+            let dungeon = castles.get(castle_id).expect("INTERN ERROR: false castle").dungeons.get(dungeon_id).expect("INTERN ERROR: false dungeon)");
 
             if room_id >= dungeon.rooms.len() { panic!("INTERN ERROR: false room") }
 
             if room_id + 1 == dungeon.rooms.len() {
-                Level::Entry
+                Level::Corridor { castle: castle_id }
             } else {
-                Level::Dungeon(dungeon_id,room_id+1)
+                Level::Room {
+                    castle: castle_id,
+                    dungeon: dungeon_id,
+                    room: room_id+1,
+                }
             }
         } else {
             panic!("INTERN ERROR: cannot call next on entry dungeon");
@@ -32,66 +64,33 @@ impl Level {
     }
 }
 
+pub struct Castle {
+    pub name: String,
+    pub music: usize,
+    pub dungeons: Vec<Dungeon>,
+}
+#[derive(Clone)]
 pub struct Dungeon {
     name: String,
     music: usize,
     rooms: Vec<String>,
 }
-impl configuration::FromToml for Dungeon {
-    fn from_toml(value: &toml::Value) -> Result<Self,String> {
-        let table = try!(value.as_table().ok_or(String::from(" expect table")));
-        let mut name = None;
-        let mut music = None;
-        let mut rooms = None;
-
-        for (key,value) in table {
-            match &**key {
-                "name" => if name.is_none() {
-                    name = Some(String::from(try!(value.as_str().ok_or(String::from(" expect name to be a string")))));
-                } else {
-                    return Err(String::from(" double definition of name"));
-                },
-                "rooms" => if rooms.is_none() {
-                    let mut vec = vec!();
-                    let mut i = 0;
-                    for value in try!(value.as_slice().ok_or(String::from(" expect rooms to be an array"))) {
-                        vec.push(String::from(try!(value.as_str().ok_or(format!(" expect rooms[{}] to be a string",i)))));
-                        i += 1;
-                    }
-                    rooms = Some(vec);
-                } else {
-                    return Err(String::from(" double definition of rooms"));
-                },
-                "music" => if music.is_none() {
-                    let v = try!(value.as_integer().ok_or(String::from(" expect music to be an integer")));
-                    if v >= 0 {
-                        music = Some(v as usize);
-                    } else {
-                        return Err(String::from(" expect music to be a positive integer"));
-                    }
-                } else {
-                    return Err(String::from(" double definition of music"));
-                },
-                _ => return Err(String::from(" uneepected key")),
-            }
-        }
-
-        Ok(Dungeon {
-            name: try!(name.ok_or(String::from(" expect name key"))),
-            music: try!(music.ok_or(String::from(" expect music key"))),
-            rooms: try!(rooms.ok_or(String::from(" expect rooms key"))),
-        })
-    }
-}
+impl_from_toml_for_struct!( Dungeon {
+    name: String,
+    music: usize,
+    rooms: VecString,
+});
 
 #[derive(Debug)]
 pub enum LoadError {
-    ComputeLevel(usize,usize),
+    GetCastleError,
+    GetDungeonError,
+    GetRoomError,
     OpenBmp(bmp::BmpError),
     UnexpectedColor,
 }
 
-pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity,LoadError> {
+pub fn load<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::World) -> Result<specs::Entity,LoadError> {
     // flush world
     for entity in world.entities().iter() {
         world.delete_later(entity);
@@ -99,86 +98,71 @@ pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity
     world.maintain();
 
     // read level file
-    if let &Level::Dungeon(dungeon_id,room_id) = level {
-        let dungeon = try!(config.levels.dungeons.get(dungeon_id).ok_or(LoadError::ComputeLevel(dungeon_id,room_id)));
+    match level {
+        &Level::Room { castle: castle_id, dungeon: dungeon_id, room: room_id } => {
+            let castle = try!(castles.get(castle_id).ok_or(LoadError::GetCastleError));
+            let dungeon = try!(castle.dungeons.get(dungeon_id).ok_or(LoadError::GetDungeonError));
 
-        if let Some(music) = baal::music::index() {
-            if music != dungeon.music {
-                baal::music::play(dungeon.music);
+            if let Some(music) = baal::music::index() {
+                if music != dungeon.music {
+                    baal::music::play(dungeon.music);
+                }
             }
-        }
 
-        let room = try!(dungeon.rooms.get(room_id).ok_or(LoadError::ComputeLevel(dungeon_id,room_id)));
-        let path = Path::new(&*config.levels.dir).join(Path::new(&*dungeon.name).join(Path::new(&*format!("{}{}",room,".bmp"))));
-        let image = try!(bmp::open(&*path.to_string_lossy()).map_err(|e| LoadError::OpenBmp(e)));
-        for (x,y) in image.coordinates() {
-            let pixel = image.get_pixel(x,y);
-            let col = [pixel.r,pixel.g,pixel.b];
-            if col == config.levels.empty_col {
-            } else if col == config.levels.char_col {
-                entities::add_character(world,[x as isize,y as isize]);
-            } else if col == config.levels.portal_col {
-                entities::add_portal(world,[x as isize,y as isize],level.next());
-            } else if col == config.levels.laser_col {
-                entities::add_laser(world,[x as isize,y as isize]);
-            } else if col == config.levels.monster_col {
-                entities::add_monster(world,[x as isize,y as isize]);
-            } else if col == config.levels.column_col {
-                entities::add_column(world,[x as isize,y as isize]);
-            } else if col == config.levels.wall_col {
-                entities::add_wall(world,[x as isize,y as isize]);
-            } else {
-                return Err(LoadError::UnexpectedColor);
+            let room = try!(dungeon.rooms.get(room_id).ok_or(LoadError::GetRoomError));
+            let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/maps/{}{}",castle.name,room,".bmp")));
+            let image = try!(bmp::open(&*path.to_string_lossy()).map_err(|e| LoadError::OpenBmp(e)));
+            for (x,y) in image.coordinates() {
+                let pixel = image.get_pixel(x,y);
+                let col = [pixel.r,pixel.g,pixel.b];
+                if col == config.levels.empty_col {
+                } else if col == config.levels.char_col {
+                    entities::add_character(world,[x as isize,y as isize]);
+                } else if col == config.levels.portal_col {
+                    entities::add_portal(world,[x as isize,y as isize],level.next(castles));
+                } else if col == config.levels.laser_col {
+                    entities::add_laser(world,[x as isize,y as isize]);
+                } else if col == config.levels.monster_col {
+                    entities::add_monster(world,[x as isize,y as isize]);
+                } else if col == config.levels.column_col {
+                    entities::add_column(world,[x as isize,y as isize]);
+                } else if col == config.levels.wall_col {
+                    entities::add_wall(world,[x as isize,y as isize]);
+                } else {
+                    return Err(LoadError::UnexpectedColor);
+                }
             }
-        }
-    } else {
-        if let Some(music) = baal::music::index() {
-            if music != config.levels.entry_music {
-                baal::music::play(config.levels.entry_music);
+        },
+        &Level::Corridor { castle: castle_id } => {
+            let castle = try!(castles.get(castle_id).ok_or(LoadError::GetCastleError));
+
+            if let Some(music) = baal::music::index() {
+                if music != castle.music {
+                    baal::music::play(castle.music);
+                }
             }
-        }
 
-        entities::add_character(world,[0,0]);
+            let levels = (0..castle.dungeons.len()).map(|i| Level::Room {
+                castle: castle_id,
+                dungeon: i,
+                room: 0,
+            }).collect();
 
-        entities::add_wall(world,[-1,-1]);
-        entities::add_wall(world,[-1,0]);
-        entities::add_wall(world,[-1,1]);
-
-        entities::add_wall(world,[0,-1]);
-        entities::add_wall(world,[0,1]);
-
-        entities::add_wall(world,[1,-1]);
-        entities::add_laser(world,[1,0]);
-        entities::add_wall(world,[1,1]);
-
-        entities::add_wall(world,[2,1]);
-        entities::add_wall(world,[3,-1]);
-        entities::add_wall(world,[3,1]);
-        entities::add_wall(world,[4,-1]);
-        entities::add_wall(world,[4,1]);
-        entities::add_wall(world,[5,1]);
-        entities::add_wall(world,[5,0]);
-        entities::add_wall(world,[5,-1]);
-        entities::add_laser(world,[3,0]);
-
-        if config.levels.dungeons.len() != 0 {
-            entities::add_portal(world,[4,0],Level::Dungeon(0,0));
-        }
-        for i in 1..config.levels.dungeons.len() {
-            let y = -((i*2) as isize);
-            entities::add_wall(world,[1,y]);
-            entities::add_wall(world,[1,y-1]);
-            entities::add_wall(world,[3,y-1]);
-            entities::add_wall(world,[4,y-1]);
-            entities::add_wall(world,[5,y-1]);
-            entities::add_wall(world,[5,y]);
-            entities::add_laser(world,[3,y]);
-
-            if config.levels.dungeons[i].rooms.len() > 0 {
-                entities::add_portal(world,[4,y],Level::Dungeon(i,0));
+            create_corridor(Some(Level::Entry),levels,world);
+        },
+        &Level::Entry => {
+            if let Some(music) = baal::music::index() {
+                if music != config.levels.entry_music {
+                    baal::music::play(config.levels.entry_music);
+                }
             }
-        }
-        entities::add_wall(world,[2,1-(config.levels.dungeons.len() as isize)*2]);
+
+            let levels = (0..castles.len()).map(|i| Level::Corridor {
+                castle: i,
+            }).collect();
+
+            create_corridor(None,levels,world);
+        },
     }
 
     // add_physic_world
@@ -191,4 +175,53 @@ pub fn load<'l>(level: &Level, world: &mut specs::World) -> Result<specs::Entity
     physic_worlds.get_mut(master_entity).unwrap().fill(&world);
 
     Ok(master_entity)
+}
+
+fn create_corridor(back: Option<Level>, mut levels: Vec<Level>, world: &mut specs::World) {
+    entities::add_character(world,[2,0]);
+
+    entities::add_wall(world,[1,-1]);
+    entities::add_wall(world,[1,1]);
+
+    entities::add_wall(world,[2,1]);
+    entities::add_wall(world,[3,-1]);
+    entities::add_wall(world,[3,1]);
+    entities::add_wall(world,[4,-1]);
+    entities::add_wall(world,[4,1]);
+    entities::add_wall(world,[5,1]);
+    entities::add_wall(world,[5,0]);
+    entities::add_wall(world,[5,-1]);
+    entities::add_laser(world,[3,0]);
+
+    if let Some(back) = back {
+        entities::add_portal(world,[0,0],back);
+
+        entities::add_wall(world,[-1,-1]);
+        entities::add_wall(world,[-1,0]);
+        entities::add_wall(world,[-1,1]);
+
+        entities::add_wall(world,[0,-1]);
+        entities::add_wall(world,[0,1]);
+
+        entities::add_laser(world,[1,0]);
+    } else {
+        entities::add_wall(world,[1,0]);
+    }
+
+    entities::add_wall(world,[2,1-(levels.len() as isize)*2]);
+
+    for (i,level) in levels.drain(..).enumerate() {
+        let y = -((i*2) as isize);
+        if i != 0 {
+            entities::add_wall(world,[1,y]);
+            entities::add_wall(world,[1,y-1]);
+        }
+        entities::add_wall(world,[3,y-1]);
+        entities::add_wall(world,[4,y-1]);
+        entities::add_wall(world,[5,y-1]);
+        entities::add_wall(world,[5,y]);
+        entities::add_laser(world,[3,y]);
+
+        entities::add_portal(world,[4,y],level);
+    }
 }

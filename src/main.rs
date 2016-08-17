@@ -157,34 +157,42 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
 }
 
 fn main() {
-    // init
-    let (mut app,mut window,mut window_events) = match init() {
-        Ok(app) => app,
-        Err(err) => {
-            println!("{}",err);
-            std::process::exit(1);
-        },
-    };
+    loop {
+        // init
+        let (mut app,mut window,mut window_events) = match init() {
+            Ok(app) => app,
+            Err(err) => {
+                println!("{}",err);
+                std::process::exit(1);
+            },
+        };
 
-    // game loop
-    while let Some(event) = window_events.next(&mut window) {
-        match event {
-            Event::Update(args) => app.update(args),
-            Event::Render(args) => app.render(args),
-            Event::Input(InputEvent::Closed) => break,
-            Event::Input(InputEvent::KeyboardInput(state,keycode,_)) => {
-                if state == ElementState::Pressed {
-                    app.key_pressed(keycode);
-                } else {
-                    app.key_released(keycode);
-                }
-            },
-            Event::Input(InputEvent::Resized(width,height)) => {
-                app.resize(width,height);
-            },
-            Event::Input(_) => (),
-            Event::Idle(args) => thread::sleep(Duration::from_millis(args.dt as u64)),
+        // game loop
+        while let Some(event) = window_events.next(&mut window) {
+            match event {
+                Event::Update(args) => app.update(args),
+                Event::Render(args) => app.render(args),
+                Event::Input(InputEvent::Closed) => break,
+                Event::Input(InputEvent::KeyboardInput(state,keycode,_)) => {
+                    if state == ElementState::Pressed {
+                        app.key_pressed(keycode);
+                    } else {
+                        app.key_released(keycode);
+                    }
+                },
+                Event::Input(InputEvent::Resized(width,height)) => {
+                    app.resize(width,height);
+                },
+                Event::Input(_) => (),
+                Event::Idle(args) => thread::sleep(Duration::from_millis(args.dt as u64)),
+            }
+
+            if app.quit | app.reset {
+                break;
+            }
         }
+
+        baal::close();
 
         if app.quit {
             break;

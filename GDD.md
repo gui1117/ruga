@@ -123,20 +123,40 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
+* reset game and quit doesn't work
 * castle definition independant from config.toml and assets
+  * menu castle: ...
+  * save last castle
+  * load last castle or main castle or first castle or empty castle
+
+* save luminosity and etc...
 * event loop: ups=fps ?
+* better circle rectangle collision: use math
 
 * input : + joysticks
 
-* better circle rectangle collision: use math
+
 * menu:
   * note castle
 * color with transparency for portal
 * window creation catch error and try whitout vsync and then without multisampling
 * maybe print at top left the castle / dungeon / room
 
-##possibilité de mécanique trop complexe
+##possibilité de mécanique - trop complexe
 
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
+
+## castle
+
+config.toml:
+[[level]]
+music = "muse"
+level = ["toto","tata","titi"]
+
+[[level]]
+music = "muse"
+level = ["toto","tata","titi"]
+
+muse.ogg and toto.bmp and tata.bmp and titi.bmp
 

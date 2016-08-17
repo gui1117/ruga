@@ -183,6 +183,39 @@ macro_rules! impl_from_toml_for_enum {
     };
 }
 
+#[macro_export]
+macro_rules! impl_from_toml_for_struct {
+    ($ty:ident {
+        $($variant_id:ident: $variant_ty:ident,)*
+    }) => {
+        impl_from_toml_for_struct!($ty {
+            $($variant_id: $variant_ty),*
+        });
+    };
+    ($ty:ident {
+        $($variant_id:ident: $variant_ty:ident),*
+    }) => {
+        impl configuration::FromToml for $ty {
+            fn from_toml(val: &toml::Value) -> Result<Self,String> {
+                let table = try!(val.as_table().ok_or(String::from(" expect table")));
+                for (key,_) in table {
+                    match &**key {
+                        $(
+                            stringify!($variant_id) => (),
+                         )*
+                        _ => return Err(format!(" unexpected key: {}",key)),
+                    }
+                }
+                Ok($ty {
+                    $(
+                        $variant_id: try!($variant_ty::from_toml(try!(table.get(stringify!($variant_id)).ok_or(format!(" expect key: {}",stringify!($variant_id)))))),
+                     )*
+                })
+            }
+        }
+    };
+}
+
 macro_rules! toml_integer {
     ($ty:ty) => {
         impl FromToml for $ty {

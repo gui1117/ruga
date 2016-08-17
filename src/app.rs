@@ -89,6 +89,7 @@ impl Effect {
 pub enum Control {
     GotoLevel(levels::Level),
     ResetLevel,
+    ResetGame,
     CreateBall([f32;2],Arc<()>),
 }
 
@@ -125,6 +126,7 @@ impl MenuEntry {
 
 pub struct App {
     menu: Vec<MenuEntry>,
+    castles: Vec<levels::Castle>,
     state: State,
     current_level: levels::Level,
     camera: graphics::Camera,
@@ -138,10 +140,21 @@ pub struct App {
     effect_tx: mpsc::Sender<Effect>,
     master_entity: specs::Entity,
     pub quit: bool,
+    pub reset: bool,
 }
 
 impl App {
     pub fn new<F: glium::backend::Facade>(facade: &F) -> Result<App,String> {
+        // castles
+        let castles = vec!(levels::Castle {
+            name: "main".into(),
+            music: 0,
+            dungeons: config.levels.dungeons.clone(),
+        });
+
+        // level
+        let level = levels::Level::Entry;
+
         // init graphics
         let graphics = try!(graphics::Graphics::new(facade, graphics::GraphicsSetting {
             colors: graphics::ColorsValue {
@@ -175,6 +188,7 @@ impl App {
             billboard_font_length: config.graphics.billboard_font_length,
             billboard_font_interline: config.graphics.billboard_font_interline,
         }).map_err(|e| format!("ERRROR: graphics init failed: {:#?}",e)));
+
         // init camera
         let camera = try!(graphics::Camera::new(facade, graphics::CameraSetting {
             zoom: config.camera.zoom
@@ -205,7 +219,7 @@ impl App {
         world.register::<Portal>();
 
         // load level
-        let master_entity = try!(levels::load(&levels::Level::Entry,&mut world)
+        let master_entity = try!(levels::load(&level, &castles, &mut world)
                                  .map_err(|e| format!("ERROR: level load failed: {:#?}",e)));
 
         // init planner
@@ -259,24 +273,20 @@ impl App {
                     app.graphics.set_luminosity((l+0.1).min(1.0));
                 }))),
             MenuEntry::new(
-                Box::new(|_| "reset level".into()),
+                Box::new(|_| "reset room".into()),
                 Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetLevel).unwrap();
-                    app.state = State::Game;
                 })),
                 Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetLevel).unwrap();
-                    app.state = State::Game;
                 }))),
             MenuEntry::new(
                 Box::new(|_| "reset game".into()),
                 Rc::new(Box::new(|app| {
-                    app.control_tx.send(Control::GotoLevel(levels::Level::Entry)).unwrap();
-                    app.state = State::Game;
+                    app.control_tx.send(Control::ResetGame).unwrap();
                 })),
                 Rc::new(Box::new(|app| {
-                    app.control_tx.send(Control::GotoLevel(levels::Level::Entry)).unwrap();
-                    app.state = State::Game;
+                    app.control_tx.send(Control::ResetGame).unwrap();
                 }))),
             MenuEntry::new(
                 Box::new(|_| "donate".into()),
@@ -307,7 +317,8 @@ impl App {
         Ok(App {
             menu: menu,
             state: State::Game,
-            current_level: levels::Level::Entry,
+            castles: castles,
+            current_level: level,
             effect_storage: Vec::new(),
             camera: camera,
             graphics: graphics,
@@ -319,6 +330,7 @@ impl App {
             control_rx: control_rx,
             control_tx: control_tx,
             quit: false,
+            reset: false,
         })
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
@@ -332,17 +344,19 @@ impl App {
 
             self.planner.dispatch(context);
             self.planner.wait();
-
-            while let Ok(control) = self.control_rx.try_recv() {
-                match control {
-                    Control::GotoLevel(level) => self.goto_level(level),
-                    Control::ResetLevel => {
-                        let level = self.current_level.clone();
-                        self.goto_level(level);
-                        self.state = State::Game;
-                    }
-                    Control::CreateBall(pos,arc) => entities::add_ball(self.planner.mut_world(),pos,arc),
+        }
+        while let Ok(control) = self.control_rx.try_recv() {
+            match control {
+                Control::GotoLevel(level) => self.goto_level(level),
+                Control::ResetLevel => {
+                    let level = self.current_level.clone();
+                    self.goto_level(level);
+                    self.state = State::Game;
                 }
+                Control::ResetGame => {
+                    self.reset = true;
+                }
+                Control::CreateBall(pos,arc) => entities::add_ball(self.planner.mut_world(),pos,arc),
             }
         }
     }
@@ -350,7 +364,7 @@ impl App {
         while let Ok(_) = self.control_rx.try_recv() {}
         while let Ok(_) = self.effect_rx.try_recv() {}
 
-        self.master_entity = match levels::load(&level,self.planner.mut_world()) {
+        self.master_entity = match levels::load(&level,&self.castles,self.planner.mut_world()) {
             Err(e) => panic!(format!("ERROR: level load failed: {:#?}",e)),
             Ok(m) => m,
         };
