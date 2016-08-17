@@ -140,7 +140,6 @@ pub struct App {
     effect_tx: mpsc::Sender<Effect>,
     master_entity: specs::Entity,
     pub quit: bool,
-    pub reset: bool,
 }
 
 impl App {
@@ -330,7 +329,6 @@ impl App {
             control_rx: control_rx,
             control_tx: control_tx,
             quit: false,
-            reset: false,
         })
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
@@ -354,7 +352,8 @@ impl App {
                     self.state = State::Game;
                 }
                 Control::ResetGame => {
-                    self.reset = true;
+                    self.goto_level(levels::Level::Entry);
+                    self.state = State::Game;
                 }
                 Control::CreateBall(pos,arc) => entities::add_ball(self.planner.mut_world(),pos,arc),
             }

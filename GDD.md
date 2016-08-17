@@ -123,19 +123,17 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* reset game and quit doesn't work
 * castle definition independant from config.toml and assets
-  * menu castle: ...
-  * save last castle
-  * load last castle or main castle or first castle or empty castle
 
-* save luminosity and etc...
+* save luminosity and etc... and castle
 * event loop: ups=fps ?
 * better circle rectangle collision: use math
 
 * input : + joysticks
 
 
+* real reset game (config ...)
+* reset game and quit doesn't work
 * menu:
   * note castle
 * color with transparency for portal
