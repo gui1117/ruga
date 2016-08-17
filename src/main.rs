@@ -202,9 +202,6 @@ fn main() {
 
 #[test]
 fn main_test() {
-    unsafe {
-        //TODO main_test: config.audio.check_level = "always";
-    }
     if let Err(err) = init() {
         println!("{}",err);
         std::process::exit(1);
