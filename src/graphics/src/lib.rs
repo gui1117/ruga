@@ -273,9 +273,9 @@ impl Camera {
 
 #[derive(Debug,Clone)]
 pub struct Line {
-    x: i32,
-    y: i32,
-    length: usize,
+    pub x: i32,
+    pub y: i32,
+    pub length: usize,
 }
 
 impl<'a> Frame<'a> {
@@ -303,9 +303,6 @@ impl<'a> Frame<'a> {
             ]
         };
 
-        let background = Color::Base1.into_vec4(t_graphics.mode,&t_graphics.colors);
-        frame.clear_color_and_depth((background[0],background[1],background[2],background[3]),0f32);;
-
         let draw_parameters = DrawParameters {
             smooth: Some(Smooth::DontCare),
             depth: Depth {
@@ -315,6 +312,26 @@ impl<'a> Frame<'a> {
             },
             .. Default::default()
         };
+
+        // clear color and depth
+        frame.clear_depth(0f32);;
+
+        let uniform = uniform!{
+            trans: {
+                let mut trans = vecmath::mat4_id::<f32>();
+                trans[3][2] = 0.001;
+                trans
+            },
+            camera: vecmath::mat4_id::<f32>(),
+            color: Color::Base1.into_vec4(t_graphics.mode,&t_graphics.colors),
+        };
+
+        frame.draw(
+            &t_graphics.quad_vertex_buffer,
+            &t_graphics.quad_indices,
+            &t_graphics.program,
+            &uniform,
+            &draw_parameters).unwrap();
 
         Frame {
             billboard_camera: billboard_camera,
@@ -432,17 +449,17 @@ impl<'a> Frame<'a> {
             let text_display = glium_text::TextDisplay::new(&self.t_graphics.text_system, &self.t_graphics.font, burn);
 
             let dx = lines[index].x as f32;
-            let dy = lines[index].y as f32;
+            let dy = lines[index].y as f32 + 0.2;
             let dz = layer.into();
             let ratio = self.t_graphics.font_ratio;
             let trans = [
-                [ 1.,    0., 0., 0.],
-                [ 0., ratio, 0., 0.],
+                [ 0.5,    0., 0., 0.],
+                [ 0., ratio/2., 0., 0.],
                 [ 0.,    0., 1., 0.],
                 [ dx,    dy, dz, 1.]
             ];
 
-            let matrix = vecmath::row_mat4_mul(self.camera,trans);
+            let matrix = vecmath::row_mat4_mul(trans,self.camera);
             glium_text::draw(&text_display, &self.t_graphics.text_system, &mut self.frame, matrix, color);
             index += 1;
         }

@@ -239,8 +239,6 @@ impl App {
                     }
                 }
             }
-            //TODO
-            println!("check level : {:?}",check_level);
         }
 
         // load level
@@ -464,6 +462,7 @@ impl App {
                         self.effect_storage.push(effect);
                     }
                 }
+                frame.draw_text("target.draw_text 0,0puis 1.1mmmmmmmmmmmmmmmmmmmmm",&vec!(graphics::Line {x:0,y:0,length:10},graphics::Line {x:1,y:1,length:100}),graphics::Layer::Ceil,graphics::Color::Base5);
                 frame.finish().unwrap();
             },
             State::Menu(entry) => {
