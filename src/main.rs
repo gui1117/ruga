@@ -79,6 +79,12 @@ use event_loop::{
 fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event_loop::WindowEvents),String> {
     use glium::DisplayBuild;
 
+    let mut musics = vec!();
+    musics.push(config.levels.entry_music.clone());
+
+    // load casltes
+    let (castles,musics) = try!(levels::load_castles(musics));
+
     // init baal
     try!(baal::init(&baal::Setting {
         channels: config.audio.channels,
@@ -102,7 +108,7 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
             }
             effect
         },
-        music: config.audio.musics.clone(),
+        music: musics,
         check_level: match &*config.audio.check_level {
             "never" => baal::CheckLevel::Never,
             "always" => baal::CheckLevel::Always,
@@ -144,7 +150,7 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
     window.get_window().unwrap().set_cursor_state(glium::glutin::CursorState::Hide).unwrap();
 
     // init app
-    let app = try!(app::App::new(&window));
+    let app = try!(app::App::new(&window,castles));
 
     // init event loop
     let window_events = window.events(&event_loop::Setting {

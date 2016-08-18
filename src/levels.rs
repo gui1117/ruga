@@ -8,29 +8,101 @@ use toml;
 use bmp;
 use baal;
 use configuration;
+use std::fs;
+use std::fmt;
+use std::io::Read;
+use configuration::FromToml;
 
-// type VecDungeonSetting = Vec<DungeonSetting>;
+type VecDungeonSetting = Vec<DungeonSetting>;
 type VecString = Vec<String>;
-// pub struct CastleSetting {
-//     music: String,
-//     dungeons: Vec<DungeonSetting>,
-// }
-// impl_from_toml_for_struct!( CastleSetting {
-//     music: String,
-//     dungeons: VecDungeonSetting,
-// });
-// pub struct DungeonSetting {
-//     name: String,
-//     music: String,
-//     rooms: VecString,
-// }
-// impl_from_toml_for_struct!( DungeonSetting {
-//     name: String,
-//     music: String,
-//     rooms: VecString,
-// });
+pub struct CastleSetting {
+    music: String,
+    dungeons: Vec<DungeonSetting>,
+}
+impl_from_toml_for_struct!( CastleSetting {
+    music: String,
+    dungeons: VecDungeonSetting,
+});
+pub struct DungeonSetting {
+    name: String,
+    music: String,
+    rooms: VecString,
+}
+impl_from_toml_for_struct!( DungeonSetting {
+    name: String,
+    music: String,
+    rooms: VecString,
+});
 
-#[derive(Clone)]
+/// argument: vector of musics
+/// return a vector of castle and a vector of music name
+/// the order of music name in the vector correspond to the music id
+/// in the castles definitions
+pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>,Vec<String>),String> {
+    let error = "ERROR: incorrect level directory: ";
+    let mut castles = Vec::new();
+
+    for dir_entry in try!(fs::read_dir(config.levels.dir.clone()).map_err(|e| format!("{}{}",error,e))) {
+        let dir_entry = try!(dir_entry.map_err(|e| format!("{}{}",error,e)));
+
+        let castle_name = try!(dir_entry.file_name().into_string().map_err(|_| format!("{}castle folder name is invalid utf8",error)));
+
+        if !try!(dir_entry.file_type().map_err(|e| format!("{}cannot get file type: {}",error,e))).is_dir() {
+            return Err(format!("{}expect only directory",error));
+        }
+        let mut file = try!(fs::File::open(dir_entry.path().join(String::from("config.toml"))).
+                        map_err(|e| format!("{}cannot open file: {}",error,e)));
+
+        let mut file_string = String::new();
+
+        try!(file.read_to_string(&mut file_string)
+             .map_err(|_| format!("{}not valid UTF-8",error)));
+
+        let mut file_parser = toml::Parser::new(&*file_string);
+        let toml_table = try!(file_parser.parse().ok_or({
+            let mut error = String::from(error);
+            for err in file_parser.errors {
+                error.push_str(&*format!("\n\t[{},{}] {}",err.lo,err.hi,err.desc));
+            }
+            error
+        }));
+
+        let castle_setting = try!(CastleSetting::from_toml(&toml::Value::Table(toml_table))
+            .map_err(|e| format!("{}{}",error,e)));
+
+        let castle_music = format!("{}/{}/musics/{}.ogg",config.levels.dir,castle_name,castle_setting.music);
+
+        musics.push(castle_music);
+
+        let mut castle = Castle {
+            music: musics.len()-1,
+            name: castle_name,
+            dungeons: vec!(),
+        };
+
+        for dungeon in castle_setting.dungeons {
+            let dungeon_music = format!("{}/{}/musics/{}.ogg",config.levels.dir,castle.name,dungeon.music);
+            let index = if let Some(index) = musics.iter().position(|m| m.eq(&dungeon_music)) {
+                index
+            } else {
+                musics.push(dungeon_music);
+                musics.len()-1
+            };
+            castle.dungeons.push(Dungeon {
+                music: index,
+                name: dungeon.name,
+                rooms: dungeon.rooms,
+            });
+        }
+
+        castles.push(castle);
+    }
+
+    Ok((castles,musics))
+}
+
+
+#[derive(Debug,Clone)]
 pub enum Level {
     Room {
         castle: usize,
@@ -64,16 +136,17 @@ impl Level {
     }
 }
 
+#[derive(Debug)]
 pub struct Castle {
     pub name: String,
     pub music: usize,
     pub dungeons: Vec<Dungeon>,
 }
-#[derive(Clone)]
+#[derive(Debug,Clone)]
 pub struct Dungeon {
-    name: String,
-    music: usize,
-    rooms: Vec<String>,
+    pub name: String,
+    pub music: usize,
+    pub rooms: Vec<String>,
 }
 impl_from_toml_for_struct!( Dungeon {
     name: String,
@@ -88,6 +161,18 @@ pub enum LoadError {
     GetRoomError,
     OpenBmp(bmp::BmpError),
     UnexpectedColor,
+}
+impl fmt::Display for LoadError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &LoadError::GetCastleError => try!(fmt.write_str("castle id out of bounds")),
+            &LoadError::GetDungeonError => try!(fmt.write_str("dungeon id out of bounds")),
+            &LoadError::GetRoomError => try!(fmt.write_str("room id out of bounds")),
+            &LoadError::OpenBmp(ref bmp_error) => try!(fmt.write_str(&*format!("open bmp error: {}",bmp_error))),
+            &LoadError::UnexpectedColor => try!(fmt.write_str("unexpected color in bmp file")),
+        }
+        Ok(())
+    }
 }
 
 pub fn load<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::World) -> Result<specs::Entity,LoadError> {
@@ -152,8 +237,8 @@ pub fn load<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::World) 
         },
         &Level::Entry => {
             if let Some(music) = baal::music::index() {
-                if music != config.levels.entry_music {
-                    baal::music::play(config.levels.entry_music);
+                if music != 0 {
+                    baal::music::play(0);
                 }
             }
 

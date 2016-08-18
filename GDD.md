@@ -123,14 +123,12 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* castle definition independant from config.toml and assets
-
+* print on map an introduction in the entry, same on castle (configurable in toml) and dungeons and castles names
 * save luminosity and etc... and castle
 * event loop: ups=fps ?
 * better circle rectangle collision: use math
 
 * input : + joysticks
-
 
 * real reset game (config ...)
 * reset game and quit doesn't work
@@ -144,17 +142,4 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
-
-## castle
-
-config.toml:
-[[level]]
-music = "muse"
-level = ["toto","tata","titi"]
-
-[[level]]
-music = "muse"
-level = ["toto","tata","titi"]
-
-muse.ogg and toto.bmp and tata.bmp and titi.bmp
 

@@ -143,14 +143,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new<F: glium::backend::Facade>(facade: &F) -> Result<App,String> {
-        // castles
-        let castles = vec!(levels::Castle {
-            name: "main".into(),
-            music: 0,
-            dungeons: config.levels.dungeons.clone(),
-        });
-
+    pub fn new<F: glium::backend::Facade>(facade: &F, castles: Vec<levels::Castle>) -> Result<App,String> {
         // level
         let level = levels::Level::Entry;
 
@@ -217,9 +210,42 @@ impl App {
 
         world.register::<Portal>();
 
+        // check levels
+        let check_level = match &*config.levels.check_level {
+            "always" => true,
+            "debug" => {
+                let mut check_level = false;
+                debug_assert!({
+                    check_level = true;
+                    true
+                });
+                check_level
+            },
+            "never" => false,
+            _ => unreachable!(),
+        };
+
+        if check_level {
+            for (c,castle) in castles.iter().enumerate() {
+                for (d,dungeon) in castle.dungeons.iter().enumerate() {
+                    for (r,_) in dungeon.rooms.iter().enumerate() {
+                        let level = levels::Level::Room {
+                            castle: c,
+                            dungeon: d,
+                            room: r,
+                        };
+                        try!(levels::load(&level, &castles, &mut world)
+                                .map_err(|e| format!("ERROR: load level failed: {} {:#?} {:#?}",e,level,castles)));
+                    }
+                }
+            }
+            //TODO
+            println!("check level : {:?}",check_level);
+        }
+
         // load level
         let master_entity = try!(levels::load(&level, &castles, &mut world)
-                                 .map_err(|e| format!("ERROR: level load failed: {:#?}",e)));
+                                 .map_err(|e| format!("ERROR: load level failed: {}",e)));
 
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
@@ -272,7 +298,7 @@ impl App {
                     app.graphics.set_luminosity((l+0.1).min(1.0));
                 }))),
             MenuEntry::new(
-                Box::new(|_| "reset room".into()),
+                Box::new(|_| "restart room".into()),
                 Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetLevel).unwrap();
                 })),
@@ -280,7 +306,7 @@ impl App {
                     app.control_tx.send(Control::ResetLevel).unwrap();
                 }))),
             MenuEntry::new(
-                Box::new(|_| "reset game".into()),
+                Box::new(|_| "restart game".into()),
                 Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetGame).unwrap();
                 })),
@@ -364,7 +390,7 @@ impl App {
         while let Ok(_) = self.effect_rx.try_recv() {}
 
         self.master_entity = match levels::load(&level,&self.castles,self.planner.mut_world()) {
-            Err(e) => panic!(format!("ERROR: level load failed: {:#?}",e)),
+            Err(e) => panic!(format!("ERROR: load level failed: {}",e)),
             Ok(m) => m,
         };
 

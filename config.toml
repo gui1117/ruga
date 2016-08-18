@@ -94,7 +94,8 @@ unit = 2.0
 
 [levels]
 dir = "./levels"
-entry_music = 1
+entry_music = "assets/musics/todo.ogg"
+check_level = "debug"
 
 empty_col = [0,0,0]
 char_col = [0,255,255]
@@ -103,16 +104,6 @@ laser_col = [255,255,0]
 monster_col = [255,0,0]
 column_col = [255,0,255]
 wall_col = [255,255,255]
-
-[[levels.dungeons]]
-name = "dungeon_test"
-music = 0
-rooms = ["level_test","level_test"]
-
-[[levels.dungeons]]
-name = "dungeon_test"
-music = 0
-rooms = ["level_test","level_test"]
 
 [keys]
 up = [25,111]
@@ -129,7 +120,7 @@ sample_rate = 44100.0
 frames_per_buffer = 64
 
 effect_dir = "assets/effects"
-music_dir = "assets/musics"
+music_dir = "."
 
 global_volume = 0.5
 music_volume = 0.8
@@ -140,7 +131,6 @@ distance_model_min = 10.0
 distance_model_max = 110.0
 music_loop = true
 
-musics = ["todo.ogg"]
 effects_name = ["todo.ogg"]
 effects_number = [10]
 

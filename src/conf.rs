@@ -4,7 +4,6 @@ use graphics::{ Color, Layer };
 
 pub type EffectsName = Vec<String>;
 pub type EffectsNumber = Vec<u32>;
-pub type Musics = Vec<String>;
 pub type Dimension = [u32;2];
 pub type Array4F32 = [f32;4];
 pub type VecU8 = Vec<u8>;
@@ -22,8 +21,6 @@ fn config_constraint(conf: &Config) -> Result<(),String> {
     if conf.audio.effects_name.len() != conf.audio.effects_number.len() {
         return Err("ERROR: configuration file invalid: audio effects name and audio effects number arrays must be of the same length".into());
     }
-
-    //TODO audio constraint
 
     Ok(())
 }
@@ -124,8 +121,8 @@ configure!(
     },
     levels: {
         dir: t String,
-        entry_music: t usize,
-        dungeons: t Dungeons,
+        entry_music: t String,
+        check_level: e String [always,debug,never],
 
         empty_col: t Array3U8,
         char_col: t Array3U8,
@@ -150,7 +147,6 @@ configure!(
         music_loop: t bool,
         effects_name: t EffectsName,
         effects_number: t EffectsNumber,
-        musics: t Musics,
         check_level: e String [always,debug,never],
         transition_type: e String [instant,smooth,overlap],
         transition_time: t f32,
