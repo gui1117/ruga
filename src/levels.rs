@@ -79,7 +79,6 @@ impl From<io::Error> for LoadCastlesError {
 /// the order of music name in the vector correspond to the music id
 /// in the castles definitions
 pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>,Vec<String>),LoadCastlesError> {
-    // let error = "ERROR: incorrect level directory: ";
     let mut castles = Vec::new();
 
     for dir_entry in try!(fs::read_dir(config.levels.dir.clone()).map_err(|e| LoadCastlesError::ReadDirError(e))) {
@@ -194,7 +193,11 @@ pub enum LoadLevelError {
     GetDungeonError,
     GetRoomError,
     OpenBmp(bmp::BmpError),
+    AmbiguousLevelDefinition,
+    NoLevelDefinition,
+    InvalidUTF8,
     UnexpectedColor,
+    IoError(io::Error),
 }
 impl fmt::Display for LoadLevelError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
@@ -205,7 +208,17 @@ impl fmt::Display for LoadLevelError {
             GetRoomError => write!(fmt,"room id out of bounds"),
             OpenBmp(ref bmp_error) => write!(fmt,"open bmp error: {}",bmp_error),
             UnexpectedColor => write!(fmt,"unexpected color in bmp file"),
+            IoError(ref e) => write!(fmt,"io error: {}",e),
+            AmbiguousLevelDefinition => write!(fmt,"ambiguous level definition: both .txt and .bmp file exists"),
+            InvalidUTF8 => write!(fmt,"text level invalid UTF-8"),
+            NoLevelDefinition => write!(fmt,"level doesn't exist"),
         }
+    }
+}
+
+impl From<io::Error> for LoadLevelError {
+    fn from(e: io::Error) -> Self {
+        LoadLevelError::IoError(e)
     }
 }
 
@@ -229,27 +242,42 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
             }
 
             let room = try!(dungeon.rooms.get(room_id).ok_or(LoadLevelError::GetRoomError));
-            let path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/maps/{}{}",castle.name,room,".bmp")));
-            let image = try!(bmp::open(&*path.to_string_lossy()).map_err(|e| LoadLevelError::OpenBmp(e)));
-            for (x,y) in image.coordinates() {
-                let pixel = image.get_pixel(x,y);
-                let col = [pixel.r,pixel.g,pixel.b];
-                if col == config.levels.empty_col {
-                } else if col == config.levels.char_col {
-                    entities::add_character(world,[x as isize,y as isize]);
-                } else if col == config.levels.portal_col {
-                    entities::add_portal(world,[x as isize,y as isize],level.next(castles));
-                } else if col == config.levels.laser_col {
-                    entities::add_laser(world,[x as isize,y as isize]);
-                } else if col == config.levels.monster_col {
-                    entities::add_monster(world,[x as isize,y as isize]);
-                } else if col == config.levels.column_col {
-                    entities::add_column(world,[x as isize,y as isize]);
-                } else if col == config.levels.wall_col {
-                    entities::add_wall(world,[x as isize,y as isize]);
-                } else {
-                    return Err(LoadLevelError::UnexpectedColor);
-                }
+
+            let txt_path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/maps/{}{}",castle.name,room,".txt")));
+            let bmp_path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/maps/{}{}",castle.name,room,".bmp")));
+
+            match (txt_path.exists(),bmp_path.exists()) {
+                (true,true) => return Err(LoadLevelError::AmbiguousLevelDefinition),
+                (false,false) => return Err(LoadLevelError::NoLevelDefinition),
+                (true,false) => {
+                    let mut text = String::new();
+                    try!(try!(fs::File::open(txt_path)).read_to_string(&mut text).map_err(|_| LoadLevelError::InvalidUTF8));
+
+                    create_text_level(level.next(castles),text,world);
+                },
+                (false,true) => {
+                    let image = try!(bmp::open(&*bmp_path.to_string_lossy()).map_err(|e| LoadLevelError::OpenBmp(e)));
+                    for (x,y) in image.coordinates() {
+                        let pixel = image.get_pixel(x,y);
+                        let col = [pixel.r,pixel.g,pixel.b];
+                        if col == config.levels.empty_col {
+                        } else if col == config.levels.char_col {
+                            entities::add_character(world,[x as isize,y as isize]);
+                        } else if col == config.levels.portal_col {
+                            entities::add_portal(world,[x as isize,y as isize],level.next(castles));
+                        } else if col == config.levels.laser_col {
+                            entities::add_laser(world,[x as isize,y as isize]);
+                        } else if col == config.levels.monster_col {
+                            entities::add_monster(world,[x as isize,y as isize]);
+                        } else if col == config.levels.column_col {
+                            entities::add_column(world,[x as isize,y as isize]);
+                        } else if col == config.levels.wall_col {
+                            entities::add_wall(world,[x as isize,y as isize]);
+                        } else {
+                            return Err(LoadLevelError::UnexpectedColor);
+                        }
+                    }
+                },
             }
         },
         &Level::Corridor { castle: castle_id } => {
@@ -294,6 +322,25 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
     physic_worlds.get_mut(master_entity).unwrap().fill(&world);
 
     Ok(master_entity)
+}
+
+fn create_text_level(next: Level, text: String, world: &mut specs::World) {
+    let bottom = config.text.bottom as isize;
+    let left = config.text.left as isize;
+    let right = config.text.right as isize;
+
+    entities::add_text(world,text);
+
+    entities::add_character(world,[left+1,bottom+1]);
+    entities::add_portal(world,[right-7,bottom+1],next);
+
+    entities::add_wall(world,[left,bottom+1]);
+    entities::add_wall(world,[right-6,bottom+1]);
+
+    for x in left..right-5 {
+        entities::add_wall(world,[x,bottom+2]);
+        entities::add_wall(world,[x,bottom]);
+    }
 }
 
 fn create_corridor(back: Option<Level>, mut levels: Vec<Level>, world: &mut specs::World) {

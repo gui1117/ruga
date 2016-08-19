@@ -6,7 +6,15 @@ use std::collections::hash_map::{HashMap, Entry};
 use std::collections::HashSet;
 use std::f32;
 
-pub trait IntoGrid { fn into_grid(&self) -> [f32;2]; }
+pub trait IntoGrid {
+    fn into_grid(&self) -> [f32;2];
+}
+
+impl IntoGrid for [i32;2] {
+    fn into_grid(&self) -> [f32;2] {
+        [self[0] as f32 + 0.5, self[1] as f32 + 0.5]
+    }
+}
 impl IntoGrid for [isize;2] {
     fn into_grid(&self) -> [f32;2] {
         [self[0] as f32 + 0.5, self[1] as f32 + 0.5]

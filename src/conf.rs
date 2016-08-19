@@ -185,6 +185,12 @@ configure!(
         billboard_font_length: t f32,
         billboard_font_interline: t f32,
     },
+    text: {
+        top: t i32,
+        bottom: t i32,
+        right: t i32,
+        left: t i32,
+    },
     camera: {
         zoom: t f32,
     },

@@ -19,6 +19,7 @@ mod entities;
 mod utils;
 mod life;
 mod portal;
+mod text;
 
 mod components {
     pub use control::{
@@ -47,6 +48,10 @@ mod components {
     };
     pub use portal::Portal;
     pub use app::Graphic;
+    pub use text::{
+        Text,
+        FixedCamera,
+    };
 }
 mod systems {
     pub use physic::PhysicSystem;

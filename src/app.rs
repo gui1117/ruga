@@ -219,6 +219,9 @@ impl App {
 
         world.register::<Portal>();
 
+        world.register::<Text>();
+        world.register::<FixedCamera>();
+
         // check levels
         let check_level = match &*config.levels.check_level {
             "always" => true,
@@ -435,10 +438,16 @@ impl App {
                 // update camera
                 {
                     let characters = world.read::<PlayerControl>();
+                    let fixed_cameras = world.read::<FixedCamera>();
                     let states = world.read::<PhysicState>();
+
                     for (_, state) in (&characters, &states).iter() {
                         self.camera.x = state.position[0];
                         self.camera.y = state.position[1];
+                    }
+                    for _ in fixed_cameras.iter() {
+                        self.camera.x = 0.;
+                        self.camera.y = 0.;
                     }
                 }
 
@@ -447,6 +456,7 @@ impl App {
                 // draw entities
                 {
                     let states = world.read::<PhysicState>();
+                    let texts = world.read::<Text>();
                     let types = world.read::<PhysicType>();
                     let graphics = world.read::<Graphic>();
                     let squares = world.read::<GridSquare>();
@@ -462,6 +472,19 @@ impl App {
                         match typ.shape {
                             Shape::Circle(radius) => frame.draw_circle(x,y,radius,graphic.layer,graphic.color),
                             Shape::Square(radius) => frame.draw_square(x,y,radius,graphic.layer,graphic.color),
+                        }
+                    }
+
+                    if config.text.right > config.text.left {
+                        for text in texts.iter() {
+                            for (y,text_line) in (config.text.bottom+3..config.text.top+1).rev().zip(text.string.lines()) {
+                                let lines = vec!(graphics::Line {
+                                    x: config.text.left,
+                                    y: y,
+                                    length: (config.text.right - config.text.left) as usize,
+                                });
+                                frame.draw_text(text_line,&lines,graphics::Layer::Ceil,graphics::Color::Base5);
+                            }
                         }
                     }
                 }
@@ -483,7 +506,7 @@ impl App {
                         self.effect_storage.push(effect);
                     }
                 }
-                frame.draw_text("target.draw_text 0,0puis 1.1mmmmmmmmmmmmmmmmmmmmm",&vec!(graphics::Line {x:0,y:0,length:10},graphics::Line {x:1,y:1,length:100}),graphics::Layer::Ceil,graphics::Color::Base5);
+
                 frame.finish().unwrap();
             },
             State::Menu(entry) => {

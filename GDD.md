@@ -123,22 +123,22 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* text map and new component: fixe camera and text
-* save luminosity and etc... and castle
+* maybe print at top left the castle / dungeon / room
+* windows support
 * maybe if run top-left and wall on left doesn't slow down
 
+* save luminosity and etc... and castle
+* download dungeon
+* android support
+* mac support
 * event loop: ups=fps ?
 * better circle rectangle collision: use math
 
 * input : + joysticks
 
-* real reset game (config ...)
-* reset game and quit doesn't work
-* menu:
-  * note castle
+* note castle
 * color with transparency for portal
 * window creation catch error and try whitout vsync and then without multisampling
-* maybe print at top left the castle / dungeon / room
 
 ##possibilité de mécanique - trop complexe
 

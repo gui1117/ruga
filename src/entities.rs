@@ -143,3 +143,11 @@ pub fn add_portal(world: &mut specs::World, pos: [isize;2], destination: levels:
         .build();
 }
 
+pub fn add_text(world: &mut specs::World, text: String) {
+    world.create_now()
+        .with::<FixedCamera>(FixedCamera)
+        .build();
+    world.create_now()
+        .with::<Text>(Text::new(text))
+        .build();
+}
