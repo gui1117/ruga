@@ -357,7 +357,6 @@ fn create_corridor(back: Option<Level>, mut levels: Vec<Level>, world: &mut spec
     entities::add_wall(world,[5,1]);
     entities::add_wall(world,[5,0]);
     entities::add_wall(world,[5,-1]);
-    entities::add_laser(world,[3,0]);
 
     if let Some(back) = back {
         entities::add_portal(world,[0,0],back);
@@ -369,7 +368,6 @@ fn create_corridor(back: Option<Level>, mut levels: Vec<Level>, world: &mut spec
         entities::add_wall(world,[0,-1]);
         entities::add_wall(world,[0,1]);
 
-        entities::add_laser(world,[1,0]);
     } else {
         entities::add_wall(world,[1,0]);
     }
@@ -386,7 +384,6 @@ fn create_corridor(back: Option<Level>, mut levels: Vec<Level>, world: &mut spec
         entities::add_wall(world,[4,y-1]);
         entities::add_wall(world,[5,y-1]);
         entities::add_wall(world,[5,y]);
-        entities::add_laser(world,[3,y]);
 
         entities::add_portal(world,[4,y],level);
     }
