@@ -280,11 +280,6 @@ pub struct Frame<'a> {
 }
 
 #[derive(Clone,Debug)]
-pub struct CameraSetting {
-    pub zoom: f32,
-}
-
-#[derive(Clone,Debug)]
 pub struct Camera {
     pub x: f32,
     pub y: f32,
@@ -293,15 +288,15 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new<F: Facade>(facade: &F, setting: CameraSetting) -> Result<Self,String> {
+    pub fn new<F: Facade>(facade: &F, zoom: f32) -> Self {
         let (width,height) = facade.get_context().get_framebuffer_dimensions();
 
-        Ok(Camera {
+        Camera {
             x: 0.,
             y: 0.,
-            zoom: setting.zoom,
+            zoom: zoom,
             ratio: width as f32/ height as f32,
-        })
+        }
     }
 }
 

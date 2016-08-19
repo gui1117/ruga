@@ -83,7 +83,7 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
     musics.push(config.levels.entry_music.clone());
 
     // load casltes
-    let (castles,musics) = try!(levels::load_castles(musics));
+    let (castles,musics) = try!(levels::load_castles(musics).map_err(|e| format!("ERROR: levels castles load failed: {}",e)));
 
     // init baal
     try!(baal::init(&baal::Setting {
@@ -150,7 +150,7 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
     window.get_window().unwrap().set_cursor_state(glium::glutin::CursorState::Hide).unwrap();
 
     // init app
-    let app = try!(app::App::new(&window,castles));
+    let app = try!(app::App::new(&window,castles).map_err(|e| format!("ERROR: app creation failed: {}",e)));
 
     // init event loop
     let window_events = window.events(&event_loop::Setting {

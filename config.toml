@@ -113,7 +113,7 @@ right = [40,114,36]
 escape = [9]
 
 [audio]
-check_level = "always"
+check_level = "debug"
 
 channels = 2
 sample_rate = 44100.0

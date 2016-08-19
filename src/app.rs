@@ -13,6 +13,7 @@ use baal;
 use std::rc::Rc;
 use std::sync::Arc;
 use entities;
+use std::fmt;
 
 static CREDIT: &'static str = "
 thiolliere - thiolliere.org
@@ -140,16 +141,23 @@ pub struct App {
     pub quit: bool,
 }
 
-pub struct AppError {
+pub enum AppError {
     InitGraphics(graphics::GraphicsCreationError),
     LevelCreation(String),
 }
 
-impl {
-    pub fn new<F: glium::backend::Facade>(facade: &F, castles: Vec<levels::Castle>) -> Result<App,String> {
-        // level
-        let level = levels::Level::Entry;
+impl fmt::Display for AppError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        use self::AppError::*;
+        match *self {
+            InitGraphics(ref e) => write!(fmt,"graphics init failed: {}",e),
+            LevelCreation(ref s) =>write!(fmt,"level creation error: {}",s),
+        }
+    }
+}
 
+impl App {
+    pub fn new<F: glium::backend::Facade>(facade: &F, castles: Vec<levels::Castle>) -> Result<App,AppError> {
         // init graphics
         let graphics = try!(graphics::Graphics::new(facade, graphics::GraphicsSetting {
             colors: graphics::ColorsValue {
@@ -182,7 +190,7 @@ impl {
             font_ratio: config.graphics.font_ratio,
             billboard_font_length: config.graphics.billboard_font_length,
             billboard_font_interline: config.graphics.billboard_font_interline,
-        }).map_err(|e| format!("ERRROR: graphics init failed: {:#?}",e)));
+        }).map_err(|e| AppError::InitGraphics(e)));
 
         // init camera
         let camera = graphics::Camera::new(facade, config.camera.zoom);
@@ -235,16 +243,17 @@ impl {
                             dungeon: d,
                             room: r,
                         };
-                        try!(levels::load(&level, &castles, &mut world)
-                                .map_err(|e| format!("ERROR: load level failed: {} {:#?} {:#?}",e,level,castles)));
+                        try!(levels::load_level(&level, &castles, &mut world)
+                                .map_err(|e| AppError::LevelCreation(format!("load level {}.{}.{} failed: {}",castle.name,dungeon.name,r,e))));
                     }
                 }
             }
         }
 
         // load level
-        let master_entity = try!(levels::load(&level, &castles, &mut world)
-                                 .map_err(|e| format!("ERROR: load level failed: {}",e)));
+        let level = levels::Level::Entry;
+        let master_entity = try!(levels::load_level(&level, &castles, &mut world)
+                                 .map_err(|e| AppError::LevelCreation(format!("load entry level failed: {}",e))));
 
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
@@ -388,8 +397,19 @@ impl {
         while let Ok(_) = self.control_rx.try_recv() {}
         while let Ok(_) = self.effect_rx.try_recv() {}
 
-        self.master_entity = match levels::load(&level,&self.castles,self.planner.mut_world()) {
-            Err(e) => panic!(format!("ERROR: load level failed: {}",e)),
+        self.master_entity = match levels::load_level(&level,&self.castles,self.planner.mut_world()) {
+            Err(e) => {
+                let level_name = match level {
+                    levels::Level::Room { castle: c, dungeon: d, room: r } => format!("room (castle: {:?}, dungeon: {:?}, room: {:?})",
+                        self.castles.get(c),
+                        self.castles.get(c).and_then(|c| c.dungeons.get(d)),
+                        self.castles.get(c).and_then(|c| c.dungeons.get(d)).and_then(|d| d.rooms.get(r)),
+                    ),
+                    levels::Level::Corridor { castle: c } => format!("corridor (castle: {:?})",self.castles.get(c)),
+                    levels::Level::Entry => "entry".into(),
+                };
+                panic!(format!("ERROR: failed to load level {}: {}",level_name,e));
+            },
             Ok(m) => m,
         };
 
