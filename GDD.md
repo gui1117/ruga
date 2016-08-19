@@ -123,8 +123,10 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* print on map an introduction in the entry, same on castle (configurable in toml) and dungeons and castles names
+* text map and new component: fixe camera and text
 * save luminosity and etc... and castle
+* maybe if run top-left and wall on left doesn't slow down
+
 * event loop: ups=fps ?
 * better circle rectangle collision: use math
 
@@ -143,8 +145,3 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
 
-## quelques citations
-
-We recognize the touch of the Master in the idea that the problem is not to define what a motive is: the problem is to define the category of motives and to identify its structures.
-
-Discovery is the privilege of the child: the child who has no fear of being once again wrong, of looking like an idiot, of not being serious, of not doing things like everyone else.
