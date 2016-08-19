@@ -57,8 +57,7 @@ pub enum Effect {
 impl Effect {
     fn next(self,dt: f32) -> Option<Effect> {
         match self {
-            Effect::Line { origin: o, length: le, angle: a, persistance: mut p, thickness: t, layer: la, color: c, }
-            => {
+            Effect::Line { origin: o, length: le, angle: a, persistance: mut p, thickness: t, layer: la, color: c, } => {
                 p -= dt;
                 if p > 0. {
                     Some(Effect::Line { origin: o, length: le, angle: a, persistance: p, thickness: t, layer: la, color: c, })
@@ -85,7 +84,6 @@ impl Effect {
     }
 }
 
-// ajouter
 pub enum Control {
     GotoLevel(levels::Level),
     ResetLevel,
@@ -142,7 +140,12 @@ pub struct App {
     pub quit: bool,
 }
 
-impl App {
+pub struct AppError {
+    InitGraphics(graphics::GraphicsCreationError),
+    LevelCreation(String),
+}
+
+impl {
     pub fn new<F: glium::backend::Facade>(facade: &F, castles: Vec<levels::Castle>) -> Result<App,String> {
         // level
         let level = levels::Level::Entry;
@@ -182,9 +185,7 @@ impl App {
         }).map_err(|e| format!("ERRROR: graphics init failed: {:#?}",e)));
 
         // init camera
-        let camera = try!(graphics::Camera::new(facade, graphics::CameraSetting {
-            zoom: config.camera.zoom
-        }).map_err(|e| format!("ERROR: camera init failed: {:#?}",e)));
+        let camera = graphics::Camera::new(facade, config.camera.zoom);
 
         // init world
         let mut world = specs::World::new();

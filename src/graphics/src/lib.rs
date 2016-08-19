@@ -22,6 +22,8 @@ use glium_text::{
     TextSystem,
     FontTexture,
 };
+use std::error::Error;
+use std::fmt;
 
 pub type Transformation = vecmath::Matrix2x3<f32>;
 
@@ -114,9 +116,41 @@ pub enum GraphicsCreationError {
     ProgramCreationError(ProgramCreationError),
     BufferCreationError(BufferCreationError),
     FontFileOpenError(std::io::Error),
-    FontCreationError(()),
+    FontTextureCreationError,
 }
 
+impl Error for GraphicsCreationError {
+    fn description(&self) -> &str {
+        use self::GraphicsCreationError::*;
+        match *self {
+            ProgramCreationError(_) => "program creation failed",
+            BufferCreationError(_) => "buffer creation failed",
+            FontFileOpenError(_) => "open font file failed",
+            FontTextureCreationError => "font texture creation failed",
+        }
+    }
+    fn cause(&self) -> Option<&Error> {
+        use self::GraphicsCreationError::*;
+        match *self {
+            ProgramCreationError(ref e) => e.cause(),
+            BufferCreationError(ref e) => e.cause(),
+            FontFileOpenError(ref e) => e.cause(),
+            FontTextureCreationError => None,
+        }
+    }
+}
+
+impl fmt::Display for GraphicsCreationError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        use self::GraphicsCreationError::*;
+        match *self {
+            ProgramCreationError(ref e) => write!(fmt,"{}: {}",self.description(),e),
+            BufferCreationError(ref e) => write!(fmt,"{}: {}",self.description(),e),
+            FontFileOpenError(ref e) => write!(fmt,"{}: {}",self.description(),e),
+            FontTextureCreationError => write!(fmt,"{}",self.description()),
+        }
+    }
+}
 impl Graphics {
     pub fn new<F: Facade>(facade: &F, setting: GraphicsSetting) -> Result<Graphics,GraphicsCreationError> {
 
@@ -189,7 +223,7 @@ impl Graphics {
         let font_file = try!(std::fs::File::open(&std::path::Path::new(&setting.font_file))
             .map_err(|ioe| GraphicsCreationError::FontFileOpenError(ioe)));
         let font = try!(glium_text::FontTexture::new(facade, font_file, setting.font_precision)
-            .map_err(|fce| GraphicsCreationError::FontCreationError(fce)));
+            .map_err(|_| GraphicsCreationError::FontTextureCreationError));
 
         Ok(Graphics {
             colors: colors,
