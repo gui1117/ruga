@@ -181,5 +181,5 @@ billboard_font_interline = 1.2
 [text]
 top = 4
 bottom = -5
-right = 14
-left = -9
+right = 16
+left = -11
