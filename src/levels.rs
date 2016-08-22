@@ -344,47 +344,47 @@ fn create_text_level(next: Level, text: String, world: &mut specs::World) {
 }
 
 fn create_corridor(back: Option<Level>, mut levels: Vec<Level>, world: &mut specs::World) {
-    entities::add_character(world,[2,0]);
+    let corridor_length = config.levels.corridor_length as isize;
 
-    entities::add_wall(world,[1,-1]);
-    entities::add_wall(world,[1,1]);
+    entities::add_wall(world,[0,1]);
+    entities::add_character(world,[0,0]);
 
-    entities::add_wall(world,[2,1]);
-    entities::add_wall(world,[3,-1]);
-    entities::add_wall(world,[3,1]);
-    entities::add_wall(world,[4,-1]);
-    entities::add_wall(world,[4,1]);
-    entities::add_wall(world,[5,1]);
-    entities::add_wall(world,[5,0]);
-    entities::add_wall(world,[5,-1]);
-
+    for x in 1..corridor_length+2 {
+        entities::add_wall(world,[x,1]);
+        entities::add_wall(world,[x,1]);
+    }
     if let Some(back) = back {
-        entities::add_portal(world,[0,0],back);
+        for x in 1..corridor_length+1 {
+            entities::add_wall(world,[-x,-1]);
+            entities::add_wall(world,[-x,1]);
+        }
 
-        entities::add_wall(world,[-1,-1]);
-        entities::add_wall(world,[-1,0]);
-        entities::add_wall(world,[-1,1]);
+        entities::add_portal(world,[-corridor_length,0],back);
 
-        entities::add_wall(world,[0,-1]);
-        entities::add_wall(world,[0,1]);
-
+        entities::add_wall(world,[-1-corridor_length,-1]);
+        entities::add_wall(world,[-1-corridor_length,0]);
+        entities::add_wall(world,[-1-corridor_length,1]);
     } else {
-        entities::add_wall(world,[1,0]);
+        entities::add_wall(world,[-1,-1]);
+        entities::add_wall(world,[-1,1]);
+        entities::add_wall(world,[-1,0]);
     }
 
-    entities::add_wall(world,[2,1-(levels.len() as isize)*2]);
+    entities::add_wall(world,[0,1-(levels.len() as isize)*2]);
 
     for (i,level) in levels.drain(..).enumerate() {
         let y = -((i*2) as isize);
         if i != 0 {
-            entities::add_wall(world,[1,y]);
-            entities::add_wall(world,[1,y-1]);
+            entities::add_wall(world,[-1,y]);
+            entities::add_wall(world,[-1,y-1]);
         }
-        entities::add_wall(world,[3,y-1]);
-        entities::add_wall(world,[4,y-1]);
-        entities::add_wall(world,[5,y-1]);
-        entities::add_wall(world,[5,y]);
+        for x in 1..corridor_length+1 {
+            entities::add_wall(world,[x,y-1]);
+            entities::add_wall(world,[x,y-1]);
+        }
+        entities::add_wall(world,[corridor_length+1,y-1]);
+        entities::add_wall(world,[corridor_length+1,y]);
 
-        entities::add_portal(world,[4,y],level);
+        entities::add_portal(world,[corridor_length,y],level);
     }
 }

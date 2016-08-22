@@ -123,9 +123,17 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* maybe print at top left the castle / dungeon / room
+* pause sound and game when window is not focus
+* sound on menu clic
+* android UI
+  * menu on clic
+  * arrow on topleft that link to menu
+  * virtual joystick on bottomcenter
+* android
 * windows support
+
 * maybe if run top-left and wall on left doesn't slow down
+* maybe print at top left the castle / dungeon / room
 
 * save luminosity and etc... and castle
 * download dungeon

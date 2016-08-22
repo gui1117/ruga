@@ -120,6 +120,7 @@ configure!(
         portal_snd: t usize,
     },
     levels: {
+        corridor_length: t usize,
         dir: t String,
         entry_music: t String,
         check_level: e String [always,debug,never],

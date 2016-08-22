@@ -96,6 +96,7 @@ unit = 2.0
 dir = "./levels"
 entry_music = "assets/musics/todo.ogg"
 check_level = "debug"
+corridor_length = 8
 
 empty_col = [0,0,0]
 char_col = [0,255,255]
@@ -122,7 +123,7 @@ frames_per_buffer = 64
 effect_dir = "assets/effects"
 music_dir = "."
 
-global_volume = 0.0
+global_volume = 0.5
 music_volume = 0.8
 effect_volume = 0.3
 
@@ -149,7 +150,7 @@ fullscreen_monitor = 0
 zoom = 0.08
 
 [event_loop]
-ups = 120
+ups = 60
 max_fps = 60
 
 [graphics]
