@@ -123,23 +123,20 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* pause sound and game when window is not focus
-* sound on menu clic
+* event loop: ups=fps ?
 * android UI
   * menu on clic
   * arrow on topleft that link to menu
   * virtual joystick on bottomcenter
-* android
+* android support
 * windows support
+* mac support
 
 * maybe if run top-left and wall on left doesn't slow down
 * maybe print at top left the castle / dungeon / room
 
 * save luminosity and etc... and castle
 * download dungeon
-* android support
-* mac support
-* event loop: ups=fps ?
 * better circle rectangle collision: use math
 
 * input : + joysticks

@@ -85,6 +85,7 @@ entry_color = "base4"
 cursor_color = "red"
 background_color = "base1"
 
+clic_snd = 0
 background_width = 25.0
 background_height = 22.0
 
@@ -150,8 +151,8 @@ fullscreen_monitor = 0
 zoom = 0.08
 
 [event_loop]
-ups = 60
-max_fps = 60
+ups = 20
+max_fps = 20
 
 [graphics]
 base03 = [ 0.0, 0.16862746, 0.21176471, 1.0 ]

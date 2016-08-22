@@ -100,12 +100,39 @@ pub struct UpdateContext {
     pub master_entity: specs::Entity,
 }
 
-#[derive(PartialEq)]
-enum State {
+#[derive(PartialEq,Clone)]
+enum PauseState {
     Game,
     Menu(usize),
     Text(usize,String),
 }
+
+#[derive(PartialEq,Clone)]
+enum State {
+    Game,
+    Menu(usize),
+    Text(usize,String),
+    Pause(PauseState),
+}
+impl State {
+    fn pause(&mut self) {
+        *self = match self.clone() {
+            State::Game => State::Pause(PauseState::Game),
+            State::Menu(c) => State::Pause(PauseState::Menu(c)),
+            State::Text(c,t) => State::Pause(PauseState::Text(c,t)),
+            p @ State::Pause(_) => p,
+        };
+    }
+    fn resume(&mut self) {
+        *self = match self.clone() {
+            State::Pause(PauseState::Game) => State::Game,
+            State::Pause(PauseState::Menu(c)) => State::Menu(c),
+            State::Pause(PauseState::Text(c,t)) => State::Text(c,t),
+            s @ _ => s,
+        }
+    }
+}
+
 
 struct MenuEntry {
     name: Box<Fn(&App)->String>,
@@ -368,6 +395,16 @@ impl App {
             quit: false,
         })
     }
+    pub fn focused(&mut self, focus: bool) {
+        if focus {
+            baal::music::pause();
+            self.state.resume();
+        } else {
+            self.state.pause();
+            baal::effect::stop_all();
+            baal::music::resume();
+        }
+    }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
         if self.state == State::Game {
             let context = UpdateContext {
@@ -432,7 +469,7 @@ impl App {
         let dt = 1. / config.event_loop.max_fps as f32;
 
         match self.state {
-            State::Game => {
+            State::Game | State::Pause(PauseState::Game) => {
                 let world = self.planner.mut_world();
 
                 // update camera
@@ -490,6 +527,7 @@ impl App {
                 }
 
                 // draw effects
+                //TODO draw effects: do not next if pause
                 for effect in &self.effect_storage {
                     effect.draw(&mut frame);
                 }
@@ -509,7 +547,7 @@ impl App {
 
                 frame.finish().unwrap();
             },
-            State::Menu(entry) => {
+            State::Menu(entry) | State::Pause(PauseState::Menu(entry)) => {
                 let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
                 let mut menu = String::new();
                 let mut cursor = String::new();
@@ -527,7 +565,7 @@ impl App {
                 frame.draw_billboard_centered_text(&*menu,config.menu.entry_color);
                 frame.finish().unwrap();
             }
-            State::Text(_,ref text) => {
+            State::Text(_,ref text) | State::Pause(PauseState::Text(_,ref text)) => {
                 let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
                 frame.draw_rectangle(0.,0.,25.0,18.0,graphics::Layer::BillBoard,config.menu.background_color);
                 frame.draw_billboard_centered_text(&*text,config.menu.entry_color);
@@ -538,6 +576,10 @@ impl App {
     }
     pub fn key_pressed(&mut self, key: u8) {
         use std::ops::Rem;
+
+        if let State::Pause(_) = self.state {
+            return;
+        }
 
         let direction = if config.keys.up.contains(&key) {
             Some(Direction::Up)
@@ -560,6 +602,7 @@ impl App {
                     }
                 },
                 State::Menu(entry) => {
+                    baal::effect::play(config.menu.clic_snd,&[0.,0.,0.]);
                     match direction {
                         Direction::Up => self.state = State::Menu(if entry == 0 { self.menu.len()-1 } else { entry-1 }),
                         Direction::Down => self.state = State::Menu((entry+1).rem(self.menu.len())),
@@ -570,6 +613,7 @@ impl App {
                 State::Text(entry,_) => {
                     self.state = State::Menu(entry)
                 }
+                State::Pause(_) => unreachable!(),
             }
         }
 
@@ -578,11 +622,16 @@ impl App {
                 State::Game => self.state = State::Menu(0),
                 State::Menu(_) => self.state = State::Game,
                 State::Text(entry,_) => self.state = State::Menu(entry),
+                State::Pause(_) => unreachable!(),
             }
         }
 
     }
     pub fn key_released(&mut self, key: u8) {
+        if let State::Pause(_) = self.state {
+            return;
+        }
+
         let direction = if config.keys.up.contains(&key) {
             Some(Direction::Up)
         } else if config.keys.down.contains(&key) {

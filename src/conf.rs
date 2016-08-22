@@ -49,6 +49,7 @@ configure!(
         entry_color: t Color,
         cursor_color: t Color,
         background_color: t Color,
+        clic_snd: t usize,
 
         background_width: t f32,
         background_height: t f32,

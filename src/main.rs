@@ -193,6 +193,7 @@ fn main() {
             Event::Input(InputEvent::Resized(width,height)) => {
                 app.resize(width,height);
             },
+            Event::Input(InputEvent::Focused(f)) => app.focused(f),
             Event::Input(_) => (),
             Event::Idle(args) => thread::sleep(Duration::from_millis(args.dt as u64)),
         }
