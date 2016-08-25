@@ -49,8 +49,9 @@ mod components {
     pub use portal::Portal;
     pub use app::Graphic;
     pub use text::{
-        Text,
+        FixedCameraText,
         FixedCamera,
+        Text,
     };
 }
 mod systems {

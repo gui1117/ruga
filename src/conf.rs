@@ -55,6 +55,8 @@ configure!(
         background_height: t f32,
     },
     entities: {
+        text_color: t Color,
+
         ball_group: t BitflagU32,
         ball_mask: t BitflagU32,
         ball_killer_mask: t BitflagU32,
@@ -121,6 +123,7 @@ configure!(
         portal_snd: t usize,
     },
     levels: {
+        hall_length: t usize,
         corridor_length: t usize,
         dir: t String,
         entry_music: t String,

@@ -1,3 +1,4 @@
+use graphics;
 use specs;
 use entities;
 use config;
@@ -289,10 +290,15 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
                 }
             }
 
-            let levels = (0..castle.dungeons.len()).map(|i| Level::Room {
-                castle: castle_id,
-                dungeon: i,
-                room: 0,
+            let levels = castle.dungeons.iter().enumerate().map(|(i,dungeon)| {
+                (
+                    dungeon.name.clone(),
+                    Level::Room {
+                        castle: castle_id,
+                        dungeon: i,
+                        room: 0,
+                    }
+                )
             }).collect();
 
             create_corridor(Some(Level::Entry),levels,world);
@@ -304,8 +310,13 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
                 }
             }
 
-            let levels = (0..castles.len()).map(|i| Level::Corridor {
-                castle: i,
+            let levels = castles.iter().enumerate().map(|(i,castle)| {
+                (
+                    castle.name.clone(),
+                    Level::Corridor {
+                        castle: i,
+                    }
+            )
             }).collect();
 
             create_corridor(None,levels,world);
@@ -329,7 +340,7 @@ fn create_text_level(next: Level, text: String, world: &mut specs::World) {
     let left = config.text.left as isize;
     let right = config.text.right as isize;
 
-    entities::add_text(world,text);
+    entities::add_fixed_camera_text(world,text);
 
     entities::add_character(world,[left+1,bottom+1]);
     entities::add_portal(world,[right-7,bottom+1],next);
@@ -343,48 +354,96 @@ fn create_text_level(next: Level, text: String, world: &mut specs::World) {
     }
 }
 
-fn create_corridor(back: Option<Level>, mut levels: Vec<Level>, world: &mut specs::World) {
+fn create_corridor(back: Option<Level>, mut levels: Vec<(String,Level)>, world: &mut specs::World) {
     let corridor_length = config.levels.corridor_length as isize;
+    let hall_length = config.levels.hall_length as isize;
 
-    entities::add_wall(world,[0,1]);
-    entities::add_character(world,[0,0]);
-
-    for x in 1..corridor_length+2 {
-        entities::add_wall(world,[x,1]);
-        entities::add_wall(world,[x,1]);
-    }
     if let Some(back) = back {
-        for x in 1..corridor_length+1 {
+        entities::add_character(world,[-corridor_length-1,0]);
+        entities::add_portal(world,[-corridor_length-1,-2],back);
+        entities::add_text(world,"Exit".into(),vec!(graphics::Line {
+            x: -hall_length as i32 -corridor_length as i32 -3,
+            y: -2,
+            length: 2,
+        }));
+
+        for x in 1..corridor_length+2 {
             entities::add_wall(world,[-x,-1]);
             entities::add_wall(world,[-x,1]);
+            entities::add_wall(world,[-x,-3]);
         }
 
-        entities::add_portal(world,[-corridor_length,0],back);
+        for y in -3..2 {
+            entities::add_wall(world,[-2-corridor_length,y]);
+        }
 
-        entities::add_wall(world,[-1-corridor_length,-1]);
-        entities::add_wall(world,[-1-corridor_length,0]);
-        entities::add_wall(world,[-1-corridor_length,1]);
+        for x in 0..hall_length {
+            entities::add_wall(world,[x,1]);
+            entities::add_wall(world,[x,if levels.len() >= 2 { 1-(levels.len() as isize)*2 } else { -3 }]);
+        }
+        if levels.len() == 0 {
+            for y in -3..2 {
+                entities::add_wall(world,[hall_length,y]);
+            }
+        } else if levels.len() == 1 {
+            for y in -3..0 {
+                entities::add_wall(world,[hall_length,y]);
+            }
+        }
+        if levels.len() != 0 {
+            for x in hall_length..hall_length+corridor_length+2 {
+                entities::add_wall(world,[x,1]);
+            }
+        }
     } else {
-        entities::add_wall(world,[-1,-1]);
+        for x in hall_length..hall_length+corridor_length+2 {
+            entities::add_wall(world,[x,3]);
+        }
+        entities::add_wall(world,[hall_length+corridor_length+1,2]);
+        entities::add_character(world,[hall_length+corridor_length,2]);
+
+        entities::add_wall(world,[-1,3]);
+        entities::add_wall(world,[-1,2]);
         entities::add_wall(world,[-1,1]);
-        entities::add_wall(world,[-1,0]);
+
+        if levels.len() == 1 {
+            entities::add_wall(world,[-1,0]);
+            entities::add_wall(world,[-1,-1]);
+        } else if levels.len() > 1 {
+            entities::add_wall(world,[-1,0]);
+            entities::add_wall(world,[-1,-1]);
+            entities::add_wall(world,[-1,-2]);
+            entities::add_wall(world,[-1,-3]);
+        }
+
+        for x in 0..hall_length {
+            entities::add_wall(world,[x,3]);
+            entities::add_wall(world,[x,1-(levels.len() as isize)*2]);
+        }
+
+        for x in hall_length..hall_length+corridor_length+2 {
+            entities::add_wall(world,[x,1]);
+        }
     }
 
-    entities::add_wall(world,[0,1-(levels.len() as isize)*2]);
-
-    for (i,level) in levels.drain(..).enumerate() {
+    for (i,(name,level)) in levels.drain(..).enumerate() {
         let y = -((i*2) as isize);
-        if i != 0 {
+
+        entities::add_text(world,name,vec!(graphics::Line {
+            x: hall_length as i32 + corridor_length as i32 + 3,
+            y: y as i32,
+            length: 15,
+        }));
+
+        if i != 0 && i != 1 {
             entities::add_wall(world,[-1,y]);
             entities::add_wall(world,[-1,y-1]);
         }
-        for x in 1..corridor_length+1 {
-            entities::add_wall(world,[x,y-1]);
+        for x in hall_length..hall_length+corridor_length+2 {
             entities::add_wall(world,[x,y-1]);
         }
-        entities::add_wall(world,[corridor_length+1,y-1]);
-        entities::add_wall(world,[corridor_length+1,y]);
+        entities::add_wall(world,[hall_length+corridor_length+1,y]);
 
-        entities::add_portal(world,[corridor_length,y],level);
+        entities::add_portal(world,[hall_length+corridor_length,y],level);
     }
 }

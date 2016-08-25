@@ -10,6 +10,7 @@ laser_group         = "00001000"
 column_group        = "00010000"
 wall_group          = "00100000"
 
+#masks
 char_mask           = "00110000"
 monster_mask        = "00110010"
 ball_mask           = "00100000"
@@ -65,6 +66,7 @@ wall_color = "base4"
 monster_color = "green"
 portal_start_color = "base5"
 portal_end_color = "base2"
+text_color = "base5"
 
 #layers
 ball_layer = "middle"
@@ -94,10 +96,11 @@ rate = 0.9
 unit = 2.0
 
 [levels]
+check_level = "debug"
 dir = "./levels"
 entry_music = "assets/musics/todo.ogg"
-check_level = "debug"
-corridor_length = 8
+corridor_length = 3
+hall_length = 1
 
 empty_col = [0,0,0]
 char_col = [0,255,255]
@@ -124,7 +127,7 @@ frames_per_buffer = 64
 effect_dir = "assets/effects"
 music_dir = "."
 
-global_volume = 0.5
+global_volume = 0.0
 music_volume = 0.8
 effect_volume = 0.3
 
@@ -151,8 +154,8 @@ fullscreen_monitor = 0
 zoom = 0.08
 
 [event_loop]
-ups = 20
-max_fps = 20
+ups = 60
+max_fps = 60
 
 [graphics]
 base03 = [ 0.0, 0.16862746, 0.21176471, 1.0 ]
@@ -175,7 +178,7 @@ mode = "dark"
 luminosity = 1.0
 circle_precision = 32
 font_file = "assets/fonts/DejaVuSansMono-Bold.ttf"
-font_precision = 24
+font_precision = 50
 font_ratio = 1.5
 billboard_font_length = 0.04
 billboard_font_interline = 1.2

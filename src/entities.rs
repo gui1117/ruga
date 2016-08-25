@@ -3,6 +3,7 @@ use specs;
 use config;
 use levels;
 use std::sync::Arc;
+use graphics;
 
 pub fn add_character(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
@@ -143,11 +144,17 @@ pub fn add_portal(world: &mut specs::World, pos: [isize;2], destination: levels:
         .build();
 }
 
-pub fn add_text(world: &mut specs::World, text: String) {
+pub fn add_fixed_camera_text(world: &mut specs::World, text: String) {
     world.create_now()
         .with::<FixedCamera>(FixedCamera)
         .build();
     world.create_now()
-        .with::<Text>(Text::new(text))
+        .with::<FixedCameraText>(FixedCameraText::new(text))
+        .build();
+}
+
+pub fn add_text(world: &mut specs::World, text: String, lines: Vec<graphics::Line>) {
+    world.create_now()
+        .with::<Text>(Text::new(text,lines))
         .build();
 }

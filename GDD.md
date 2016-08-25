@@ -123,15 +123,21 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* event loop: ups=fps ?
+* first map start is like a return of castle
+* exit and start of castle
+* sounds
+* maps
+* trailer
+
+* windows support
+* mac support
 * android UI
   * menu on clic
   * arrow on topleft that link to menu
   * virtual joystick on bottomcenter
 * android support
-* windows support
-* mac support
 
+* event loop: ups=fps ?
 * maybe if run top-left and wall on left doesn't slow down
 * maybe print at top left the castle / dungeon / room
 
@@ -150,3 +156,9 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
 
+# game loop
+
+* variable time step
+* minimum time step
+* maximum fps
+* http://entropyinteractive.com/2011/02/game-engine-design-the-game-loop/

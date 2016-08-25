@@ -246,6 +246,7 @@ impl App {
 
         world.register::<Portal>();
 
+        world.register::<FixedCameraText>();
         world.register::<Text>();
         world.register::<FixedCamera>();
 
@@ -307,6 +308,22 @@ impl App {
                 Rc::new(Box::new(|app| app.state = State::Game)),
                 Rc::new(Box::new(|app| app.state = State::Game))),
             MenuEntry::new(
+                Box::new(|_| "restart room".into()),
+                Rc::new(Box::new(|app| {
+                    app.control_tx.send(Control::ResetLevel).unwrap();
+                })),
+                Rc::new(Box::new(|app| {
+                    app.control_tx.send(Control::ResetLevel).unwrap();
+                }))),
+            MenuEntry::new(
+                Box::new(|_| "restart game".into()),
+                Rc::new(Box::new(|app| {
+                    app.control_tx.send(Control::ResetGame).unwrap();
+                })),
+                Rc::new(Box::new(|app| {
+                    app.control_tx.send(Control::ResetGame).unwrap();
+                }))),
+            MenuEntry::new(
                 Box::new(|_| format!("global volume: {}",(baal::volume()*10.) as usize)),
                 Rc::new(Box::new(|_| baal::set_volume((baal::volume()-0.1).max(0.0)))),
                 Rc::new(Box::new(|_| baal::set_volume((baal::volume()+0.1).min(1.0))))),
@@ -334,22 +351,6 @@ impl App {
                 Rc::new(Box::new(|app| {
                     let l = app.graphics.luminosity();
                     app.graphics.set_luminosity((l+0.1).min(1.0));
-                }))),
-            MenuEntry::new(
-                Box::new(|_| "restart room".into()),
-                Rc::new(Box::new(|app| {
-                    app.control_tx.send(Control::ResetLevel).unwrap();
-                })),
-                Rc::new(Box::new(|app| {
-                    app.control_tx.send(Control::ResetLevel).unwrap();
-                }))),
-            MenuEntry::new(
-                Box::new(|_| "restart game".into()),
-                Rc::new(Box::new(|app| {
-                    app.control_tx.send(Control::ResetGame).unwrap();
-                })),
-                Rc::new(Box::new(|app| {
-                    app.control_tx.send(Control::ResetGame).unwrap();
                 }))),
             MenuEntry::new(
                 Box::new(|_| "donate".into()),
@@ -493,6 +494,7 @@ impl App {
                 // draw entities
                 {
                     let states = world.read::<PhysicState>();
+                    let fixed_camera_texts = world.read::<FixedCameraText>();
                     let texts = world.read::<Text>();
                     let types = world.read::<PhysicType>();
                     let graphics = world.read::<Graphic>();
@@ -513,16 +515,20 @@ impl App {
                     }
 
                     if config.text.right > config.text.left {
-                        for text in texts.iter() {
+                        for text in fixed_camera_texts.iter() {
                             for (y,text_line) in (config.text.bottom+3..config.text.top+1).rev().zip(text.string.lines()) {
                                 let lines = vec!(graphics::Line {
                                     x: config.text.left,
                                     y: y,
                                     length: (config.text.right - config.text.left) as usize,
                                 });
-                                frame.draw_text(text_line,&lines,graphics::Layer::Ceil,graphics::Color::Base5);
+                                frame.draw_text(text_line,&lines,graphics::Layer::Ceil,config.entities.text_color);
                             }
                         }
+                    }
+
+                    for text in texts.iter() {
+                        frame.draw_text(&*text.string,&text.lines,graphics::Layer::Ceil,config.entities.text_color);
                     }
                 }
 
