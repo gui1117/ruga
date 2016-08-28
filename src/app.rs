@@ -16,13 +16,23 @@ use entities;
 use std::fmt;
 
 static CREDIT: &'static str = "
-thiolliere - thiolliere.org
+made by thiolliere [thiolliere.org]
+
+
+musics from ¿Therence?
+
+sounds effects from Xonotic game [xonotic.org]
+
+colors from solarized [ethanschoonover.com/solarized]
+
+powered by rust language [rust-lang.org]
 
 ";
 
 static DONATE: &'static str = "
 if you want to
-please consider donate to:
+please consider donate
+maybe 2$ or 5$ to:
 
 TODO paypal
 
@@ -89,6 +99,7 @@ pub enum Control {
     GotoLevel(levels::Level),
     ResetLevel,
     ResetGame,
+    ResetCastle,
     CreateBall([f32;2],Arc<()>),
 }
 
@@ -152,6 +163,7 @@ impl MenuEntry {
 
 pub struct App {
     menu: Vec<MenuEntry>,
+    menu_interline: Vec<usize>,
     castles: Vec<levels::Castle>,
     state: State,
     current_level: levels::Level,
@@ -302,6 +314,7 @@ impl App {
         let (control_tx, control_rx) = mpsc::channel();
 
         // create menu
+        let menu_interline = vec!(0,3,6,8,10);
         let menu = vec!(
             MenuEntry::new(
                 Box::new(|_| "continue".into()),
@@ -314,6 +327,14 @@ impl App {
                 })),
                 Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetLevel).unwrap();
+                }))),
+            MenuEntry::new(
+                Box::new(|_| "restart castle".into()),
+                Rc::new(Box::new(|app| {
+                    app.control_tx.send(Control::ResetCastle).unwrap();
+                })),
+                Rc::new(Box::new(|app| {
+                    app.control_tx.send(Control::ResetCastle).unwrap();
                 }))),
             MenuEntry::new(
                 Box::new(|_| "restart game".into()),
@@ -379,6 +400,7 @@ impl App {
             );
 
         Ok(App {
+            menu_interline: menu_interline,
             menu: menu,
             state: State::Game,
             castles: castles,
@@ -423,6 +445,15 @@ impl App {
                 Control::GotoLevel(level) => self.goto_level(level),
                 Control::ResetLevel => {
                     let level = self.current_level.clone();
+                    self.goto_level(level);
+                    self.state = State::Game;
+                }
+                Control::ResetCastle => {
+                    let level = match self.current_level {
+                        levels::Level::Room { castle, dungeon: _, room: _ } => levels::Level::Corridor { castle: castle },
+                        levels::Level::Corridor { castle } => levels::Level::Corridor { castle: castle },
+                        levels::Level::Entry => levels::Level::Entry,
+                    };
                     self.goto_level(level);
                     self.state = State::Game;
                 }
@@ -565,6 +596,11 @@ impl App {
                     }
                     menu.push_str(&*(*menu_entry.name)(&self));
                     menu.push('\n');
+
+                    if self.menu_interline.contains(&index) {
+                        cursor.push('\n');
+                        menu.push('\n');
+                    }
                 }
                 frame.draw_rectangle(0.,0.,config.menu.background_width,config.menu.background_height,graphics::Layer::BillBoard,config.menu.background_color);
                 frame.draw_billboard_centered_text(&*cursor,config.menu.cursor_color);
@@ -617,6 +653,7 @@ impl App {
                     }
                 }
                 State::Text(entry,_) => {
+                    baal::effect::play(config.menu.clic_snd,&[0.,0.,0.]);
                     self.state = State::Menu(entry)
                 }
                 State::Pause(_) => unreachable!(),
@@ -624,6 +661,7 @@ impl App {
         }
 
         if config.keys.escape.contains(&key) {
+            baal::effect::play(config.menu.clic_snd,&[0.,0.,0.]);
             match self.state {
                 State::Game => self.state = State::Menu(0),
                 State::Menu(_) => self.state = State::Game,

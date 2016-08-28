@@ -123,8 +123,11 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* first map start is like a return of castle
-* exit and start of castle
+* begin sound
+* quit sound
+* ambiant sound for ball, laser and monsters.
+* character walk sound ?
+
 * sounds
 * maps
 * trailer
@@ -156,9 +159,3 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
 
-# game loop
-
-* variable time step
-* minimum time step
-* maximum fps
-* http://entropyinteractive.com/2011/02/game-engine-design-the-game-loop/

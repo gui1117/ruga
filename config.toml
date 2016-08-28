@@ -26,13 +26,13 @@ laser_killer_mask   = "00000110"
 
 #sounds
 ball_kill_snd = 0
-ball_die_snd = 0
-laser_kill_snd = 0
-char_die_snd = 0
+ball_die_snd = 2
+laser_kill_snd = 3
+char_die_snd = 5
 monster_kill_snd = 0
-monster_die_snd = 0
-portal_snd = 0
-column_spawn_snd = 0
+monster_die_snd = 4
+portal_snd = 6
+column_spawn_snd = 7
 
 #radius
 laser_radius = 0.5
@@ -87,7 +87,7 @@ entry_color = "base4"
 cursor_color = "red"
 background_color = "base1"
 
-clic_snd = 0
+clic_snd = 1
 background_width = 25.0
 background_height = 22.0
 
@@ -127,17 +127,34 @@ frames_per_buffer = 64
 effect_dir = "assets/effects"
 music_dir = "."
 
-global_volume = 0.0
+global_volume = 0.3
 music_volume = 0.8
-effect_volume = 0.3
+effect_volume = 0.5
 
 distance_model = "pow2"
-distance_model_min = 10.0
-distance_model_max = 110.0
+distance_model_min = 15.0
+distance_model_max = 25.0
 music_loop = true
 
-effects_name = ["todo.ogg"]
-effects_number = [10]
+effects_name = [
+"null.ogg",
+"clic.ogg",
+"destroy_ball.ogg",
+"laser.ogg",
+"monster_die_2.ogg",
+"char_die.ogg",
+"portal_3.ogg",
+"spawn_ball.ogg"]
+
+effects_number = [
+1,
+5,
+5,
+10,
+10,
+1,
+1,
+10]
 
 transition_type = "smooth"
 transition_time = 2.0
@@ -180,7 +197,7 @@ circle_precision = 32
 font_file = "assets/fonts/DejaVuSansMono-Bold.ttf"
 font_precision = 50
 font_ratio = 1.5
-billboard_font_length = 0.04
+billboard_font_length = 0.03
 billboard_font_interline = 1.2
 
 [text]
