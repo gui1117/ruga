@@ -6,6 +6,7 @@ use config;
 use rand;
 use rand::distributions::{IndependentSample, Range};
 use baal;
+use utils::Into3D;
 
 #[derive(Debug,Clone,Default)]
 pub struct PlayerControl;
@@ -25,7 +26,7 @@ impl specs::System<app::UpdateContext> for PlayerSystem {
 
         if let Some((_,entity)) = (&players, &entities).iter().nth(0) {
             let state = states.get(entity).expect("playrcontrol expect state component");
-            baal::effect::set_listener(state.position[0] as f64, state.position[1] as f64, 0f64);
+            baal::effect::set_listener(state.position.into_3d());
         } else {
             context.control_tx.send(app::Control::ResetLevel).unwrap();
         }

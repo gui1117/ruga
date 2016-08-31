@@ -1,0 +1,39 @@
+music = "main"
+
+[[dungeons]]
+name = "Nerval"
+music = "main"
+rooms = ["nerval_1","nerval_2","nerval_3","nerval_4"]
+
+[[dungeons]]
+name = "second"
+music = "main"
+rooms = ["sound","main"]
+[[dungeons]]
+name = "second"
+music = "main"
+rooms = ["main","main"]
+[[dungeons]]
+name = "second"
+music = "main"
+rooms = ["main","main"]
+[[dungeons]]
+name = "second"
+music = "main"
+rooms = ["main","main"]
+[[dungeons]]
+name = "second"
+music = "main"
+rooms = ["main","main"]
+[[dungeons]]
+name = "second"
+music = "main"
+rooms = ["main","main"]
+[[dungeons]]
+name = "second"
+music = "main"
+rooms = ["main","main"]
+[[dungeons]]
+name = "second"
+music = "main"
+rooms = ["main","main"]

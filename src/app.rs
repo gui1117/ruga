@@ -32,7 +32,7 @@ powered by rust language [rust-lang.org]
 static DONATE: &'static str = "
 if you want to
 please consider donate
-maybe 2$ or 5$ to:
+maybe $2 or $5 to:
 
 TODO paypal
 
@@ -424,7 +424,7 @@ impl App {
             self.state.resume();
         } else {
             self.state.pause();
-            baal::effect::stop_all();
+            baal::effect::short::stop_all();
             baal::music::resume();
         }
     }
@@ -644,7 +644,7 @@ impl App {
                     }
                 },
                 State::Menu(entry) => {
-                    baal::effect::play(config.menu.clic_snd,&[0.,0.,0.]);
+                    baal::effect::short::play(config.menu.clic_snd,[0.,0.,0.]);
                     match direction {
                         Direction::Up => self.state = State::Menu(if entry == 0 { self.menu.len()-1 } else { entry-1 }),
                         Direction::Down => self.state = State::Menu((entry+1).rem(self.menu.len())),
@@ -653,7 +653,7 @@ impl App {
                     }
                 }
                 State::Text(entry,_) => {
-                    baal::effect::play(config.menu.clic_snd,&[0.,0.,0.]);
+                    baal::effect::short::play(config.menu.clic_snd,[0.,0.,0.]);
                     self.state = State::Menu(entry)
                 }
                 State::Pause(_) => unreachable!(),
@@ -661,7 +661,7 @@ impl App {
         }
 
         if config.keys.escape.contains(&key) {
-            baal::effect::play(config.menu.clic_snd,&[0.,0.,0.]);
+            baal::effect::short::play(config.menu.clic_snd,[0.,0.,0.]);
             match self.state {
                 State::Game => self.state = State::Menu(0),
                 State::Menu(_) => self.state = State::Game,

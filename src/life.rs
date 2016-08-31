@@ -42,7 +42,7 @@ impl specs::System<app::UpdateContext> for LifeSystem {
             if !life.alive {
                 let state = states.get_mut(entity).expect("life expect state component");
 
-                baal::effect::play(life.die_snd,&state.position.into_3d());
+                baal::effect::short::play(life.die_snd,state.position.into_3d());
                 arg.delete(entity);
             }
         }
@@ -78,7 +78,7 @@ impl specs::System<app::UpdateContext> for KillerSystem {
             let mut kill = false;
             physic_world.apply_on_shape(&state.position, killer.mask, &typ.shape, &mut |other_entity,_| {
                 if let Some(life) = lives.get_mut(*other_entity) {
-                    baal::effect::play(killer.kill_snd,&state.position.into_3d());
+                    baal::effect::short::play(killer.kill_snd,state.position.into_3d());
                     life.kill();
                     kill = true;
                 }
@@ -160,7 +160,7 @@ impl specs::System<app::UpdateContext> for ColumnSystem {
                 } else {
                     let state = states.get(entity).expect("column component expect state component");
                     context.control_tx.send(app::Control::CreateBall(state.position,column.arc.clone())).unwrap();
-                    baal::effect::play(column.spawn_snd,&state.position.into_3d());
+                    baal::effect::short::play(column.spawn_snd,state.position.into_3d());
                     None
                 }
             } else if let Some(_) = Arc::get_mut(&mut column.arc) {

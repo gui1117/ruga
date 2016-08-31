@@ -44,7 +44,7 @@ impl specs::System<app::UpdateContext> for PortalSystem {
             for (portal,entity) in (&portals, &entities).iter() {
                 let pos = grid_squares.get(entity).expect("portal expect grid square component").position;
                 if (player_pos[0] - pos[0]).powi(2) + (player_pos[1] - pos[1]).powi(2) < 0.01 {
-                    baal::effect::play(config.entities.portal_snd, &baal::effect::listener());
+                    baal::effect::short::play(config.entities.portal_snd, baal::effect::listener());
                     context.control_tx.send(app::Control::GotoLevel(portal.destination.clone())).unwrap();
                 }
             }

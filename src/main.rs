@@ -89,15 +89,15 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
     musics.push(config.levels.entry_music.clone());
 
     // load casltes
-    let (castles,musics) = try!(levels::load_castles(musics).map_err(|e| format!("ERROR: levels castles load failed: {}",e)));
+    let (castles,mut musics) = try!(levels::load_castles(musics).map_err(|e| format!("ERROR: levels castles load failed: {}",e)));
 
     // init baal
     try!(baal::init(&baal::Setting {
         channels: config.audio.channels,
         sample_rate: config.audio.sample_rate,
         frames_per_buffer: config.audio.frames_per_buffer,
-        effect_dir: config.audio.effect_dir.clone(),
-        music_dir: config.audio.music_dir.clone(),
+        effect_dir: config.audio.effect_dir.clone().into(),
+        music_dir: config.audio.music_dir.clone().into(),
         global_volume: config.audio.global_volume,
         music_volume: config.audio.music_volume,
         effect_volume: config.audio.effect_volume,
@@ -107,14 +107,15 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
             _ => unreachable!(),
         },
         music_loop: config.audio.music_loop,
-        effect: {
+        short_effect: {
             let mut effect = vec!();
             for i in 0..config.audio.effects_name.len() {
-                effect.push((config.audio.effects_name[i].clone(),config.audio.effects_number[i].clone()));
+                effect.push((config.audio.effects_name[i].clone().into(),config.audio.effects_number[i]));
             }
             effect
         },
-        music: musics,
+        persistent_effect: vec!(),
+        music: musics.drain(..).map(|music| music.into()).collect(),
         check_level: match &*config.audio.check_level {
             "never" => baal::CheckLevel::Never,
             "always" => baal::CheckLevel::Always,

@@ -58,12 +58,13 @@ pub fn minus_pi_pi(a: f32) -> f32 {
 }
 
 pub trait Into3D {
-    fn into_3d(&self) -> [f64;3];
+    fn into_3d(&self) -> [f32;3];
 }
 
 impl Into3D for [f32;2] {
-    fn into_3d(&self) -> [f64;3] {
-        [self[0] as f64,self[1] as f64,0f64]
+    #[inline]
+    fn into_3d(&self) -> [f32;3] {
+        [self[0],self[1],0f32]
     }
 }
 
