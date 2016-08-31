@@ -126,6 +126,7 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * begin sound
 * quit sound
 * ambiant sound for ball, laser and monsters.
+  two laser one for lasers and one for the laser in collision with de character
 * character walk sound ?
 
 * sounds
@@ -140,7 +141,7 @@ there is no gun anymore for the player, he can only move and maybe some other ac
   * virtual joystick on bottomcenter
 * android support
 
-* event loop: ups=fps ?
+* event loop: ups=fps ? no it seems OK
 * maybe if run top-left and wall on left doesn't slow down
 * maybe print at top left the castle / dungeon / room
 
