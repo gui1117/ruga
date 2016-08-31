@@ -107,13 +107,7 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
             _ => unreachable!(),
         },
         music_loop: config.audio.music_loop,
-        short_effect: {
-            let mut effect = vec!();
-            for i in 0..config.audio.effects_name.len() {
-                effect.push((config.audio.effects_name[i].clone().into(),config.audio.effects_number[i]));
-            }
-            effect
-        },
+        short_effect: config.audio.short_effects.iter().map(|&(ref name,quantity)| (name.clone().into(),quantity)).collect(),
         persistent_effect: vec!(),
         music: musics.drain(..).map(|music| music.into()).collect(),
         check_level: match &*config.audio.check_level {

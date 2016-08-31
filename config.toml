@@ -136,25 +136,14 @@ distance_model_min = 15.0
 distance_model_max = 25.0
 music_loop = true
 
-effects_name = [
-"null.ogg",
-"clic.ogg",
-"destroy_ball.ogg",
-"laser.ogg",
-"monster_die_2.ogg",
-"char_die.ogg",
-"portal_3.ogg",
-"spawn_ball.ogg"]
-
-effects_number = [
-1,
-5,
-5,
-10,
-10,
-1,
-1,
-10]
+short_effects = [ ["null.ogg","1"]
+				, ["clic.ogg","5"]
+				, ["destroy_ball.ogg","5"]
+				, ["laser.ogg","10"]
+				, ["monster_die_2.ogg","10"]
+				, ["char_die.ogg","1"]
+				, ["portal_3.ogg","1"]
+				, ["spawn_ball.ogg","10"]]
 
 transition_type = "smooth"
 transition_time = 2.0

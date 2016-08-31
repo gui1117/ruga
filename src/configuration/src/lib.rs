@@ -54,11 +54,15 @@ macro_rules! configure {
                 if let Some(config_table) = config_table_option {
                     config_table
                 } else {
-                    let mut error = String::from("ERROR: configuration file invalid: toml parsing failed:");
-                    for err in config_parser.errors {
-                        error.push_str(&*format!("\n\t[{},{}] {}",err.lo,err.hi,err.desc));
+                    let mut error_msg = String::from("ERROR: configuration file invalid: toml parsing failed:");
+                    let mut errors: Vec<toml::ParserError> = config_parser.errors.drain(..).collect();
+
+                    for err in errors {
+                        let lo = config_parser.to_linecol(err.lo);
+                        let hi = config_parser.to_linecol(err.hi);
+                        error_msg.push_str(&*format!("\n\tfrom ({},{}) to ({},{}) {}",lo.0,lo.1,hi.0,hi.1,err.desc));
                     }
-                    return Err(error);
+                    return Err(error_msg);
                 }
             };
             let res = Config {
@@ -217,10 +221,15 @@ macro_rules! impl_from_toml_for_struct {
 }
 
 macro_rules! toml_integer {
-    ($ty:ty) => {
+    ($ty:ident) => {
         impl FromToml for $ty {
             fn from_toml(val: &toml::Value) -> Result<Self,String> {
-                Ok(try!(val.as_integer().ok_or(" expect integer")) as $ty)
+                match val {
+                    &toml::Value::String(ref string) => $ty::from_str_radix(&**string,10)
+                        .map_err(|e| format!(" cannot convert string: {}",e)),
+                    &toml::Value::Integer(integer) => Ok(integer as $ty),
+                    _ => Err(" expect integer or string convertible".into()),
+                }
             }
         }
     }

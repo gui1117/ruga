@@ -2,8 +2,7 @@ use configuration::BitflagU32;
 use levels as levelss;
 use graphics::{ Color, Layer };
 
-pub type EffectsName = Vec<String>;
-pub type EffectsNumber = Vec<u32>;
+pub type ShortEffects = Vec<(String,u32)>;
 pub type Dimension = [u32;2];
 pub type Array4F32 = [f32;4];
 pub type VecU8 = Vec<u8>;
@@ -16,10 +15,6 @@ fn config_constraint(conf: &Config) -> Result<(),String> {
        || conf.keys.left.len() == 0
        || conf.keys.right.len() == 0 {
            return Err("ERROR: configuration file invalid: keys mustn't be empty".into());
-    }
-
-    if conf.audio.effects_name.len() != conf.audio.effects_number.len() {
-        return Err("ERROR: configuration file invalid: audio effects name and audio effects number arrays must be of the same length".into());
     }
 
     Ok(())
@@ -150,8 +145,7 @@ configure!(
         distance_model_min: t f32,
         distance_model_max: t f32,
         music_loop: t bool,
-        effects_name: t EffectsName,
-        effects_number: t EffectsNumber,
+        short_effects: t ShortEffects,
         check_level: e String [always,debug,never],
         transition_type: e String [instant,smooth,overlap],
         transition_time: t f32,
