@@ -27,7 +27,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "baal"
 version = "0.4.0"
-source = "git+https://github.com/thiolliere/baal#2cf73a97eba65ae2925c2723f4695a41271c1617"
+source = "git+https://github.com/thiolliere/baal#4457551eff3a136627cd119e10e75cf6c3bfdb81"
 dependencies = [
  "libc 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "portaudio 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",

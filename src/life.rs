@@ -138,7 +138,7 @@ impl Column {
     pub fn new(snd: usize) -> Column {
         Column {
             spawn_snd: snd,
-            cooldown: Some(0.),
+            cooldown: Some(config.entities.column_cooldown),
             arc: Arc::new(()),
         }
     }

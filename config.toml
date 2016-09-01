@@ -81,6 +81,7 @@ portal_end_layer = "floor"
 #others
 monster_vision_time = 0.5
 column_cooldown = 1.0
+char_restart_millis = 1000
 
 [menu]
 entry_color = "base4"
@@ -137,7 +138,7 @@ distance_model_max = 25.0
 music_loop = true
 
 short_effects = [ ["null.ogg","1"]
-				, ["clic.ogg","5"]
+				, ["clic.ogg","1"]
 				, ["destroy_ball.ogg","5"]
 				, ["laser.ogg","10"]
 				, ["monster_die_2.ogg","10"]
@@ -185,7 +186,7 @@ luminosity = 1.0
 circle_precision = 32
 font_file = "assets/fonts/DejaVuSansMono-Bold.ttf"
 font_precision = 50
-font_ratio = 1.5
+font_ratio = 1.3
 billboard_font_length = 0.03
 billboard_font_interline = 1.2
 

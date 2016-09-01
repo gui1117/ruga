@@ -89,6 +89,7 @@ configure!(
         char_color: t Color,
         char_layer: t Layer,
         char_die_snd: t usize,
+        char_restart_millis: t u64,
         //TODO char_restart_snd: t usize,
 
         wall_group: t BitflagU32,

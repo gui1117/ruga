@@ -301,7 +301,7 @@ impl App {
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
         planner.add_system(PhysicSystem, "physic", 10);
-        planner.add_system(PlayerSystem, "player", 5);
+        planner.add_system(PlayerSystem::default(), "player", 5);
         planner.add_system(MonsterSystem, "monster", 5);
         planner.add_system(TowardPlayerSystem, "toward_player", 5);
         planner.add_system(KillerSystem, "killer", 5);

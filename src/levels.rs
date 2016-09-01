@@ -230,6 +230,11 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
     }
     world.maintain();
 
+    baal::effect::short::stop_all();
+    baal::effect::persistent::clear_positions_for_all();
+    baal::effect::persistent::update_volume_for_all();
+    baal::effect::short::play(config.entities.portal_snd, baal::effect::listener());
+
     // read level file
     match level {
         &Level::Room { castle: castle_id, dungeon: dungeon_id, room: room_id } => {

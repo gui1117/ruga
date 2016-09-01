@@ -55,7 +55,7 @@ macro_rules! configure {
                     config_table
                 } else {
                     let mut error_msg = String::from("ERROR: configuration file invalid: toml parsing failed:");
-                    let mut errors: Vec<toml::ParserError> = config_parser.errors.drain(..).collect();
+                    let errors: Vec<toml::ParserError> = config_parser.errors.drain(..).collect();
 
                     for err in errors {
                         let lo = config_parser.to_linecol(err.lo);

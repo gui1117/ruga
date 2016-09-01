@@ -7,13 +7,24 @@ use rand;
 use rand::distributions::{IndependentSample, Range};
 use baal;
 use utils::Into3D;
+use std::thread;
+use std::time::Duration;
 
 #[derive(Debug,Clone,Default)]
 pub struct PlayerControl;
 impl specs::Component for PlayerControl {
     type Storage = specs::NullStorage<Self>;
 }
-pub struct PlayerSystem;
+pub struct PlayerSystem {
+    player_dead: bool
+}
+impl Default for PlayerSystem {
+    fn default() -> Self {
+        PlayerSystem {
+            player_dead: false,
+        }
+    }
+}
 impl specs::System<app::UpdateContext> for PlayerSystem {
     fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
         let (players, states, entities) = arg.fetch(|world| {
@@ -27,8 +38,15 @@ impl specs::System<app::UpdateContext> for PlayerSystem {
         if let Some((_,entity)) = (&players, &entities).iter().nth(0) {
             let state = states.get(entity).expect("playrcontrol expect state component");
             baal::effect::set_listener(state.position.into_3d());
+            self.player_dead = false;
         } else {
-            context.control_tx.send(app::Control::ResetLevel).unwrap();
+            if !self.player_dead {
+                self.player_dead = true;
+                thread::spawn(move || {
+                    thread::sleep(Duration::from_millis(config.entities.char_restart_millis));
+                    context.control_tx.send(app::Control::ResetLevel).unwrap();
+                });
+            }
         }
     }
 }
