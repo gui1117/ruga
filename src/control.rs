@@ -7,8 +7,6 @@ use rand;
 use rand::distributions::{IndependentSample, Range};
 use baal;
 use utils::Into3D;
-use std::thread;
-use std::time::Duration;
 
 #[derive(Debug,Clone,Default)]
 pub struct PlayerControl;
@@ -16,12 +14,12 @@ impl specs::Component for PlayerControl {
     type Storage = specs::NullStorage<Self>;
 }
 pub struct PlayerSystem {
-    player_dead: bool
+    restart_cooldown: Option<f32>,
 }
 impl Default for PlayerSystem {
     fn default() -> Self {
         PlayerSystem {
-            player_dead: false,
+            restart_cooldown: None,
         }
     }
 }
@@ -38,15 +36,18 @@ impl specs::System<app::UpdateContext> for PlayerSystem {
         if let Some((_,entity)) = (&players, &entities).iter().nth(0) {
             let state = states.get(entity).expect("playrcontrol expect state component");
             baal::effect::set_listener(state.position.into_3d());
-            self.player_dead = false;
+            self.restart_cooldown = Some(config.entities.char_restart);
         } else {
-            if !self.player_dead {
-                self.player_dead = true;
-                thread::spawn(move || {
-                    thread::sleep(Duration::from_millis(config.entities.char_restart_millis));
+            self.restart_cooldown = if let Some(cooldown) = self.restart_cooldown {
+                if cooldown > 0. {
+                    Some(cooldown - context.dt as f32)
+                } else {
                     context.control_tx.send(app::Control::ResetLevel).unwrap();
-                });
-            }
+                    None
+                }
+            } else {
+                None
+            };
         }
     }
 }

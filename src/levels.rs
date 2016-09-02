@@ -21,7 +21,7 @@ pub struct CastleSetting {
     music: String,
     dungeons: Vec<DungeonSetting>,
 }
-impl_from_toml_for_struct!( CastleSetting {
+impl_from_into_toml_for_struct!( CastleSetting {
     music: String,
     dungeons: VecDungeonSetting,
 });
@@ -30,7 +30,7 @@ pub struct DungeonSetting {
     music: String,
     rooms: VecString,
 }
-impl_from_toml_for_struct!( DungeonSetting {
+impl_from_into_toml_for_struct!( DungeonSetting {
     name: String,
     music: String,
     rooms: VecString,
@@ -182,7 +182,7 @@ pub struct Dungeon {
     pub music: usize,
     pub rooms: Vec<String>,
 }
-impl_from_toml_for_struct!( Dungeon {
+impl_from_into_toml_for_struct!( Dungeon {
     name: String,
     music: usize,
     rooms: VecString,

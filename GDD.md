@@ -123,7 +123,11 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* die_cooldown
+* save
+  luminosity
+  3 sound
+  graphics mode
+
 * ambiant sound for ball, laser and monsters.
   two laser one for lasers and one for the laser in collision with de character
   character walk sound
@@ -144,7 +148,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * maybe if run top-left and wall on left doesn't slow down
 * maybe print at top left the castle / dungeon / room
 
-* save luminosity and etc... and castle
 * download dungeon
 * better circle rectangle collision: use math
 

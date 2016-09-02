@@ -1,4 +1,7 @@
-use configuration::BitflagU32;
+use configuration::{ self, BitflagU32 };
+use toml;
+use std;
+
 use levels as levelss;
 use graphics::{ Color, Layer };
 
@@ -23,6 +26,7 @@ fn config_constraint(conf: &Config) -> Result<(),String> {
 configure!(
     file = "config.toml";
     debug_file = "config.toml";
+    save_file = "save.toml";
 
     constraint = config_constraint;
 
@@ -89,7 +93,7 @@ configure!(
         char_color: t Color,
         char_layer: t Layer,
         char_die_snd: t usize,
-        char_restart_millis: t u64,
+        char_restart: t f32,
         //TODO char_restart_snd: t usize,
 
         wall_group: t BitflagU32,
@@ -139,9 +143,9 @@ configure!(
         frames_per_buffer: t u32,
         effect_dir: t String,
         music_dir: t String,
-        global_volume: t f32,
-        music_volume: t f32,
-        effect_volume: t f32,
+        global_volume: t f32 save global_volume,
+        music_volume: t f32 save music_volume,
+        effect_volume: t f32 save effect_volume,
         distance_model: e String [linear,pow2],
         distance_model_min: t f32,
         distance_model_max: t f32,
@@ -176,8 +180,8 @@ configure!(
         blue: t Array4F32,
         cyan: t Array4F32,
         green: t Array4F32,
-        mode: e String [light,dark],
-        luminosity: t f32,
+        mode: e String [light,dark] save mode,
+        luminosity: t f32 save luminosity,
         circle_precision: t usize,
         font_precision: t u32,
         font_file: t String,

@@ -567,7 +567,7 @@ pub enum Color {
     Green,
 }
 
-impl_from_toml_for_enum!{
+impl_from_into_toml_for_enum!{
     Color {
         Base1,
         Base2,
@@ -664,7 +664,7 @@ pub enum Layer {
     BillBoard,
 }
 
-impl_from_toml_for_enum!{
+impl_from_into_toml_for_enum!{
     Layer {
         Floor,
         Middle,

@@ -152,11 +152,18 @@ struct MenuEntry {
 }
 
 impl MenuEntry {
-    fn new(name: Box<Fn(&App)->String>, left: Rc<Box<Fn(&mut App)>>, right: Rc<Box<Fn(&mut App)>>) -> Self {
+    fn new_left_right(name: Box<Fn(&App)->String>, left: Rc<Box<Fn(&mut App)>>, right: Rc<Box<Fn(&mut App)>>) -> Self {
         MenuEntry {
             name: name,
             left: left,
             right: right,
+        }
+    }
+    fn new_button(name: Box<Fn(&App)->String>, button: Rc<Box<Fn(&mut App)>>) -> Self {
+        MenuEntry {
+            name: name,
+            left: button.clone(),
+            right: button,
         }
     }
 }
@@ -316,86 +323,89 @@ impl App {
         // create menu
         let menu_interline = vec!(0,3,6,8,10);
         let menu = vec!(
-            MenuEntry::new(
+            MenuEntry::new_button(
                 Box::new(|_| "continue".into()),
-                Rc::new(Box::new(|app| app.state = State::Game)),
                 Rc::new(Box::new(|app| app.state = State::Game))),
-            MenuEntry::new(
+            MenuEntry::new_button(
                 Box::new(|_| "restart room".into()),
                 Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetLevel).unwrap();
-                })),
-                Rc::new(Box::new(|app| {
-                    app.control_tx.send(Control::ResetLevel).unwrap();
                 }))),
-            MenuEntry::new(
+            MenuEntry::new_button(
                 Box::new(|_| "restart castle".into()),
                 Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetCastle).unwrap();
-                })),
-                Rc::new(Box::new(|app| {
-                    app.control_tx.send(Control::ResetCastle).unwrap();
                 }))),
-            MenuEntry::new(
+            MenuEntry::new_button(
                 Box::new(|_| "restart game".into()),
                 Rc::new(Box::new(|app| {
                     app.control_tx.send(Control::ResetGame).unwrap();
+                }))),
+            MenuEntry::new_left_right(
+                Box::new(|_| format!("global volume: {}",(baal::volume()*10.) as usize)),
+                Rc::new(Box::new(|app| {
+                    baal::set_volume((baal::volume()-0.1).max(0.0));
+                    app.save();
                 })),
                 Rc::new(Box::new(|app| {
-                    app.control_tx.send(Control::ResetGame).unwrap();
+                    baal::set_volume((baal::volume()+0.1).min(1.0));
+                    app.save();
                 }))),
-            MenuEntry::new(
-                Box::new(|_| format!("global volume: {}",(baal::volume()*10.) as usize)),
-                Rc::new(Box::new(|_| baal::set_volume((baal::volume()-0.1).max(0.0)))),
-                Rc::new(Box::new(|_| baal::set_volume((baal::volume()+0.1).min(1.0))))),
-            MenuEntry::new(
+            MenuEntry::new_left_right(
                 Box::new(|_| format!("music volume: {}",(baal::music::volume()*10.) as usize)),
-                Rc::new(Box::new(|_| baal::music::set_volume((baal::music::volume()-0.1).max(0.0)))),
-                Rc::new(Box::new(|_| baal::music::set_volume((baal::music::volume()+0.1).min(1.0))))),
-            MenuEntry::new(
+                Rc::new(Box::new(|app| {
+                    baal::music::set_volume((baal::music::volume()-0.1).max(0.0));
+                    app.save()
+                })),
+                Rc::new(Box::new(|app| {
+                    baal::music::set_volume((baal::music::volume()+0.1).min(1.0));
+                    app.save();
+                }))),
+            MenuEntry::new_left_right(
                 Box::new(|_| format!("effects volume: {}",(baal::effect::volume()*10.) as usize)),
-                Rc::new(Box::new(|_| baal::effect::set_volume((baal::effect::volume()-0.1).max(0.0)))),
-                Rc::new(Box::new(|_| baal::effect::set_volume((baal::effect::volume()+0.1).min(1.0))))),
-            MenuEntry::new(
-                Box::new(|app| format!("switch: {}", match app.graphics.mode() {
+                Rc::new(Box::new(|app| {
+                    baal::effect::set_volume((baal::effect::volume()-0.1).max(0.0));
+                    app.save()
+                })),
+                Rc::new(Box::new(|app| {
+                    baal::effect::set_volume((baal::effect::volume()+0.1).min(1.0));
+                    app.save();
+                }))),
+            MenuEntry::new_button(
+                Box::new(|app| format!("theme: {}", match app.graphics.mode() {
                     graphics::Mode::Dark => "dark",
                     graphics::Mode::Light => "light",
                 })),
-                Rc::new(Box::new(|app| app.graphics.toggle_mode())),
-                Rc::new(Box::new(|app| app.graphics.toggle_mode()))),
-            MenuEntry::new(
+                Rc::new(Box::new(|app| {
+                    app.graphics.toggle_mode();
+                    app.save();
+                }))),
+            MenuEntry::new_left_right(
                 Box::new(|app| format!("luminosity: {}", (app.graphics.luminosity()*10.) as usize)),
                 Rc::new(Box::new(|app| {
                     let l = app.graphics.luminosity();
                     app.graphics.set_luminosity((l-0.1).max(0.0));
+                    app.save();
                 })),
                 Rc::new(Box::new(|app| {
                     let l = app.graphics.luminosity();
                     app.graphics.set_luminosity((l+0.1).min(1.0));
+                    app.save();
                 }))),
-            MenuEntry::new(
+            MenuEntry::new_button(
                 Box::new(|_| "donate".into()),
                 Rc::new(Box::new(|app| {
                     let entry = if let State::Menu(e) = app.state { e } else { 0 };
                     app.state = State::Text(entry,DONATE.into());
-                })),
-                Rc::new(Box::new(|app| {
-                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
-                    app.state = State::Text(entry,DONATE.into());
                 }))),
-            MenuEntry::new(
+            MenuEntry::new_button(
                 Box::new(|_| "credit".into()),
                 Rc::new(Box::new(|app| {
                     let entry = if let State::Menu(e) = app.state { e } else { 0 };
                     app.state = State::Text(entry,CREDIT.into());
-                })),
-                Rc::new(Box::new(|app| {
-                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
-                    app.state = State::Text(entry,CREDIT.into());
                 }))),
-            MenuEntry::new(
+            MenuEntry::new_button(
                 Box::new(|_| "quit".into()),
-                Rc::new(Box::new(|app| app.quit = true)),
                 Rc::new(Box::new(|app| app.quit = true))),
             );
 
@@ -426,6 +436,25 @@ impl App {
             self.state.pause();
             baal::effect::short::stop_all();
             baal::music::resume();
+        }
+    }
+    pub fn save(&self) {
+        use conf;
+        use std;
+        use std::io::Write;
+
+        let result =  conf::save(conf::Save {
+            global_volume: baal::music::volume(),
+            effect_volume: baal::effect::volume(),
+            music_volume: baal::effect::volume(),
+            luminosity: self.graphics.luminosity(),
+            mode: match self.graphics.mode() {
+                graphics::Mode::Light => "light".into(),
+                graphics::Mode::Dark => "dark".into(),
+            },
+        });
+        if let Some(err) = result.err() {
+            writeln!(&mut std::io::stderr(), "ERROR failed to save save_file: {}", err).unwrap();
         }
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {

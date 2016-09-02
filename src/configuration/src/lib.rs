@@ -1,3 +1,5 @@
+//! save value must be clonable
+
 #[macro_use] extern crate lazy_static;
 extern crate toml;
 
@@ -9,13 +11,31 @@ macro_rules! configure {
     (
         file = $file:expr;
         debug_file = $debug_file:expr;
+        save_file = $save_file:expr;
         constraint = $constraint:ident;
         $($table:ident: {
-            $($key:ident: $(e $string:ident[$($variante:ident),*])* $(t $value:ident)*,)*
+            $($key:ident: $(e $string:ident[$($variante:ident),*] $(save $enum_save_key:ident)*)* $(t $value:ident $(save $save_key:ident)*)*,)*
         },)*
     )
         =>
     {
+        pub struct Save {
+            $($($($(pub $enum_save_key: $string,)*)*)*)*
+            $($($($(pub $save_key: $value,)*)*)*)*
+        }
+        impl_from_into_toml_for_struct!(Save {
+            $($($($($enum_save_key: $string,)*)*)*)*
+            $($($($($save_key: $value,)*)*)*)*
+        });
+        pub fn save(save: Save) -> std::io::Result<()> {
+            use std::fs::File;
+            use std::io::Write;
+            use configuration::IntoToml;
+            use std::path::Path;
+
+            let mut file = try!(File::create(Path::new($save_file)));
+            file.write_fmt(format_args!("{}",IntoToml::into_toml(save)))
+        }
         $(#[allow(non_camel_case_types)] pub struct $table {
             $(pub $key:
               $($string)*
@@ -25,12 +45,33 @@ macro_rules! configure {
         pub struct Config {
             $(pub $table: $table,)*
         }
+
+        fn _get_table_from_file(file: &mut std::fs::File) -> Result<toml::Table,String> {
+            use std::io::Read;
+
+            let mut config_string = String::new();
+            try!(file.read_to_string(&mut config_string).map_err(|_| "ERROR: configuration file invalid: not valid UTF-8"));
+            let mut config_parser = toml::Parser::new(&*config_string);
+
+            let config_table = config_parser.parse();
+            config_table.ok_or({
+                let mut error_msg = String::from("ERROR: configuration file invalid: toml parsing failed:");
+                let errors: Vec<toml::ParserError> = config_parser.errors.drain(..).collect();
+
+                for err in errors {
+                    let lo = config_parser.to_linecol(err.lo);
+                    let hi = config_parser.to_linecol(err.hi);
+                    error_msg.push_str(&*format!("\n\tfrom ({},{}) to ({},{}) {}",lo.0,lo.1,hi.0,hi.1,err.desc));
+                }
+                error_msg
+            })
+        }
         fn _load_config() -> Result<Config,String> {
             use std::fs::File;
-            use std::io::Read;
             use std::error::Error;
             use toml;
             use configuration::FromToml;
+            use std::path::Path;
 
             let file = {
                 let mut file = $file;
@@ -46,25 +87,22 @@ macro_rules! configure {
                         format!("\n\tdescription: {}",e.description()),
                         if let Some(cause) = e.cause() { format!("\n\tcause: {}",cause.description()) } else { String::from("") })
             }));
-            let mut config_string = String::new();
-            try!(config_file.read_to_string(&mut config_string).map_err(|_| "ERROR: configuration file invalid: not valid UTF-8"));
-            let mut config_parser = toml::Parser::new(&*config_string);
-            let mut config_table = {
-                let config_table_option = config_parser.parse();
-                if let Some(config_table) = config_table_option {
-                    config_table
-                } else {
-                    let mut error_msg = String::from("ERROR: configuration file invalid: toml parsing failed:");
-                    let errors: Vec<toml::ParserError> = config_parser.errors.drain(..).collect();
+            let mut config_table = try!(_get_table_from_file(&mut config_file));
 
-                    for err in errors {
-                        let lo = config_parser.to_linecol(err.lo);
-                        let hi = config_parser.to_linecol(err.hi);
-                        error_msg.push_str(&*format!("\n\tfrom ({},{}) to ({},{}) {}",lo.0,lo.1,hi.0,hi.1,err.desc));
-                    }
-                    return Err(error_msg);
-                }
+            let save = if Path::new($save_file).is_file() {
+                let mut save_file = try!(File::open($save_file).map_err(|e| {
+                    format!("ERROR: an error occured when openning save file at {}{}{}",
+                            file,
+                            format!("\n\tdescription: {}",e.description()),
+                            if let Some(cause) = e.cause() { format!("\n\tcause: {}",cause.description()) } else { String::from("") })
+                }));
+                let save_table = try!(_get_table_from_file(&mut save_file));
+                Some(try!(Save::from_toml(&toml::Value::Table(save_table))
+                          .map_err(|e| format!("ERROR: save file invalid: {}",e))))
+            } else {
+                None
             };
+
             let res = Config {
                 $($table: {
                     let table_toml_value = try!(config_table
@@ -87,9 +125,18 @@ macro_rules! configure {
                                                 variante.pop().unwrap();
                                                 format!("ERROR: configuration file invalid: {}.{} expect{}",stringify!($table),stringify!($key),variante)
                                         };
-                                        if let toml::Value::$string(string) = value {
+
+                                        if false {
+                                            unreachable!();
+                                        }
+                                        $(
+                                        else if let Some(ref save) = save {
+                                            save.$enum_save_key.clone()
+                                        }
+                                        )*
+                                        else if let toml::Value::$string(string) = value {
                                             if false {
-                                                String::from("")
+                                                unreachable!();
                                             }
                                             $(
                                             else if string == String::from(stringify!($variante)) {
@@ -104,8 +151,18 @@ macro_rules! configure {
                                         }
                                      )*
                                     $(
-                                        try!($value::from_toml(&value)
-                                             .map_err(|e| format!("ERROR: configuration file invalid: {}.{}{}",stringify!($table),stringify!($key),e)))
+                                        if false {
+                                            unreachable!();
+                                        }
+                                        $(
+                                        else if let Some(ref save) = save {
+                                            save.$save_key.clone()
+                                        }
+                                        )*
+                                        else {
+                                            try!($value::from_toml(&value)
+                                                 .map_err(|e| format!("ERROR: configuration file invalid: {}.{}{}",stringify!($table),stringify!($key),e)))
+                                        }
                                      )*
                                 },
                                 )*};
@@ -150,19 +207,22 @@ macro_rules! configure {
     };
 }
 
-/// trait that implement from_toml
 pub trait FromToml: Sized {
     /// convert toml element into a rust type,
     /// it raises an error if it is not the toml element expected
     fn from_toml(&toml::Value) -> Result<Self,String>;
 }
+pub trait IntoToml {
+    /// convert value into toml value
+    fn into_toml(Self) -> toml::Value;
+}
 
 #[macro_export]
-macro_rules! impl_from_toml_for_enum {
+macro_rules! impl_from_into_toml_for_enum {
     ($ty:ident {
         $($variant:ident,)*
     }) => {
-        impl_from_toml_for_enum!($ty {
+        impl_from_into_toml_for_enum!($ty {
             $($variant),*
         });
     };
@@ -184,15 +244,22 @@ macro_rules! impl_from_toml_for_enum {
                 }
             }
         }
+        impl configuration::IntoToml for $ty {
+            fn into_toml(s: Self) -> toml::Value {
+                toml::Value::String(match s {
+                    $( $ty::$variant => stringify!($variant).into(),)*
+                })
+            }
+        }
     };
 }
 
 #[macro_export]
-macro_rules! impl_from_toml_for_struct {
+macro_rules! impl_from_into_toml_for_struct {
     ($ty:ident {
         $($variant_id:ident: $variant_ty:ident,)*
     }) => {
-        impl_from_toml_for_struct!($ty {
+        impl_from_into_toml_for_struct!($ty {
             $($variant_id: $variant_ty),*
         });
     };
@@ -217,6 +284,15 @@ macro_rules! impl_from_toml_for_struct {
                 })
             }
         }
+        impl configuration::IntoToml for $ty {
+            fn into_toml(s: Self) -> toml::Value {
+                let mut map = toml::Table::new();
+
+                $(map.insert(stringify!($variant_id).into(),configuration::IntoToml::into_toml(s.$variant_id));)*
+
+                toml::Value::Table(map)
+            }
+        }
     };
 }
 
@@ -230,6 +306,11 @@ macro_rules! toml_integer {
                     &toml::Value::Integer(integer) => Ok(integer as $ty),
                     _ => Err(" expect integer or string convertible".into()),
                 }
+            }
+        }
+        impl IntoToml for $ty {
+            fn into_toml(s: Self) -> toml::Value {
+                toml::Value::Integer(s as i64)
             }
         }
     }
@@ -252,6 +333,11 @@ macro_rules! toml_float {
                 Ok(try!(val.as_float().ok_or(" expect foat")) as $ty)
             }
         }
+        impl IntoToml for $ty {
+            fn into_toml(s: Self) -> toml::Value {
+                toml::Value::Float(s as f64)
+            }
+        }
     }
 }
 toml_float!(f32);
@@ -262,10 +348,20 @@ impl FromToml for bool {
         Ok(try!(val.as_bool().ok_or(" expect boolean")))
     }
 }
+impl IntoToml for bool {
+    fn into_toml(s: Self) -> toml::Value {
+        toml::Value::Boolean(s)
+    }
+}
 
 impl FromToml for String {
     fn from_toml(val: &toml::Value) -> Result<Self,String> {
         Ok(String::from(try!(val.as_str().ok_or(" expect string"))))
+    }
+}
+impl IntoToml for String {
+    fn into_toml(s: Self) -> toml::Value {
+        toml::Value::String(s)
     }
 }
 
@@ -283,6 +379,11 @@ macro_rules! toml_array {
                             .map_err(|e| format!("[{}]{}",$i,e))),
                    )+
                 ])
+            }
+        }
+        impl<T: IntoToml + Clone> IntoToml for [T;$n] {
+            fn into_toml(s: Self) -> toml::Value {
+                toml::Value::Array(vec!($(IntoToml::into_toml(s[$i].clone()),)+))
             }
         }
     }
@@ -312,6 +413,11 @@ impl<T: FromToml> FromToml for Vec<T> {
         Ok(res)
     }
 }
+impl<T: IntoToml> IntoToml for Vec<T> {
+    fn into_toml(mut s: Self) -> toml::Value {
+        toml::Value::Array(s.drain(..).map(|e| IntoToml::into_toml(e)).collect())
+    }
+}
 
 macro_rules! toml_tuple {
     ($n:expr =>  $([$i:ident $ni:expr])+) => {
@@ -327,6 +433,13 @@ macro_rules! toml_tuple {
                             .map_err(|e| format!("[{}]{}",$ni,e))),
                    )+
                 ))
+            }
+        }
+        impl<$($i: IntoToml),+> IntoToml for ($($i),+) {
+            #[allow(non_snake_case)]
+            fn into_toml(s: Self) -> toml::Value {
+                let ($($i,)+) = s;
+                toml::Value::Array(vec!($(IntoToml::into_toml($i),)+))
             }
         }
     }
@@ -370,6 +483,19 @@ macro_rules! toml_map {
                 Ok(map)
             }
         }
+        impl<T: IntoToml> IntoToml for $t {
+            fn into_toml(mut s: Self) -> toml::Value {
+                let mut table = toml::Table::new();
+
+                let keys: Vec<String> = s.keys().cloned().collect();
+                for key in keys {
+                    let value = IntoToml::into_toml(s.remove(&key).unwrap());
+                    table.insert(key,value);
+                }
+
+                toml::Value::Table(table)
+            }
+        }
     }
 }
 
@@ -395,6 +521,11 @@ impl FromToml for BitflagU32 {
         Ok(BitflagU32 {
             val: bitval,
         })
+    }
+}
+impl IntoToml for BitflagU32 {
+    fn into_toml(s: Self) -> toml::Value {
+        toml::Value::String(format!("{:b}",s.val))
     }
 }
 
