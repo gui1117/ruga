@@ -123,8 +123,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* join only in rust no / anymore
-
 * sounds
 * maps
 * trailer

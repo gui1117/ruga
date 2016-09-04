@@ -3,6 +3,7 @@ use specs;
 use entities;
 use config;
 use std::path::Path;
+use std::path::PathBuf;
 use specs::Join;
 use physic;
 use toml;
@@ -104,7 +105,14 @@ pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>,Vec<String>)
         let castle_setting = try!(CastleSetting::from_toml(&toml::Value::Table(toml_table))
             .map_err(|e| LoadCastlesError::InvalidTomlValue(e)));
 
-        let castle_music = format!("{}/{}/musics/{}",config.levels.dir,castle_name,castle_setting.music);
+        let castle_music = PathBuf::new()
+            .join(Path::new(&*config.levels.dir))
+            .join(Path::new(&*castle_name))
+            .join(Path::new("musics"))
+            .join(Path::new(&*castle_setting.music))
+            .into_os_string()
+            .into_string()
+            .unwrap();
 
         musics.push(castle_music);
 
@@ -115,7 +123,15 @@ pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>,Vec<String>)
         };
 
         for dungeon in castle_setting.dungeons {
-            let dungeon_music = format!("{}/{}/musics/{}",config.levels.dir,castle.name,dungeon.music);
+            let dungeon_music = PathBuf::new()
+                .join(Path::new(&*config.levels.dir))
+                .join(Path::new(&*castle.name))
+                .join(Path::new("musics"))
+                .join(Path::new(&*dungeon.music))
+                .into_os_string()
+                .into_string()
+                .unwrap();
+
             let index = if let Some(index) = musics.iter().position(|m| m.eq(&dungeon_music)) {
                 index
             } else {
@@ -249,8 +265,17 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
 
             let room = try!(dungeon.rooms.get(room_id).ok_or(LoadLevelError::GetRoomError));
 
-            let txt_path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/texts/{}",castle.name,room)));
-            let png_path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/maps/{}",castle.name,room)));
+            let txt_path = PathBuf::new()
+                .join(Path::new(&*config.levels.dir))
+                .join(Path::new(&*castle.name))
+                .join(Path::new("texts"))
+                .join(Path::new(&*room));
+
+            let png_path = PathBuf::new()
+                .join(Path::new(&*config.levels.dir))
+                .join(Path::new(&*castle.name))
+                .join(Path::new("maps"))
+                .join(Path::new(&*room));
 
             match (txt_path.exists(),png_path.exists()) {
                 (true,true) => return Err(LoadLevelError::AmbiguousLevelDefinition),
@@ -262,7 +287,7 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
                     create_text_level(level.next(castles),text,world);
                 },
                 (false,true) => {
-                    let decoder = png::Decoder::new(try!(fs::File::open("toto.png")));
+                    let decoder = png::Decoder::new(try!(fs::File::open(png_path)));
                     let (info,mut reader) = try!(decoder.read_info().map_err(|e| LoadLevelError::PngDecodingError(e)));
                     let mut data = vec![0; 3 * info.width as usize * info.height as usize];
                     try!(reader.next_frame(&mut data).map_err(|e| LoadLevelError::PngDecodingError(e)));
