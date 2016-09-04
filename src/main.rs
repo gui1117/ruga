@@ -7,8 +7,9 @@ extern crate specs;
 extern crate time;
 extern crate toml;
 extern crate rand;
-extern crate bmp;
+extern crate png;
 
+mod persistent_snd;
 mod levels;
 mod app;
 mod conf;
@@ -53,6 +54,7 @@ mod components {
         FixedCamera,
         Text,
     };
+    pub use persistent_snd::PersistentSnd;
 }
 mod systems {
     pub use physic::PhysicSystem;
@@ -68,6 +70,7 @@ mod systems {
         TowardPlayerSystem,
     };
     pub use portal::PortalSystem;
+    pub use persistent_snd::PersistentSndSystem;
 }
 
 pub use conf::{config};

@@ -269,6 +269,8 @@ impl App {
         world.register::<Text>();
         world.register::<FixedCamera>();
 
+        world.register::<PersistentSnd>();
+
         // check levels
         let check_level = match &*config.levels.check_level {
             "always" => true,
@@ -316,6 +318,7 @@ impl App {
         planner.add_system(PortalSystem, "portal", 5);
         planner.add_system(ColumnSystem, "column", 5);
         planner.add_system(LifeSystem, "life", 1);
+        planner.add_system(PersistentSndSystem, "life", 2);
 
         let (effect_tx, effect_rx) = mpsc::channel();
         let (control_tx, control_rx) = mpsc::channel();

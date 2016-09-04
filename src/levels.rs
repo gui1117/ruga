@@ -6,7 +6,6 @@ use std::path::Path;
 use specs::Join;
 use physic;
 use toml;
-use bmp;
 use baal;
 use configuration;
 use std::fs;
@@ -14,6 +13,7 @@ use std::fmt;
 use std::io::Read;
 use configuration::FromToml;
 use std::io;
+use png;
 
 type VecDungeonSetting = Vec<DungeonSetting>;
 type VecString = Vec<String>;
@@ -104,7 +104,7 @@ pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>,Vec<String>)
         let castle_setting = try!(CastleSetting::from_toml(&toml::Value::Table(toml_table))
             .map_err(|e| LoadCastlesError::InvalidTomlValue(e)));
 
-        let castle_music = format!("{}/{}/musics/{}.ogg",config.levels.dir,castle_name,castle_setting.music);
+        let castle_music = format!("{}/{}/musics/{}",config.levels.dir,castle_name,castle_setting.music);
 
         musics.push(castle_music);
 
@@ -115,7 +115,7 @@ pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>,Vec<String>)
         };
 
         for dungeon in castle_setting.dungeons {
-            let dungeon_music = format!("{}/{}/musics/{}.ogg",config.levels.dir,castle.name,dungeon.music);
+            let dungeon_music = format!("{}/{}/musics/{}",config.levels.dir,castle.name,dungeon.music);
             let index = if let Some(index) = musics.iter().position(|m| m.eq(&dungeon_music)) {
                 index
             } else {
@@ -193,10 +193,10 @@ pub enum LoadLevelError {
     GetCastleError,
     GetDungeonError,
     GetRoomError,
-    OpenBmp(bmp::BmpError),
     AmbiguousLevelDefinition,
     NoLevelDefinition,
     InvalidUTF8,
+    PngDecodingError(png::DecodingError),
     UnexpectedColor,
     IoError(io::Error),
 }
@@ -207,10 +207,10 @@ impl fmt::Display for LoadLevelError {
             GetCastleError => write!(fmt,"castle id out of bounds"),
             GetDungeonError => write!(fmt,"dungeon id out of bounds"),
             GetRoomError => write!(fmt,"room id out of bounds"),
-            OpenBmp(ref bmp_error) => write!(fmt,"open bmp error: {}",bmp_error),
-            UnexpectedColor => write!(fmt,"unexpected color in bmp file"),
+            UnexpectedColor => write!(fmt,"unexpected color in png file"),
             IoError(ref e) => write!(fmt,"io error: {}",e),
-            AmbiguousLevelDefinition => write!(fmt,"ambiguous level definition: both .txt and .bmp file exists"),
+            PngDecodingError(ref e) => write!(fmt,"png decoding error: {}",e),
+            AmbiguousLevelDefinition => write!(fmt,"ambiguous level definition: both .txt and .png file exists"),
             InvalidUTF8 => write!(fmt,"text level invalid UTF-8"),
             NoLevelDefinition => write!(fmt,"level doesn't exist"),
         }
@@ -249,10 +249,10 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
 
             let room = try!(dungeon.rooms.get(room_id).ok_or(LoadLevelError::GetRoomError));
 
-            let txt_path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/maps/{}{}",castle.name,room,".txt")));
-            let bmp_path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/maps/{}{}",castle.name,room,".bmp")));
+            let txt_path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/texts/{}",castle.name,room)));
+            let png_path = Path::new(&*config.levels.dir).join(Path::new(&*format!("{}/maps/{}",castle.name,room)));
 
-            match (txt_path.exists(),bmp_path.exists()) {
+            match (txt_path.exists(),png_path.exists()) {
                 (true,true) => return Err(LoadLevelError::AmbiguousLevelDefinition),
                 (false,false) => return Err(LoadLevelError::NoLevelDefinition),
                 (true,false) => {
@@ -262,25 +262,33 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
                     create_text_level(level.next(castles),text,world);
                 },
                 (false,true) => {
-                    let image = try!(bmp::open(&*bmp_path.to_string_lossy()).map_err(|e| LoadLevelError::OpenBmp(e)));
-                    for (x,y) in image.coordinates() {
-                        let pixel = image.get_pixel(x,y);
-                        let col = [pixel.r,pixel.g,pixel.b];
-                        if col == config.levels.empty_col {
-                        } else if col == config.levels.char_col {
-                            entities::add_character(world,[x as isize,y as isize]);
-                        } else if col == config.levels.portal_col {
-                            entities::add_portal(world,[x as isize,y as isize],level.next(castles));
-                        } else if col == config.levels.laser_col {
-                            entities::add_laser(world,[x as isize,y as isize]);
-                        } else if col == config.levels.monster_col {
-                            entities::add_monster(world,[x as isize,y as isize]);
-                        } else if col == config.levels.column_col {
-                            entities::add_column(world,[x as isize,y as isize]);
-                        } else if col == config.levels.wall_col {
-                            entities::add_wall(world,[x as isize,y as isize]);
-                        } else {
-                            return Err(LoadLevelError::UnexpectedColor);
+                    let decoder = png::Decoder::new(try!(fs::File::open("toto.png")));
+                    let (info,mut reader) = try!(decoder.read_info().map_err(|e| LoadLevelError::PngDecodingError(e)));
+                    let mut data = vec![0; 3 * info.width as usize * info.height as usize];
+                    try!(reader.next_frame(&mut data).map_err(|e| LoadLevelError::PngDecodingError(e)));
+
+                    for x in 0..info.width {
+                        for y in 0..info.height {
+                            let offset = ((x + y*info.height)*3) as usize;
+                            let col = [data[offset],data[offset+1],data[offset+2]];
+                            let pos = [x as isize,y as isize];
+
+                            if col == config.levels.empty_col {
+                            } else if col == config.levels.char_col {
+                                entities::add_character(world,pos);
+                            } else if col == config.levels.portal_col {
+                                entities::add_portal(world,pos,level.next(castles));
+                            } else if col == config.levels.laser_col {
+                                entities::add_laser(world,pos);
+                            } else if col == config.levels.monster_col {
+                                entities::add_monster(world,pos);
+                            } else if col == config.levels.column_col {
+                                entities::add_column(world,pos);
+                            } else if col == config.levels.wall_col {
+                                entities::add_wall(world,pos);
+                            } else {
+                                return Err(LoadLevelError::UnexpectedColor);
+                            }
                         }
                     }
                 },

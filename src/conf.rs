@@ -11,6 +11,7 @@ pub type Array4F32 = [f32;4];
 pub type VecU8 = Vec<u8>;
 pub type Dungeons = Vec<levelss::Dungeon>;
 pub type Array3U8 = [u8;3];
+pub type PersistentEffects = Vec<String>;
 
 fn config_constraint(conf: &Config) -> Result<(),String> {
     if conf.keys.up.len() == 0
@@ -67,6 +68,7 @@ configure!(
         ball_weight: t f32,
         ball_color: t Color,
         ball_layer: t Layer,
+        ball_persistent_snd: t usize,
 
         laser_group: t BitflagU32,
         laser_mask: t BitflagU32,
@@ -75,6 +77,7 @@ configure!(
         laser_radius: t f32,
         laser_color: t Color,
         laser_layer: t Layer,
+        laser_persistent_snd: t usize,
 
         column_group: t BitflagU32,
         column_mask: t BitflagU32,
@@ -94,7 +97,7 @@ configure!(
         char_layer: t Layer,
         char_die_snd: t usize,
         char_restart: t f32,
-        //TODO char_restart_snd: t usize,
+        char_persistent_snd: t usize,
 
         wall_group: t BitflagU32,
         wall_mask: t BitflagU32,
@@ -115,6 +118,7 @@ configure!(
         monster_weight: t f32,
         monster_color: t Color,
         monster_layer: t Layer,
+        monster_persistent_snd: t usize,
 
         portal_end_color: t Color,
         portal_end_layer: t Layer,
@@ -151,6 +155,7 @@ configure!(
         distance_model_max: t f32,
         music_loop: t bool,
         short_effects: t ShortEffects,
+        persistent_effects: t PersistentEffects,
         check_level: e String [always,debug,never],
         transition_type: e String [instant,smooth,overlap],
         transition_time: t f32,

@@ -123,14 +123,7 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* save
-  luminosity
-  3 sound
-  graphics mode
-
-* ambiant sound for ball, laser and monsters.
-  two laser one for lasers and one for the laser in collision with de character
-  character walk sound
+* join only in rust no / anymore
 
 * sounds
 * maps
@@ -143,6 +136,8 @@ there is no gun anymore for the player, he can only move and maybe some other ac
   * arrow on topleft that link to menu
   * virtual joystick on bottomcenter
 * android support
+
+* two laser persitent snd one for lasers and one for the laser in collision with de character?
 
 * event loop: ups=fps ? no it seems OK
 * maybe if run top-left and wall on left doesn't slow down
