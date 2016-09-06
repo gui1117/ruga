@@ -33,6 +33,7 @@ configure!(
 
     general: {
         number_of_thread: t usize,
+        persistent_snd_cooldown: t usize,
     },
     keys: {
         up: t VecU8,
@@ -97,7 +98,6 @@ configure!(
         char_layer: t Layer,
         char_die_snd: t usize,
         char_restart: t f32,
-        char_persistent_snd: t usize,
 
         wall_group: t BitflagU32,
         wall_mask: t BitflagU32,
@@ -118,7 +118,6 @@ configure!(
         monster_weight: t f32,
         monster_color: t Color,
         monster_layer: t Layer,
-        monster_persistent_snd: t usize,
 
         portal_end_color: t Color,
         portal_end_layer: t Layer,

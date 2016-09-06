@@ -1,5 +1,6 @@
 [general]
 number_of_thread = 2
+persistent_snd_cooldown = 10
 
 [entities]
 #groups
@@ -33,6 +34,9 @@ monster_kill_snd = 0
 monster_die_snd = 4
 portal_snd = 6
 column_spawn_snd = 7
+
+ball_persistent_snd = 0
+laser_persistent_snd = 0
 
 #radius
 laser_radius = 0.5
@@ -137,6 +141,7 @@ distance_model_min = 15.0
 distance_model_max = 25.0
 music_loop = true
 
+persistent_effects = ["lights_loop.ogg"]
 short_effects = [ ["null.ogg","1"]
 				, ["clic.ogg","1"]
 				, ["destroy_ball.ogg","5"]

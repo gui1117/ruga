@@ -123,6 +123,8 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
+* key when goto menu
+* maybe monster persistent snd
 * sounds
 * maps
 * trailer

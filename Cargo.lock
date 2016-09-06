@@ -2,7 +2,7 @@
 name = "ruga"
 version = "0.2.0"
 dependencies = [
- "baal 0.4.0 (git+https://github.com/thiolliere/baal)",
+ "baal 0.4.0",
  "configuration 0.1.0",
  "glium 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graphics 0.1.0",
@@ -27,7 +27,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "baal"
 version = "0.4.0"
-source = "git+https://github.com/thiolliere/baal#0f9b724fab24a67622a0ae761af6545e8068894a"
 dependencies = [
  "libc 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "portaudio 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",

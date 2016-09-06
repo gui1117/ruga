@@ -23,7 +23,6 @@ pub fn add_character(world: &mut specs::World, pos: [isize;2]) {
                 config.entities.char_color,
                 config.entities.char_layer))
         .with::<PlayerControl>(PlayerControl)
-        .with::<PersistentSnd>(PersistentSnd::new(config.entities.char_persistent_snd))
         .build();
     world.create_now()
         .with::<GridSquare>(GridSquare::new(pos))
@@ -114,7 +113,6 @@ pub fn add_monster(world: &mut specs::World, pos: [isize;2]) {
             mask: config.entities.monster_killer_mask.val,
             kill_snd: config.entities.monster_kill_snd,
         })
-        .with::<PersistentSnd>(PersistentSnd::new(config.entities.monster_persistent_snd))
         .build();
 }
 

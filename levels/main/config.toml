@@ -1,39 +1,15 @@
-music = "main"
+music = "main.ogg"
 
 [[dungeons]]
 name = "Nerval"
-music = "main"
-rooms = ["nerval_1","nerval_2","nerval_3","nerval_4"]
+music = "main.ogg"
+rooms = ["nerval_1.txt","nerval_2.txt","nerval_3.txt","nerval_4.txt"]
 
 [[dungeons]]
 name = "second"
-music = "main"
-rooms = ["sound","main"]
+music = "main.ogg"
+rooms = ["sound.png","main.png"]
 [[dungeons]]
 name = "second"
-music = "main"
-rooms = ["main","main"]
-[[dungeons]]
-name = "second"
-music = "main"
-rooms = ["main","main"]
-[[dungeons]]
-name = "second"
-music = "main"
-rooms = ["main","main"]
-[[dungeons]]
-name = "second"
-music = "main"
-rooms = ["main","main"]
-[[dungeons]]
-name = "second"
-music = "main"
-rooms = ["main","main"]
-[[dungeons]]
-name = "second"
-music = "main"
-rooms = ["main","main"]
-[[dungeons]]
-name = "second"
-music = "main"
-rooms = ["main","main"]
+music = "main.ogg"
+rooms = ["main.png","main.png"]

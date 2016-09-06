@@ -111,7 +111,7 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
         },
         music_loop: config.audio.music_loop,
         short_effect: config.audio.short_effects.iter().map(|&(ref name,quantity)| (name.clone().into(),quantity)).collect(),
-        persistent_effect: vec!(),
+        persistent_effect: config.audio.persistent_effects.iter().cloned().map(|n| n.into()).collect(),
         music: musics.drain(..).map(|music| music.into()).collect(),
         check_level: match &*config.audio.check_level {
             "never" => baal::CheckLevel::Never,

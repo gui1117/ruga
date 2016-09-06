@@ -15,6 +15,13 @@ use std::sync::Arc;
 use entities;
 use std::fmt;
 
+static HELP: &'static str = "
+use up,down,left,right or w,s,a,d to move
+
+use escape to go to or escape from menu
+
+";
+
 static CREDIT: &'static str = "
 made by thiolliere [thiolliere.org]
 
@@ -318,13 +325,13 @@ impl App {
         planner.add_system(PortalSystem, "portal", 5);
         planner.add_system(ColumnSystem, "column", 5);
         planner.add_system(LifeSystem, "life", 1);
-        planner.add_system(PersistentSndSystem, "life", 2);
+        planner.add_system(PersistentSndSystem::default(), "life", 2);
 
         let (effect_tx, effect_rx) = mpsc::channel();
         let (control_tx, control_rx) = mpsc::channel();
 
         // create menu
-        let menu_interline = vec!(0,3,6,8,10);
+        let menu_interline = vec!(0,3,6,8,11);
         let menu = vec!(
             MenuEntry::new_button(
                 Box::new(|_| "continue".into()),
@@ -394,6 +401,12 @@ impl App {
                     let l = app.graphics.luminosity();
                     app.graphics.set_luminosity((l+0.1).min(1.0));
                     app.save();
+                }))),
+            MenuEntry::new_button(
+                Box::new(|_| "help".into()),
+                Rc::new(Box::new(|app| {
+                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
+                    app.state = State::Text(entry,HELP.into());
                 }))),
             MenuEntry::new_button(
                 Box::new(|_| "donate".into()),
@@ -668,15 +681,14 @@ impl App {
         };
 
         if let Some(direction) = direction {
+            if !self.player_dir.contains(&direction) {
+                self.player_dir.push(direction);
+                self.update_player_direction();
+            }
             match self.state {
-                State::Game => {
-                    if !self.player_dir.contains(&direction) {
-                        self.player_dir.push(direction);
-                        self.update_player_direction();
-                    }
-                },
+                State::Game => (),
                 State::Menu(entry) => {
-                    baal::effect::short::play(config.menu.clic_snd,[0.,0.,0.]);
+                    baal::effect::short::play_on_listener(config.menu.clic_snd);
                     match direction {
                         Direction::Up => self.state = State::Menu(if entry == 0 { self.menu.len()-1 } else { entry-1 }),
                         Direction::Down => self.state = State::Menu((entry+1).rem(self.menu.len())),
@@ -685,7 +697,7 @@ impl App {
                     }
                 }
                 State::Text(entry,_) => {
-                    baal::effect::short::play(config.menu.clic_snd,[0.,0.,0.]);
+                    baal::effect::short::play_on_listener(config.menu.clic_snd);
                     self.state = State::Menu(entry)
                 }
                 State::Pause(_) => unreachable!(),
@@ -693,7 +705,8 @@ impl App {
         }
 
         if config.keys.escape.contains(&key) {
-            baal::effect::short::play(config.menu.clic_snd,[0.,0.,0.]);
+            baal::effect::short::play_on_listener(config.menu.clic_snd);
+            baal::effect::persistent::mute_all();
             match self.state {
                 State::Game => self.state = State::Menu(0),
                 State::Menu(_) => self.state = State::Game,
@@ -721,10 +734,8 @@ impl App {
         };
 
         if let Some(direction) = direction {
-            if self.state == State::Game {
-                self.player_dir.retain(|dir| &direction != dir);
-                self.update_player_direction();
-            }
+            self.player_dir.retain(|dir| &direction != dir);
+            self.update_player_direction();
         }
     }
     fn update_player_direction(&mut self) {
