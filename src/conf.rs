@@ -21,6 +21,11 @@ fn config_constraint(conf: &Config) -> Result<(),String> {
            return Err("ERROR: configuration file invalid: keys mustn't be empty".into());
     }
 
+    // assert persistent snd and static snd doesn't overlap
+    if conf.entities.ball_persistent_snd == conf.entities.laser_persistent_snd {
+        return Err("ERROR: configuration file invalid: ball_persistent_snd and laser_persistent_snd must be different".into());
+    }
+
     Ok(())
 }
 

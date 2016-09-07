@@ -276,7 +276,7 @@ impl App {
         world.register::<Text>();
         world.register::<FixedCamera>();
 
-        world.register::<PersistentSnd>();
+        world.register::<DynPersistentSnd>();
 
         // check levels
         let check_level = match &*config.levels.check_level {

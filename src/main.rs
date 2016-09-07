@@ -54,7 +54,7 @@ mod components {
         FixedCamera,
         Text,
     };
-    pub use persistent_snd::PersistentSnd;
+    pub use persistent_snd::DynPersistentSnd;
 }
 mod systems {
     pub use physic::PhysicSystem;

@@ -35,7 +35,7 @@ monster_die_snd = 4
 portal_snd = 6
 column_spawn_snd = 7
 
-ball_persistent_snd = 0
+ball_persistent_snd = 1
 laser_persistent_snd = 0
 
 #radius
@@ -141,7 +141,7 @@ distance_model_min = 15.0
 distance_model_max = 25.0
 music_loop = true
 
-persistent_effects = ["lights_loop.ogg"]
+persistent_effects = ["lights_loop.ogg","lights_loop.ogg"]
 short_effects = [ ["null.ogg","1"]
 				, ["clic.ogg","1"]
 				, ["destroy_ball.ogg","5"]

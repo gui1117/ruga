@@ -123,8 +123,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* key when goto menu
-* maybe monster persistent snd
 * sounds
 * maps
 * trailer
@@ -137,7 +135,9 @@ there is no gun anymore for the player, he can only move and maybe some other ac
   * virtual joystick on bottomcenter
 * android support
 
+* maybe monster persistent snd
 * two laser persitent snd one for lasers and one for the laser in collision with de character?
+* title for castles and Ruga at corridor
 
 * event loop: ups=fps ? no it seems OK
 * maybe if run top-left and wall on left doesn't slow down
