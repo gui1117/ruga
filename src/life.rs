@@ -92,6 +92,7 @@ impl specs::System<app::UpdateContext> for KillerSystem {
 
 pub struct Ball {
     _arc: Arc<()>,
+    snd_timer: f32,
 }
 impl specs::Component for Ball {
     type Storage = specs::VecStorage<Self>;
@@ -100,6 +101,7 @@ impl Ball {
     pub fn new(arc: Arc<()>) -> Ball {
         Ball {
             _arc: arc,
+            snd_timer: 1.0,
         }
     }
 }
@@ -107,17 +109,29 @@ impl Ball {
 pub struct BallSystem;
 impl specs::System<app::UpdateContext> for BallSystem {
     fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
-        let (mut lives, balls, triggers, entities) = arg.fetch(|world| {
+        use std::ops::Mul;
+
+        let (mut lives, states, mut balls, triggers, entities) = arg.fetch(|world| {
             (
                 world.write::<Life>(),
-                world.read::<Ball>(),
+                world.read::<PhysicState>(),
+                world.write::<Ball>(),
                 world.read::<PhysicTrigger>(),
                 world.entities(),
             )
         });
-        for (_, entity) in (&balls, &entities).iter() {
+        for (ball, entity) in (&mut balls, &entities).iter() {
             let trigger = triggers.get(entity).expect("ball component expect trigger component");
             let life = lives.get_mut(entity).expect("ball component expect life component");
+            let state = states.get(entity).expect("ball component expect life component");
+
+            ball.snd_timer -= (state.velocity[0].powi(2)+state.velocity[1].powi(2))
+                .sqrt()
+                .mul(config.entities.ball_vel_snd_coef);
+
+            if ball.snd_timer <= 0. {
+                baal::effect::short::play(config.entities.ball_vel_snd,state.position.into_3d());
+            }
 
             if trigger.active {
                 life.kill();

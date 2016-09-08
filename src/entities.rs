@@ -89,7 +89,6 @@ pub fn add_ball(world: &mut specs::World, pos: [f32;2], arc: Arc<()>) {
             mask: config.entities.ball_killer_mask.val,
             kill_snd: config.entities.ball_kill_snd,
         })
-        .with::<DynPersistentSnd>(DynPersistentSnd::new(config.entities.ball_persistent_snd))
         .build();
 }
 
@@ -116,6 +115,8 @@ pub fn add_monster(world: &mut specs::World, pos: [isize;2]) {
             mask: config.entities.monster_killer_mask.val,
             kill_snd: config.entities.monster_kill_snd,
         })
+        .with::<DynPersistentSnd>(DynPersistentSnd::new(
+                config.entities.monster_persistent_snd))
         .build();
 }
 

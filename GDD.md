@@ -123,6 +123,7 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
+* maybe monster persistent snd, and balls play short effect more or less frequently due to their velocity
 * sounds
 * maps
 * trailer
@@ -135,7 +136,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
   * virtual joystick on bottomcenter
 * android support
 
-* maybe monster persistent snd
 * two laser persitent snd one for lasers and one for the laser in collision with de character?
 * title for castles and Ruga at corridor
 
@@ -157,3 +157,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
 
+##Ruga3D
+
+* your in a plane in VR, escape from intelligent rocket and things like that

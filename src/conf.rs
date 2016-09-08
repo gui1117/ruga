@@ -22,8 +22,8 @@ fn config_constraint(conf: &Config) -> Result<(),String> {
     }
 
     // assert persistent snd and static snd doesn't overlap
-    if conf.entities.ball_persistent_snd == conf.entities.laser_persistent_snd {
-        return Err("ERROR: configuration file invalid: ball_persistent_snd and laser_persistent_snd must be different".into());
+    if conf.entities.monster_persistent_snd == conf.entities.laser_persistent_snd {
+        return Err("ERROR: configuration file invalid: monster_persistent_snd and laser_persistent_snd must be different".into());
     }
 
     Ok(())
@@ -74,7 +74,8 @@ configure!(
         ball_weight: t f32,
         ball_color: t Color,
         ball_layer: t Layer,
-        ball_persistent_snd: t usize,
+        ball_vel_snd_coef: t f32,
+        ball_vel_snd: t usize,
 
         laser_group: t BitflagU32,
         laser_mask: t BitflagU32,
@@ -123,6 +124,7 @@ configure!(
         monster_weight: t f32,
         monster_color: t Color,
         monster_layer: t Layer,
+        monster_persistent_snd: t usize,
 
         portal_end_color: t Color,
         portal_end_layer: t Layer,
