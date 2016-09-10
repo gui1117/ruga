@@ -34,8 +34,10 @@ monster_kill_snd = 0
 monster_die_snd = 4
 portal_snd = 6
 column_spawn_snd = 7
+ball_vel_snd = 0
 
 laser_persistent_snd = 0
+monster_persistent_snd = 1
 
 #radius
 laser_radius = 0.5
@@ -85,6 +87,7 @@ portal_end_layer = "floor"
 monster_vision_time = 0.5
 column_cooldown = 1.0
 char_restart = 1.0
+ball_vel_snd_coef = 1.0
 
 [menu]
 entry_color = "base4"
@@ -140,15 +143,16 @@ distance_model_min = 10.0
 distance_model_max = 20.0
 music_loop = true
 
-persistent_effects = ["lights_loop.ogg"]
-short_effects = [ ["null.ogg","1"]
-				, ["clic.ogg","1"]
-				, ["destroy_ball.ogg","5"]
-				, ["laser.ogg","10"]
-				, ["monster_die_2.ogg","10"]
-				, ["char_die.ogg","1"]
-				, ["portal_3.ogg","1"]
-				, ["spawn_ball.ogg","10"]]
+persistent_effects = ["lights_loop.ogg","lights_loop.ogg"]
+short_effects = [ "null.ogg"
+				, "clic.ogg"
+				, "destroy_ball.ogg"
+				, "laser.ogg"
+				, "monster_die_2.ogg"
+				, "char_die.ogg"
+				, "portal_3.ogg"
+				, "spawn_ball.ogg"
+				]
 
 transition_type = "smooth"
 transition_time = 2.0

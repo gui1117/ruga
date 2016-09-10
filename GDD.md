@@ -123,7 +123,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ##TODO
 
-* maybe monster persistent snd, and balls play short effect more or less frequently due to their velocity
 * sounds
 * maps
 * trailer

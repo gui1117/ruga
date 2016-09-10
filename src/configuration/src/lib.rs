@@ -297,15 +297,10 @@ macro_rules! impl_from_into_toml_for_struct {
 }
 
 macro_rules! toml_integer {
-    ($ty:ident) => {
+    ($ty:ty) => {
         impl FromToml for $ty {
             fn from_toml(val: &toml::Value) -> Result<Self,String> {
-                match val {
-                    &toml::Value::String(ref string) => $ty::from_str_radix(&**string,10)
-                        .map_err(|e| format!(" cannot convert string: {}",e)),
-                    &toml::Value::Integer(integer) => Ok(integer as $ty),
-                    _ => Err(" expect integer or string convertible".into()),
-                }
+                Ok(try!(val.as_integer().ok_or(" expect integer")) as $ty)
             }
         }
         impl IntoToml for $ty {
@@ -454,18 +449,6 @@ toml_tuple!(7 => [A 0][B 1][C 2][D 3][E 4][F 5][G 6]);
 toml_tuple!(8 => [A 0][B 1][C 2][D 3][E 4][F 5][G 6][H 7]);
 toml_tuple!(9 => [A 0][B 1][C 2][D 3][E 4][F 5][G 6][H 7][I 8]);
 toml_tuple!(10 => [A 0][B 1][C 2][D 3][E 4][F 5][G 6][H 7][I 8][J 9]);
-
-// impl<T: FromToml> FromToml for Option<T> {
-//     fn from_toml(val: toml::Value) -> Result<Self,String> {
-//         if let toml::Value::Null = val {
-//             return Ok(None);
-//         }
-//         match T::from_toml(val) {
-//             Ok(res) => Ok(Some(res)),
-//             Err(e) => Err(format!("expect null or {}",e).into())
-//         }
-//     }
-// }
 
 macro_rules! toml_map {
     ($t:ty: $e:expr) => {

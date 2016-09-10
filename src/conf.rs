@@ -5,7 +5,7 @@ use std;
 use levels as levelss;
 use graphics::{ Color, Layer };
 
-pub type ShortEffects = Vec<(String,u32)>;
+pub type ShortEffects = Vec<String>;
 pub type Dimension = [u32;2];
 pub type Array4F32 = [f32;4];
 pub type VecU8 = Vec<u8>;
