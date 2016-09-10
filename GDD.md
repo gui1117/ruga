@@ -1,4 +1,6 @@
-#first attempt: top-down shooter
+# Game Design Document
+
+# first attempt: top-down shooter
 
 doit ce concentrer sur les mouvements:
 - déplacement haut/bas/gauche/droite
@@ -43,7 +45,7 @@ Physic: with acceleration but collision are not necessarily realisic
 
 <!-- Networking: shoots are instantate other are interpolate from snapshot -->
 
-##networking
+## networking
 
 the server update all entity but not the autonomous proxy
 and have remoteEffect such as sound and particleeffect etc...
@@ -57,7 +59,7 @@ play remote effect
 update simulated locations and current counter
 check if autonomous are OK if false then replay from the snapshot
 
-##vrac
+## vrac
 
 monsters:
 
@@ -117,11 +119,11 @@ entree sortie:
     heros dedans alors vide autour puis apparaition
     de nouvelle porte et du nouveau niveau
 
-#second attempt: top-down mover
+# second attempt: top-down mover
 
 there is no gun anymore for the player, he can only move and maybe some other action like teleport or sth like this.
 
-##TODO
+## TODO
 
 * sounds
 * maps
@@ -151,11 +153,11 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * color with transparency for portal
 * window creation catch error and try whitout vsync and then without multisampling
 
-##possibilité de mécanique - trop complexe
+## possibilité de mécanique - trop complexe
 
 * si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
 
-##Ruga3D
+## Ruga3D
 
 * your in a plane in VR, escape from intelligent rocket and things like that
