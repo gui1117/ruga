@@ -100,8 +100,6 @@ pub struct Graphics {
     quad_indices: index::NoIndices,
     circle_vertex_buffer: VertexBuffer<Vertex>,
     circle_indices: index::NoIndices,
-    line_vertex_buffer: VertexBuffer<Vertex>,
-    line_indices: index::NoIndices,
     program: Program,
     text_system: TextSystem,
     font: FontTexture,
@@ -181,16 +179,6 @@ impl Graphics {
 
         let circle_indices = index::NoIndices(index::PrimitiveType::TriangleFan);
 
-        let line_vertex = vec![
-            Vertex { position: [ 0., 0.] },
-            Vertex { position: [ 1., 1.] },
-        ];
-
-        let line_vertex_buffer = try!(VertexBuffer::new(facade, &line_vertex)
-            .map_err(|bce| GraphicsCreationError::BufferCreationError(bce)));
-
-        let line_indices = index::NoIndices(index::PrimitiveType::LinesList);
-
         let vertex_shader_src = r#"
             #version 140
             in vec2 position;
@@ -233,8 +221,6 @@ impl Graphics {
             quad_indices: quad_indices,
             circle_vertex_buffer: circle_vertex_buffer,
             circle_indices: circle_indices,
-            line_vertex_buffer: line_vertex_buffer,
-            line_indices: line_indices,
             program: program,
             text_system: text_system,
             font: font,
@@ -495,12 +481,12 @@ impl<'a> Frame<'a> {
     }
 
     pub fn draw_quad(&mut self, trans: Transformation, layer: Layer, color: Color) {
-        let trans = {
-               [[ trans[0][0], trans[1][0],           0., 0.],
-                [ trans[0][1], trans[1][1],           0., 0.],
-                [          0.,          0.,           1., 0.],
-                [ trans[0][2], trans[1][2], layer.into(), 1.]]
-        };
+        let trans = [
+            [ trans[0][0], trans[1][0],           0., 0.],
+            [ trans[0][1], trans[1][1],           0., 0.],
+            [          0.,          0.,           1., 0.],
+            [ trans[0][2], trans[1][2], layer.into(), 1.]
+        ];
         let uniform = uniform!{
             trans: trans,
             camera: self.camera,
@@ -516,32 +502,19 @@ impl<'a> Frame<'a> {
     }
 
     pub fn draw_line(&mut self, x: f32, y: f32, angle: f32, length: f32, width: f32, layer: Layer, color: Color) {
-        let trans = {
-            let kx = (length*angle.cos()) as f32;
-            let ky = (length*angle.sin()) as f32;
-            let dx = x as f32;
-            let dy = y as f32;
-            let dz = layer.into();
-            [
-                [ kx, 0., 0., 0.],
-                [ 0., ky, 0., 0.],
-                [ 0., 0., 1., 0.],
-                    [ dx, dy, dz, 1.]
-            ]
-        };
-        let uniform = uniform!{
-            trans: trans,
-            camera: self.camera,
-            color: color.into_vec4(self.t_graphics.mode,&self.t_graphics.colors),
-        };
-        self.draw_parameters.line_width = Some(width);
+        let l2 = length/2.;
+        let w2 = width/2.;
+        let cosa = angle.cos();
+        let sina = angle.sin();
+        let cx = x +l2*cosa;
+        let cy = y +l2*sina;
 
-        self.frame.draw(
-            &self.t_graphics.line_vertex_buffer,
-            &self.t_graphics.line_indices,
-            &self.t_graphics.program,
-            &uniform,
-            &self.draw_parameters).unwrap()
+        let trans = [
+            [l2*cosa, -w2*sina, cx],
+            [l2*sina,  w2*cosa, cy]
+        ];
+
+        self.draw_quad(trans,layer,color);
     }
 
     #[inline]
@@ -800,7 +773,8 @@ fn main_test() {
         target.draw_circle(0.,0.,10.,Layer::Middle,Color::Base3);
         target.draw_rectangle(0.,0.,1.1,0.4,Layer::BillBoard,Color::Yellow);
         target.draw_quad(trans,Layer::Ceil,Color::Base4);
-        target.draw_line(0.,0.,1.,10.,1.,Layer::Ceil,Color::Base5);
+        target.draw_line(0.,0.,1.,10.,0.1,Layer::Ceil,Color::Base5);
+        target.draw_line(1.,1.,1.,10.,0.1,Layer::Ceil,Color::Base5);
         target.draw_text("target.draw_text",&vec!(Line {x:0,y:0,length:10}),Layer::Ceil,Color::Base5);
         target.draw_billboard_centered_text("_\n_\ntoto\nest\na\nla\nplage",Color::Green);
         target.finish().unwrap();
@@ -810,6 +784,6 @@ fn main_test() {
                 _ => ()
             }
         }
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+        std::thread::sleep(std::time::Duration::from_millis(200));
     }
 }

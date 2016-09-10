@@ -8,6 +8,7 @@ use graphics::{ Color, Layer };
 pub type ShortEffects = Vec<String>;
 pub type Dimension = [u32;2];
 pub type Array4F32 = [f32;4];
+pub type VecF32 = Vec<f32>;
 pub type VecU8 = Vec<u8>;
 pub type Dungeons = Vec<levelss::Dungeon>;
 pub type Array3U8 = [u8;3];
@@ -46,6 +47,14 @@ configure!(
         left: t VecU8,
         right: t VecU8,
         escape: t VecU8,
+    },
+    effect: {
+        color: t Color,
+        angles: t VecF32,
+        persistance: t f32,
+        thickness: t f32,
+        inner_length: t f32,
+        length: t f32,
     },
     physic: {
         rate: t f32,

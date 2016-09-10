@@ -1,4 +1,5 @@
 use app;
+use graphics;
 use components::*;
 use specs::Join;
 use specs;
@@ -30,7 +31,7 @@ impl Life {
 
 pub struct LifeSystem;
 impl specs::System<app::UpdateContext> for LifeSystem {
-    fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
+    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
         let (mut lives, mut states, entities) = arg.fetch(|world| {
             (
                 world.write::<Life>(),
@@ -41,6 +42,23 @@ impl specs::System<app::UpdateContext> for LifeSystem {
         for (life, entity) in (&mut lives, &entities).iter() {
             if !life.alive {
                 let state = states.get_mut(entity).expect("life expect state component");
+
+                for &angle in &config.effect.angles {
+                    let origin = [
+                        state.position[0]+config.effect.inner_length*angle.cos(),
+                        state.position[1]+config.effect.inner_length*angle.sin()
+                    ];
+
+                    context.effect_tx.send(app::Effect::Line {
+                        origin: origin,
+                        length: config.effect.length,
+                        angle: angle,
+                        persistance: config.effect.persistance,
+                        thickness: config.effect.thickness,
+                        layer: graphics::Layer::Ceil,
+                        color: config.effect.color,
+                    }).unwrap();
+                }
 
                 baal::effect::short::play(life.die_snd,state.position.into_3d());
                 arg.delete(entity);
