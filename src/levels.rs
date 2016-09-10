@@ -296,7 +296,8 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
                         for y in 0..info.height {
                             let offset = ((x + y*info.height)*3) as usize;
                             let col = [data[offset],data[offset+1],data[offset+2]];
-                            let pos = [x as isize,y as isize];
+                            // -y because opengl and image editor are usually inverted
+                            let pos = [x as isize,-(y as isize)];
 
                             if col == config.levels.empty_col {
                             } else if col == config.levels.char_col {

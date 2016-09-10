@@ -12,7 +12,7 @@ angles = [ 0.7853981633975
 persistance = 0.05
 thickness = 0.4
 inner_length = 0.5
-length = 0.5
+length = 0.4
 
 [entities]
 #groups
