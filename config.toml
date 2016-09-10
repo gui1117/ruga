@@ -41,12 +41,12 @@ laser_killer_mask   = "00000110"
 ball_kill_snd = 0
 ball_die_snd = 2
 laser_kill_snd = 3
-char_die_snd = 5
+char_die_snd = 4
 monster_kill_snd = 0
 monster_die_snd = 4
-portal_snd = 6
-column_spawn_snd = 7
-ball_vel_snd = 0
+portal_snd = 5
+column_spawn_snd = 6
+ball_vel_snd = 7
 
 laser_persistent_snd = 0
 monster_persistent_snd = 1
@@ -99,7 +99,7 @@ portal_end_layer = "floor"
 monster_vision_time = 0.5
 column_cooldown = 1.0
 char_restart = 1.0
-ball_vel_snd_coef = 1.0
+ball_vel_snd_coef = 0.01
 
 [menu]
 entry_color = "base4"
@@ -160,10 +160,10 @@ short_effects = [ "null.ogg"
                 , "clic.ogg"
                 , "destroy_ball.ogg"
                 , "laser.ogg"
-                , "monster_die_2.ogg"
-                , "char_die.ogg"
-                , "portal_3.ogg"
+                , "monster_die.ogg"
+                , "portal.ogg"
                 , "spawn_ball.ogg"
+				, "ball_vel.ogg"
                 ]
 
 transition_type = "smooth"

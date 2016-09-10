@@ -148,6 +148,7 @@ impl specs::System<app::UpdateContext> for BallSystem {
                 .mul(config.entities.ball_vel_snd_coef);
 
             if ball.snd_timer <= 0. {
+                ball.snd_timer += 1.0;
                 baal::effect::short::play(config.entities.ball_vel_snd,state.position.into_3d());
             }
 
