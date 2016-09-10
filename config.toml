@@ -155,7 +155,7 @@ distance_model_min = 10.0
 distance_model_max = 20.0
 music_loop = true
 
-persistent_effects = ["lights_loop.ogg","lights_loop.ogg"]
+persistent_effects = ["lights_loop.ogg","monster_persistent.ogg"]
 short_effects = [ "null.ogg"
                 , "clic.ogg"
                 , "destroy_ball.ogg"

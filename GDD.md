@@ -125,9 +125,8 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
-* sounds
-  * persistent monster
-
+* error: Process didn't exit successfully: `target/debug/ruga` (signal: 11, SIGSEGV: invalid memory reference)
+* sounds effect volume
 * maps
 * trailer
 
