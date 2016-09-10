@@ -6,9 +6,9 @@ persistent_snd_cooldown = 10
 color = "base5"
 angles = [ 0.7853981633975
          , 2.3561944901925
-		 , 3.9269908169875
-		 , 5.4977871437825
-		 ]
+         , 3.9269908169875
+         , 5.4977871437825
+         ]
 persistance = 0.05
 thickness = 0.4
 inner_length = 0.5
@@ -157,14 +157,14 @@ music_loop = true
 
 persistent_effects = ["lights_loop.ogg","lights_loop.ogg"]
 short_effects = [ "null.ogg"
-				, "clic.ogg"
-				, "destroy_ball.ogg"
-				, "laser.ogg"
-				, "monster_die_2.ogg"
-				, "char_die.ogg"
-				, "portal_3.ogg"
-				, "spawn_ball.ogg"
-				]
+                , "clic.ogg"
+                , "destroy_ball.ogg"
+                , "laser.ogg"
+                , "monster_die_2.ogg"
+                , "char_die.ogg"
+                , "portal_3.ogg"
+                , "spawn_ball.ogg"
+                ]
 
 transition_type = "smooth"
 transition_time = 2.0
