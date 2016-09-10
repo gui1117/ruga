@@ -6,4 +6,4 @@ it is in early development.
 
 ### License
 
-see [License.md](License.md)
+see [LICENSE.md](LICENSE.md)
