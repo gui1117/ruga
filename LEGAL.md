@@ -1,4 +1,4 @@
-# License
+# Legal
 
 ## Code
 

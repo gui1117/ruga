@@ -4,6 +4,6 @@ a game made in rust
 
 it is in early development.
 
-### License
+### Licenses
 
-see [LICENSE.md](LICENSE.md)
+see [LEGAL.md](LEGAL.md)
