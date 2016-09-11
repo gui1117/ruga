@@ -12,9 +12,9 @@ use `a`,`w`,`s`,`d` or `arrow keys` to move and `escape` to go to menu
 
 ## Modding
 
-[config.toml](config.toml) holds some constant that can be modified on the fly
+[**config.toml**](config.toml) holds some constant that can be modified on the fly
 
-[levels](levels) directory holds castles definition, to add a castle just create a directory with (take example on the official castle) :
+[**levels**](levels) directory holds castles definition, to add a castle just create a directory with **(take example on the official castle)** :
 * config.toml `file`
   * music `string`: name of the sond to play in the corridor
   * dungeons `array`:
