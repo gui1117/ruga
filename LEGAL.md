@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ### Sounds FX
 
-all sounds comes from Xonotic and so are GPL v2 compatible
+all sounds comes from Xonotic and so are GPLv2 compatible
 
 ### Musics
 

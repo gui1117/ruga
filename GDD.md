@@ -125,10 +125,11 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
-* error: Process didn't exit successfully: `target/debug/ruga` (signal: 11, SIGSEGV: invalid memory reference)
 * sounds effect volume
 * maps
 * trailer
+
+* use specs ressource for world
 
 * windows support
 * mac support
