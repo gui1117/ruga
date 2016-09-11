@@ -4,6 +4,30 @@ a game made in rust
 
 it is in early development.
 
+### Play
+
+use `a`,`w`,`s`,`d` or `arrow keys` to move and `escape` to go to menu
+
+*links to downloads*
+
+### Modding
+
+[config.toml](config.toml) holds some constant that can be modified on the fly
+
+[levels](levels) directory holds castles definition, to add a castle just create a directory with (take example on the official castle):
+* config.toml file
+  * music: name of the sond to play in the corridor
+  * dungeons array:
+    * name: name of the dungeon
+	* music: name of the music to play in the dungeon
+	* rooms: array of names of texts or maps
+* music directory
+  * in ogg format and in 44100Hz
+* maps directory
+  * png image, each color define an object
+* texts directory
+  * texts for text rooms
+
 ### Licenses
 
 see [LEGAL.md](LEGAL.md)
