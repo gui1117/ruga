@@ -1,5 +1,6 @@
 use app;
 use components::*;
+use resource::*;
 use specs::Join;
 use specs;
 use config;
@@ -108,18 +109,16 @@ impl MonsterControl {
 pub struct MonsterSystem;
 impl specs::System<app::UpdateContext> for MonsterSystem {
     fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
-        let (mut monsters, players, mut forces, states, physic_worlds, entities) = arg.fetch(|world| {
+        let (mut monsters, players, mut forces, states, physic_world, entities) = arg.fetch(|world| {
             (
                 world.write::<MonsterControl>(),
                 world.read::<PlayerControl>(),
                 world.write::<PhysicForce>(),
                 world.read::<PhysicState>(),
-                world.read::<PhysicWorld>(),
+                world.read_resource::<PhysicWorld>(),
                 world.entities(),
             )
         });
-        let physic_world = physic_worlds.get(context.master_entity)
-            .expect("master_entity expect physic_world component");
 
         let mut player_pos = None;
         for (_, state) in (&players, &states).iter() {

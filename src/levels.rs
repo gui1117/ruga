@@ -1,6 +1,7 @@
 use graphics;
 use specs;
 use entities;
+use resource;
 use config;
 use std::path::Path;
 use std::path::PathBuf;
@@ -239,7 +240,7 @@ impl From<io::Error> for LoadLevelError {
     }
 }
 
-pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::World) -> Result<specs::Entity,LoadLevelError> {
+pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::World) -> Result<(),LoadLevelError> {
     // flush world
     for entity in world.entities().iter() {
         world.delete_later(entity);
@@ -362,16 +363,16 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
         },
     }
 
-    // add_physic_world
-    let master_entity = world.create_now()
-        .with::<physic::PhysicWorld>(physic::PhysicWorld::new())
-        .build();
+    // add physic_world resource if not present
+    if !world.has_resource::<resource::PhysicWorld>() {
+        world.add_resource(physic::PhysicWorld::new())
+    }
 
-    // init_physic_world
-    let mut physic_worlds = world.write::<physic::PhysicWorld>();
-    physic_worlds.get_mut(master_entity).unwrap().fill(&world);
+    // fill physic_world
+    let mut physic_world = world.write_resource::<physic::PhysicWorld>();
+    physic_world.fill(&world);
 
-    Ok(master_entity)
+    Ok(())
 }
 
 fn create_text_level(next: Level, text: String, world: &mut specs::World) {

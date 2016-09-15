@@ -33,7 +33,6 @@ mod components {
         PhysicState,
         PhysicType,
         PhysicForce,
-        PhysicWorld,
         PhysicDynamic,
         PhysicStatic,
         PhysicTrigger,
@@ -55,6 +54,9 @@ mod components {
         Text,
     };
     pub use persistent_snd::DynPersistentSnd;
+}
+mod resource {
+    pub use physic::PhysicWorld;
 }
 mod systems {
     pub use physic::PhysicSystem;

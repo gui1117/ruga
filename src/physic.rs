@@ -183,9 +183,6 @@ pub struct PhysicWorld {
     static_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],u32,Shape)>>,
     movable_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],u32,Shape)>>,
 }
-impl specs::Component for PhysicWorld {
-    type Storage = specs::VecStorage<Self>;
-}
 
 #[derive(Debug)]
 struct Resolution {
@@ -206,19 +203,17 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
         use std::f32::consts::PI;
         use specs::Join;
 
-        let (dynamics,mut states,forces,types,mut physic_worlds,mut triggers,entities) = arg.fetch(|world| {
+        let (dynamics,mut states,forces,types,mut physic_world,mut triggers,entities) = arg.fetch(|world| {
             (
                 world.read::<PhysicDynamic>(),
                 world.write::<PhysicState>(),
                 world.read::<PhysicForce>(),
                 world.read::<PhysicType>(),
-                world.write::<PhysicWorld>(),
+                world.write_resource::<PhysicWorld>(),
                 world.write::<PhysicTrigger>(),
                 world.entities(),
             )
         });
-        let physic_world = physic_worlds.get_mut(context.master_entity)
-            .expect("master_entity expect physic_world component");
 
         let dt = context.dt as f32;
 
@@ -344,6 +339,9 @@ impl PhysicWorld {
         let states = world.read::<PhysicState>();
         let types = world.read::<PhysicType>();
         let entities = world.entities();
+
+        self.static_hashmap.clear();
+        self.movable_hashmap.clear();
 
         for (_,state,typ,entity) in (&dynamics, &states, &types, &entities).iter() {
             self.insert_movable(entity, &state.position, typ.group, &typ.shape);

@@ -115,7 +115,6 @@ pub struct UpdateContext {
     pub effect_tx: mpsc::Sender<Effect>,
     pub control_tx: mpsc::Sender<Control>,
     pub dt: f64,
-    pub master_entity: specs::Entity,
 }
 
 #[derive(PartialEq,Clone)]
@@ -190,7 +189,6 @@ pub struct App {
     effect_rx: mpsc::Receiver<Effect>,
     effect_storage: Vec<Effect>,
     effect_tx: mpsc::Sender<Effect>,
-    master_entity: specs::Entity,
     pub quit: bool,
 }
 
@@ -257,7 +255,6 @@ impl App {
         world.register::<PhysicState>();
         world.register::<PhysicForce>();
         world.register::<PhysicType>();
-        world.register::<PhysicWorld>();
         world.register::<PhysicDynamic>();
         world.register::<PhysicStatic>();
         world.register::<PhysicTrigger>();
@@ -311,8 +308,8 @@ impl App {
 
         // load level
         let level = levels::Level::Entry;
-        let master_entity = try!(levels::load_level(&level, &castles, &mut world)
-                                 .map_err(|e| AppError::LevelCreation(format!("load entry level failed: {}",e))));
+        try!(levels::load_level(&level, &castles, &mut world)
+             .map_err(|e| AppError::LevelCreation(format!("load entry level failed: {}",e))));
 
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
@@ -436,7 +433,6 @@ impl App {
             graphics: graphics,
             planner: planner,
             player_dir: vec!(),
-            master_entity: master_entity,
             effect_rx: effect_rx,
             effect_tx: effect_tx,
             control_rx: control_rx,
@@ -477,7 +473,6 @@ impl App {
         if self.state == State::Game {
             let context = UpdateContext {
                 dt: args.dt,
-                master_entity: self.master_entity,
                 effect_tx: self.effect_tx.clone(),
                 control_tx: self.control_tx.clone(),
             };
@@ -514,21 +509,18 @@ impl App {
         while let Ok(_) = self.control_rx.try_recv() {}
         while let Ok(_) = self.effect_rx.try_recv() {}
 
-        self.master_entity = match levels::load_level(&level,&self.castles,self.planner.mut_world()) {
-            Err(e) => {
-                let level_name = match level {
-                    levels::Level::Room { castle: c, dungeon: d, room: r } => format!("room (castle: {:?}, dungeon: {:?}, room: {:?})",
-                        self.castles.get(c),
-                        self.castles.get(c).and_then(|c| c.dungeons.get(d)),
-                        self.castles.get(c).and_then(|c| c.dungeons.get(d)).and_then(|d| d.rooms.get(r)),
-                    ),
-                    levels::Level::Corridor { castle: c } => format!("corridor (castle: {:?})",self.castles.get(c)),
-                    levels::Level::Entry => "entry".into(),
-                };
-                panic!(format!("ERROR: failed to load level {}: {}",level_name,e));
-            },
-            Ok(m) => m,
-        };
+        if let Some(e) = levels::load_level(&level,&self.castles,self.planner.mut_world()).err() {
+            let level_name = match level {
+                levels::Level::Room { castle: c, dungeon: d, room: r } => format!("room (castle: {:?}, dungeon: {:?}, room: {:?})",
+                self.castles.get(c),
+                self.castles.get(c).and_then(|c| c.dungeons.get(d)),
+                self.castles.get(c).and_then(|c| c.dungeons.get(d)).and_then(|d| d.rooms.get(r)),
+                ),
+                levels::Level::Corridor { castle: c } => format!("corridor (castle: {:?})",self.castles.get(c)),
+                levels::Level::Entry => "entry".into(),
+            };
+            panic!(format!("ERROR: failed to load level {}: {}",level_name,e));
+        }
 
         self.current_level = level;
         let mut player_dir = vec!();

@@ -1,6 +1,7 @@
 use app;
 use graphics;
 use components::*;
+use resource::*;
 use specs::Join;
 use specs;
 use utils::Into3D;
@@ -78,19 +79,17 @@ impl specs::Component for Killer {
 
 pub struct KillerSystem;
 impl specs::System<app::UpdateContext> for KillerSystem {
-    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
-        let (mut lives, states, types, physic_worlds, killers, entities) = arg.fetch(|world| {
+    fn run(&mut self, arg: specs::RunArg, _context: app::UpdateContext) {
+        let (mut lives, states, types, physic_world, killers, entities) = arg.fetch(|world| {
             (
                 world.write::<Life>(),
                 world.read::<PhysicState>(),
                 world.read::<PhysicType>(),
-                world.read::<PhysicWorld>(),
+                world.read_resource::<PhysicWorld>(),
                 world.read::<Killer>(),
                 world.entities(),
             )
         });
-        let physic_world = physic_worlds.get(context.master_entity)
-            .expect("master_entity expect physic_world component");
 
         for (killer, state, typ, entity) in (&killers, &states, &types, &entities).iter() {
             let mut kill = false;
