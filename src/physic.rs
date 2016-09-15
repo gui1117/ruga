@@ -4,6 +4,8 @@ use config;
 use specs::Join;
 use std::collections::hash_map::{HashMap, Entry};
 use std::collections::HashSet;
+use std::hash::BuildHasherDefault;
+use fnv::FnvHasher;
 use std::f32;
 
 pub trait IntoGrid {
@@ -180,8 +182,8 @@ pub struct Collision {
 
 pub struct PhysicWorld {
     unit: f32,
-    static_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],u32,Shape)>>,
-    movable_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],u32,Shape)>>,
+    static_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],u32,Shape)>,BuildHasherDefault<FnvHasher>>,
+    movable_hashmap: HashMap<[i32;2],Vec<(specs::Entity,[f32;2],u32,Shape)>,BuildHasherDefault<FnvHasher>>,
 }
 
 #[derive(Debug)]
@@ -222,7 +224,8 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
         for trigger in (&mut triggers).iter() {
             trigger.active = false;
         }
-        physic_world.movable_hashmap = HashMap::new();
+        let fnv = BuildHasherDefault::<FnvHasher>::default();
+        physic_world.movable_hashmap = HashMap::with_hasher(fnv);
         for (_,entity) in (&dynamics, &entities).iter() {
             let state = states.get_mut(entity).expect("dynamic entity expect state component");
             let force = forces.get(entity).expect("dynamic entity expect force component");
@@ -313,7 +316,8 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
             }
         }
 
-        physic_world.movable_hashmap = HashMap::new();
+        let fnv = BuildHasherDefault::<FnvHasher>::default();
+        physic_world.movable_hashmap = HashMap::with_hasher(fnv);
         for (_,state,typ,entity) in (&dynamics, &mut states, &types, &entities).iter() {
             physic_world.insert_movable(entity, &state.position, typ.group, &typ.shape);
         }
@@ -322,10 +326,13 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
 
 impl PhysicWorld {
     pub fn new() -> Self {
+        let fnv0 = BuildHasherDefault::<FnvHasher>::default();
+        let fnv1 = BuildHasherDefault::<FnvHasher>::default();
+
         let physic_world = PhysicWorld {
             unit: config.physic.unit,
-            static_hashmap: HashMap::new(),
-            movable_hashmap: HashMap::new(),
+            static_hashmap: HashMap::with_hasher(fnv0),
+            movable_hashmap: HashMap::with_hasher(fnv1),
         };
         debug_assert_eq!(physic_world.cells_of_shape(&[0.5,0.5], &Shape::Square(0.5 + f32::EPSILON)).len(),1);
         debug_assert_eq!(physic_world.cells_of_shape(&[0.5,0.5], &Shape::Circle(0.5 + f32::EPSILON)).len(),1);

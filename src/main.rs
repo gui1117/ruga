@@ -7,6 +7,7 @@ extern crate specs;
 extern crate time;
 extern crate toml;
 extern crate rand;
+extern crate fnv;
 extern crate png;
 
 mod persistent_snd;

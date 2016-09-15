@@ -18,4 +18,5 @@ lazy_static = "*"
 toml = "*"
 rand = "*"
 png = "*"
+fnv = "*"
 
