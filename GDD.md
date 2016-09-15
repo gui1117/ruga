@@ -129,8 +129,7 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * maps
 * trailer
 
-* use specs ressource for world
-* hashmap change hash
+* hashmap change hasher
 
 * windows support
 * mac support
