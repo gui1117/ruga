@@ -1,5 +1,5 @@
 effect_volume = 0.5
 global_volume = 0.5
-luminosity = 1.0
+luminosity = 0.10999999940395355
 mode = "dark"
 music_volume = 0.5

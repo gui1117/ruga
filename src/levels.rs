@@ -294,7 +294,7 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
 
                     for x in 0..info.width {
                         for y in 0..info.height {
-                            let offset = ((x + y*info.height)*3) as usize;
+                            let offset = ((x + y*info.width)*3) as usize;
                             let col = [data[offset],data[offset+1],data[offset+2]];
                             // -y because opengl and image editor are usually inverted
                             let pos = [x as isize,-(y as isize)];

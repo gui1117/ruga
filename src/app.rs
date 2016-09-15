@@ -391,10 +391,10 @@ impl App {
                     app.save();
                 }))),
             MenuEntry::new_left_right(
-                Box::new(|app| format!("luminosity: {}", (app.graphics.luminosity()*10.) as usize)),
+                Box::new(|app| format!("luminosity: {}", (app.graphics.luminosity()*10.).round() as usize)),
                 Rc::new(Box::new(|app| {
                     let l = app.graphics.luminosity();
-                    app.graphics.set_luminosity((l-0.1).max(0.0));
+                    app.graphics.set_luminosity((l-0.1).max(0.1));
                     app.save();
                 })),
                 Rc::new(Box::new(|app| {

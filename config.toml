@@ -96,7 +96,7 @@ portal_start_layer = "floor"
 portal_end_layer = "floor"
 
 #others
-monster_vision_time = 0.5
+monster_vision_time = 0.2
 column_cooldown = 1.0
 char_restart = 1.0
 ball_vel_snd_coef = 0.01
