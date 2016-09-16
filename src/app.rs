@@ -1,6 +1,6 @@
 use graphics;
 use specs;
-use utils::Direction;
+use utils::{Direction, HorizontalVerticalAxis};
 use event_loop;
 use config;
 use glium;
@@ -14,6 +14,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use entities;
 use std::fmt;
+use gilrs;
 
 static HELP: &'static str = "
 use up,down,left,right or w,s,a,d to move
@@ -150,7 +151,6 @@ impl State {
     }
 }
 
-
 struct MenuEntry {
     name: Box<Fn(&App)->String>,
     left: Rc<Box<Fn(&mut App)>>,
@@ -174,6 +174,49 @@ impl MenuEntry {
     }
 }
 
+enum PlayerControlState {
+    Keyboard(Vec<Direction>),
+    Joystick(f32,f32),
+}
+
+impl PlayerControlState {
+    fn push_keyboard_dir(&mut self, dir: Direction) {
+        if let &mut PlayerControlState::Keyboard(ref mut directions) = self {
+            if !directions.contains(&dir) {
+                directions.push(dir);
+            }
+        } else {
+            *self = PlayerControlState::Keyboard(vec!(dir));
+        }
+    }
+    fn retain_keyboard_dir(&mut self, dir: Direction) {
+        if let &mut PlayerControlState::Keyboard(ref mut directions) = self {
+            directions.retain(|&d| d != dir);
+        }
+    }
+    fn set_axis_x_state(&mut self, x: f32) {
+        if let PlayerControlState::Keyboard(_) = *self {
+            *self = PlayerControlState::Joystick(0.,0.);
+        }
+        if let &mut PlayerControlState::Joystick(ref mut x_ref,_) = self {
+            *x_ref = x;
+        }
+    }
+    fn set_axis_y_state(&mut self, y: f32) {
+        if let PlayerControlState::Keyboard(_) = *self {
+            *self = PlayerControlState::Joystick(0.,0.);
+        }
+        if let &mut PlayerControlState::Joystick(_,ref mut y_ref) = self {
+            *y_ref = y;
+        }
+    }
+}
+
+enum JoystickMenuState {
+    Pressed(Direction,f32),
+    Released,
+}
+
 pub struct App {
     menu: Vec<MenuEntry>,
     menu_interline: Vec<usize>,
@@ -183,7 +226,8 @@ pub struct App {
     camera: graphics::Camera,
     graphics: graphics::Graphics,
     planner: specs::Planner<UpdateContext>,
-    player_dir: Vec<Direction>,
+    player_control_state: PlayerControlState,
+    joystick_menu_state: JoystickMenuState,
     control_rx: mpsc::Receiver<Control>,
     control_tx: mpsc::Sender<Control>,
     effect_rx: mpsc::Receiver<Effect>,
@@ -428,11 +472,12 @@ impl App {
             state: State::Game,
             castles: castles,
             current_level: level,
+            joystick_menu_state: JoystickMenuState::Released,
             effect_storage: Vec::new(),
             camera: camera,
             graphics: graphics,
             planner: planner,
-            player_dir: vec!(),
+            player_control_state: PlayerControlState::Keyboard(vec!()),
             effect_rx: effect_rx,
             effect_tx: effect_tx,
             control_rx: control_rx,
@@ -470,15 +515,34 @@ impl App {
         }
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
-        if self.state == State::Game {
-            let context = UpdateContext {
-                dt: args.dt,
-                effect_tx: self.effect_tx.clone(),
-                control_tx: self.control_tx.clone(),
-            };
+        match self.state {
+            State::Game => {
+                self.joystick_menu_state = JoystickMenuState::Released;
+                let context = UpdateContext {
+                    dt: args.dt,
+                    effect_tx: self.effect_tx.clone(),
+                    control_tx: self.control_tx.clone(),
+                };
 
-            self.planner.dispatch(context);
-            self.planner.wait();
+                self.planner.dispatch(context);
+                self.planner.wait();
+            },
+            State::Menu(_) | State::Text(_,_) => {
+                let dir = if let JoystickMenuState::Pressed(dir, ref mut time) = self.joystick_menu_state {
+                    if *time > config.joystick.time_to_repeat {
+                        *time = 0.;
+                        Some(dir)
+                    } else {
+                        *time += args.dt as f32;
+                        None
+                    }
+                } else { None };
+
+                if let Some(dir) = dir {
+                    self.dir_pressed(dir);
+                }
+            },
+            State::Pause(_) => (),
         }
         while let Ok(control) = self.control_rx.try_recv() {
             match control {
@@ -523,16 +587,7 @@ impl App {
         }
 
         self.current_level = level;
-        let mut player_dir = vec!();
-        player_dir.append(&mut self.player_dir);
-        for k in player_dir {
-            match k {
-                Direction::Up => self.key_pressed(config.keys.up[0]),
-                Direction::Down => self.key_pressed(config.keys.down[0]),
-                Direction::Right => self.key_pressed(config.keys.right[0]),
-                Direction::Left => self.key_pressed(config.keys.left[0]),
-            }
-        }
+        self.update_player_control();
     }
     pub fn render(&mut self, args: event_loop::RenderArgs) {
         let dt = 1. / config.event_loop.max_fps as f32;
@@ -653,140 +708,199 @@ impl App {
         }
 
     }
-    pub fn key_pressed(&mut self, key: u8) {
+    pub fn dir_pressed(&mut self, direction: Direction) {
         use std::ops::Rem;
 
-        if let State::Pause(_) = self.state {
-            return;
+        match self.state {
+            State::Game => {
+                self.player_control_state.push_keyboard_dir(direction);
+                self.update_player_control();
+            },
+            State::Menu(entry) => {
+                baal::effect::short::play_on_listener(config.menu.clic_snd);
+                match direction {
+                    Direction::Up => self.state = State::Menu(if entry == 0 { self.menu.len()-1 } else { entry-1 }),
+                    Direction::Down => self.state = State::Menu((entry+1).rem(self.menu.len())),
+                    Direction::Right => (*self.menu[entry].right.clone())(self),
+                    Direction::Left => (*self.menu[entry].left.clone())(self),
+                }
+            }
+            State::Text(entry,_) => {
+                baal::effect::short::play_on_listener(config.menu.clic_snd);
+                self.state = State::Menu(entry)
+            }
+            State::Pause(_) => (),
         }
-
-        let direction = if config.keys.up.contains(&key) {
-            Some(Direction::Up)
+    }
+    pub fn dir_released(&mut self, direction: Direction) {
+        match self.state {
+            State::Game => {
+                self.player_control_state.retain_keyboard_dir(direction);
+                self.update_player_control();
+            },
+            _ => (),
+        }
+    }
+    pub fn escape_pressed(&mut self) {
+        baal::effect::short::play_on_listener(config.menu.clic_snd);
+        baal::effect::persistent::mute_all();
+        match self.state {
+            State::Game => self.state = State::Menu(0),
+            State::Menu(_) => self.state = State::Game,
+            State::Text(entry,_) => self.state = State::Menu(entry),
+            State::Pause(_) => unreachable!(),
+        }
+    }
+    pub fn key_pressed(&mut self, key: u8) {
+        if config.keys.up.contains(&key) {
+            self.dir_pressed(Direction::Up);
         } else if config.keys.down.contains(&key) {
-            Some(Direction::Down)
+            self.dir_pressed(Direction::Down);
         } else if config.keys.left.contains(&key) {
-            Some(Direction::Left)
+            self.dir_pressed(Direction::Left);
         } else if config.keys.right.contains(&key) {
-            Some(Direction::Right)
-        } else {
-            None
-        };
-
-        if let Some(direction) = direction {
-            if !self.player_dir.contains(&direction) {
-                self.player_dir.push(direction);
-                self.update_player_direction();
-            }
-            match self.state {
-                State::Game => (),
-                State::Menu(entry) => {
-                    baal::effect::short::play_on_listener(config.menu.clic_snd);
-                    match direction {
-                        Direction::Up => self.state = State::Menu(if entry == 0 { self.menu.len()-1 } else { entry-1 }),
-                        Direction::Down => self.state = State::Menu((entry+1).rem(self.menu.len())),
-                        Direction::Right => (*self.menu[entry].right.clone())(self),
-                        Direction::Left => (*self.menu[entry].left.clone())(self),
-                    }
-                }
-                State::Text(entry,_) => {
-                    baal::effect::short::play_on_listener(config.menu.clic_snd);
-                    self.state = State::Menu(entry)
-                }
-                State::Pause(_) => unreachable!(),
-            }
+            self.dir_pressed(Direction::Right);
+        } else if config.keys.escape.contains(&key) {
+            self.escape_pressed()
         }
-
-        if config.keys.escape.contains(&key) {
-            baal::effect::short::play_on_listener(config.menu.clic_snd);
-            baal::effect::persistent::mute_all();
-            match self.state {
-                State::Game => self.state = State::Menu(0),
-                State::Menu(_) => self.state = State::Game,
-                State::Text(entry,_) => self.state = State::Menu(entry),
-                State::Pause(_) => unreachable!(),
-            }
-        }
-
     }
     pub fn key_released(&mut self, key: u8) {
-        if let State::Pause(_) = self.state {
+        if config.keys.up.contains(&key) {
+            self.dir_released(Direction::Up);
+        } else if config.keys.down.contains(&key) {
+            self.dir_released(Direction::Down);
+        } else if config.keys.left.contains(&key) {
+            self.dir_released(Direction::Left);
+        } else if config.keys.right.contains(&key) {
+            self.dir_released(Direction::Right);
+        }
+    }
+    pub fn button_pressed(&mut self, button: gilrs::Button) {
+        use gilrs::Button::*;
+        match button {
+            South | DPadDown => self.dir_pressed(Direction::Down),
+            East | DPadRight => self.dir_pressed(Direction::Right),
+            North | DPadUp => self.dir_pressed(Direction::Up),
+            West | DPadLeft => self.dir_pressed(Direction::Left),
+            Select => self.escape_pressed(),
+            _ => (),
+        }
+    }
+    pub fn button_released(&mut self, button: gilrs::Button) {
+        use gilrs::Button::*;
+        match button {
+            South | DPadDown => self.dir_released(Direction::Down),
+            East | DPadRight => self.dir_released(Direction::Right),
+            North | DPadUp => self.dir_released(Direction::Up),
+            West | DPadLeft => self.dir_released(Direction::Left),
+            _ => (),
+        }
+    }
+    pub fn axis_changed(&mut self, axis: gilrs::Axis, pos: f32) {
+        if !axis.is_horizontal() && !axis.is_vertical() {
             return;
         }
 
-        let direction = if config.keys.up.contains(&key) {
-            Some(Direction::Up)
-        } else if config.keys.down.contains(&key) {
-            Some(Direction::Down)
-        } else if config.keys.left.contains(&key) {
-            Some(Direction::Left)
-        } else if config.keys.right.contains(&key) {
-            Some(Direction::Right)
-        } else {
-            None
-        };
-
-        if let Some(direction) = direction {
-            self.player_dir.retain(|dir| &direction != dir);
-            self.update_player_direction();
+        match self.state {
+            State::Game => {
+                if axis.is_horizontal() {
+                    self.player_control_state.set_axis_x_state(pos);
+                    self.update_player_control();
+                } else {
+                    self.player_control_state.set_axis_y_state(pos);
+                    self.update_player_control();
+                }
+            },
+            State::Text(_,_) | State::Menu(_) => {
+                if pos.abs() <= config.joystick.release_epsilon {
+                    self.joystick_menu_state = JoystickMenuState::Released;
+                } else if pos.abs() >= config.joystick.press_epsilon {
+                    if let JoystickMenuState::Released = self.joystick_menu_state {
+                        let direction = match (axis.is_horizontal(), pos > 0.) {
+                            (true,true)  => Direction::Right,
+                            (true,false) => Direction::Left,
+                            (false,true) => Direction::Up,
+                            (false,false) => Direction::Down,
+                        };
+                        self.joystick_menu_state = JoystickMenuState::Pressed(direction,0.);
+                        self.dir_pressed(direction);
+                    };
+                }
+            }
+            State::Pause(_) => (),
         }
     }
-    fn update_player_direction(&mut self) {
+    fn update_player_control(&mut self) {
         use std::f32::consts::PI;
 
         let world = self.planner.mut_world();
 
-        if let Some(dir) = self.player_dir.last() {
-
-            let mut last_perpendicular: Option<&Direction> = None;
-            for d in &self.player_dir {
-                if d.perpendicular(dir) {
-                    last_perpendicular = Some(d);
+        match self.player_control_state {
+            PlayerControlState::Joystick(x,y) => {
+                let angle = y.atan2(x);
+                let intensity = (x.powi(2)+y.powi(2)).sqrt();
+                let characters = world.read::<PlayerControl>();
+                let mut forces = world.write::<PhysicForce>();
+                for (_, force) in (&characters, &mut forces).iter() {
+                    force.direction = angle;
+                    force.intensity = intensity;
                 }
-            }
+            },
+            PlayerControlState::Keyboard(ref directions) => {
+                if let Some(dir) = directions.last() {
 
-            let angle = match dir {
-                &Direction::Up => {
-                    match last_perpendicular {
-                        Some(&Direction::Left) => 3.*PI/4.,
-                        Some(&Direction::Right) => PI/4.,
-                        _ => PI/2.,
+                    let mut last_perpendicular: Option<&Direction> = None;
+                    for d in directions {
+                        if d.perpendicular(dir) {
+                            last_perpendicular = Some(d);
+                        }
                     }
-                },
-                &Direction::Down => {
-                    match last_perpendicular {
-                        Some(&Direction::Left) => -3.*PI/4.,
-                        Some(&Direction::Right) => -PI/4.,
-                        _ => -PI/2.,
-                    }
-                },
-                &Direction::Right => {
-                    match last_perpendicular {
-                        Some(&Direction::Down) => -PI/4.,
-                        Some(&Direction::Up) => PI/4.,
-                        _ => 0.,
-                    }
-                },
-                &Direction::Left => {
-                    match last_perpendicular {
-                        Some(&Direction::Down) => -3.*PI/4.,
-                        Some(&Direction::Up) => 3.*PI/4.,
-                        _ => PI,
-                    }
-                },
-            };
 
-            let characters = world.read::<PlayerControl>();
-            let mut forces = world.write::<PhysicForce>();
-            for (_, force) in (&characters, &mut forces).iter() {
-                force.direction = angle;
-                force.intensity = 1.;
-            }
-        } else {
-            let characters = world.read::<PlayerControl>();
-            let mut forces = world.write::<PhysicForce>();
-            for (_, force) in (&characters, &mut forces).iter() {
-                force.intensity = 0.;
-            }
+                    let angle = match dir {
+                        &Direction::Up => {
+                            match last_perpendicular {
+                                Some(&Direction::Left) => 3.*PI/4.,
+                                Some(&Direction::Right) => PI/4.,
+                                _ => PI/2.,
+                            }
+                        },
+                        &Direction::Down => {
+                            match last_perpendicular {
+                                Some(&Direction::Left) => -3.*PI/4.,
+                                Some(&Direction::Right) => -PI/4.,
+                                _ => -PI/2.,
+                            }
+                        },
+                        &Direction::Right => {
+                            match last_perpendicular {
+                                Some(&Direction::Down) => -PI/4.,
+                                Some(&Direction::Up) => PI/4.,
+                                _ => 0.,
+                            }
+                        },
+                        &Direction::Left => {
+                            match last_perpendicular {
+                                Some(&Direction::Down) => -3.*PI/4.,
+                                Some(&Direction::Up) => 3.*PI/4.,
+                                _ => PI,
+                            }
+                        },
+                    };
+
+                    let characters = world.read::<PlayerControl>();
+                    let mut forces = world.write::<PhysicForce>();
+                    for (_, force) in (&characters, &mut forces).iter() {
+                        force.direction = angle;
+                        force.intensity = 1.;
+                    }
+                } else {
+                    let characters = world.read::<PlayerControl>();
+                    let mut forces = world.write::<PhysicForce>();
+                    for (_, force) in (&characters, &mut forces).iter() {
+                        force.intensity = 0.;
+                    }
+                }
+            },
         }
     }
     pub fn resize(&mut self, width: u32, height: u32) {

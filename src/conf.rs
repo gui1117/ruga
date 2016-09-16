@@ -60,6 +60,11 @@ configure!(
         rate: t f32,
         unit: t f32,
     },
+    joystick: {
+        time_to_repeat: t f32,
+        press_epsilon: t f32,
+        release_epsilon: t f32,
+    },
     menu:{
         entry_color: t Color,
         cursor_color: t Color,

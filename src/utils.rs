@@ -1,3 +1,5 @@
+use gilrs;
+
 #[derive(Debug,Clone,Copy,PartialEq)]
 pub enum Direction {
     Left,
@@ -77,3 +79,24 @@ fn test_minus_pi_pi() {
     assert!((minus_pi_pi(3.*PI)-PI).abs() < 0.001);
 }
 
+pub trait HorizontalVerticalAxis {
+    fn is_horizontal(&self) -> bool;
+    fn is_vertical(&self) -> bool;
+}
+
+impl HorizontalVerticalAxis for gilrs::Axis {
+    fn is_horizontal(&self) -> bool {
+        use gilrs::Axis::*;
+        match *self {
+            LeftStickX | RightStickX => true,
+            _ => false,
+        }
+    }
+    fn is_vertical(&self) -> bool {
+        use gilrs::Axis::*;
+        match *self {
+            LeftStickY | RightStickY => true,
+            _ => false,
+        }
+    }
+}

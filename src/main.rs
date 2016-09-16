@@ -9,6 +9,7 @@ extern crate toml;
 extern crate rand;
 extern crate fnv;
 extern crate png;
+extern crate gilrs;
 
 mod persistent_snd;
 mod levels;
@@ -78,8 +79,6 @@ mod systems {
 
 pub use conf::{config};
 
-use glium::glutin::ElementState;
-use glium::glutin::Event as InputEvent;
 use glium::glutin;
 use std::time::Duration;
 use std::thread;
@@ -88,7 +87,7 @@ use event_loop::{
     Event,
 };
 
-fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event_loop::WindowEvents),String> {
+fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event_loop::WindowEvents,gilrs::Gilrs),String> {
     use glium::DisplayBuild;
 
     let mut musics = vec!();
@@ -166,13 +165,13 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
     });
 
 
-    Ok((app,window,window_events))
+    Ok((app,window,window_events,gilrs::Gilrs::new()))
 }
 
 fn main() {
     // init
-    let (mut app,mut window,mut window_events) = match init() {
-        Ok(app) => app,
+    let (mut app,mut window,mut window_events, mut gamepad) = match init() {
+        Ok(t) => t,
         Err(err) => {
             println!("{}",err);
             std::process::exit(1);
@@ -180,23 +179,25 @@ fn main() {
     };
 
     // game loop
-    while let Some(event) = window_events.next(&mut window) {
+    while let Some(event) = window_events.next(&mut window, &mut gamepad) {
         match event {
             Event::Update(args) => app.update(args),
             Event::Render(args) => app.render(args),
-            Event::Input(InputEvent::Closed) => break,
-            Event::Input(InputEvent::KeyboardInput(state,keycode,_)) => {
-                if state == ElementState::Pressed {
+            Event::GlutinEvent(glutin::Event::Closed) => break,
+            Event::GlutinEvent(glutin::Event::KeyboardInput(state,keycode,_)) => {
+                if state == glutin::ElementState::Pressed {
                     app.key_pressed(keycode);
                 } else {
                     app.key_released(keycode);
                 }
             },
-            Event::Input(InputEvent::Resized(width,height)) => {
-                app.resize(width,height);
-            },
-            Event::Input(InputEvent::Focused(f)) => app.focused(f),
-            Event::Input(_) => (),
+            Event::GlutinEvent(glutin::Event::Resized(width,height)) => app.resize(width,height),
+            Event::GlutinEvent(glutin::Event::Focused(f)) => app.focused(f),
+            Event::GlutinEvent(_) => (),
+            Event::GilrsEvent(gilrs::Event::ButtonPressed(button)) => app.button_pressed(button),
+            Event::GilrsEvent(gilrs::Event::ButtonReleased(button)) => app.button_released(button),
+            Event::GilrsEvent(gilrs::Event::AxisChanged(axis,pos)) => app.axis_changed(axis,pos),
+            Event::GilrsEvent(_) => (),
             Event::Idle(args) => thread::sleep(Duration::from_millis(args.dt as u64)),
         }
 

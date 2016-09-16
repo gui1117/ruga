@@ -136,6 +136,11 @@ left = [38,113]
 right = [40,114,36]
 escape = [9]
 
+[joystick]
+time_to_repeat = 0.3
+press_epsilon = 0.5
+release_epsilon = 0.001
+
 [audio]
 check_level = "debug"
 

@@ -125,6 +125,10 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
+* touch + touch UI is boolean in config
+
+* android
+
 * sounds effect volume
 * maps
 * trailer

@@ -1,6 +1,7 @@
 use glium::backend::glutin_backend::GlutinFacade;
 use glium::Frame;
 use glium::glutin;
+use gilrs::{ self, Gilrs };
 
 use std::thread::sleep;
 use std::time::Duration;
@@ -24,7 +25,8 @@ pub enum Event {
     Render(RenderArgs),
     Update(UpdateArgs),
     Idle(IdleArgs),
-    Input(glutin::Event),
+    GlutinEvent(glutin::Event),
+    GilrsEvent(gilrs::Event),
 }
 
 #[derive(Clone,Debug)]
@@ -148,6 +150,11 @@ pub const _DEFAULT_UPS: u64 = 120;
 /// The default maximum frames per second.
 pub const _DEFAULT_MAX_FPS: u64 = 60;
 
+fn poll_next_window_or_gamepad_events(window: &mut GlutinFacade, gamepad: &mut Gilrs) -> Option<Event> {
+    window.poll_events().next().map(|x| Event::GlutinEvent(x))
+        .or(gamepad.poll_events().next().map(|(_,x)| Event::GilrsEvent(x)))
+}
+
 impl WindowEvents {
     /// Creates a new event iterator with default UPS and FPS settings.
     pub fn new(setting: &Setting) -> WindowEvents {
@@ -167,7 +174,7 @@ impl WindowEvents {
     }
 
     /// Returns the next game event.
-    pub fn next(&mut self, window: &mut GlutinFacade) -> Option<Event> {
+    pub fn next(&mut self, window: &mut GlutinFacade, gamepad: &mut Gilrs) -> Option<Event> {
         loop {
             self.state = match self.state {
                 State::Render => {
@@ -204,9 +211,9 @@ impl WindowEvents {
                         let next_update = self.last_update + self.dt_update_in_ns;
                         let next_event = cmp::min(next_frame, next_update);
                         if next_event > current_time {
-                            if let Some(x) = window.poll_events().next() {
+                            if let Some(x) = poll_next_window_or_gamepad_events(window,gamepad) {
                                 *idle = Idle::No;
-                                return Some(Event::Input(x));
+                                return Some(x);
                             } else if *idle == Idle::No {
                                 *idle = Idle::Yes;
                                 let seconds = ((next_event - current_time) as f64) / (BILLION as f64);
@@ -224,15 +231,15 @@ impl WindowEvents {
                 State::HandleEvents => {
                     if self.bench_mode {
                         // Ignore input to prevent it affecting the benchmark.
-                        match window.poll_events().next() {
+                        match poll_next_window_or_gamepad_events(window,gamepad) {
                             None => State::Update,
                             Some(_) => State::HandleEvents,
                         }
                     } else {
                         // Handle all events before updating.
-                        match window.poll_events().next() {
+                        match poll_next_window_or_gamepad_events(window,gamepad) {
                             None => State::Update,
-                            Some(x) => { return Some(Event::Input(x)); },
+                            Some(x) => { return Some(x); },
                         }
                     }
                 }
