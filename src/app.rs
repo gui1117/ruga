@@ -812,19 +812,24 @@ impl App {
                 }
             },
             State::Text(_,_) | State::Menu(_) => {
-                if pos.abs() <= config.joystick.release_epsilon {
-                    self.joystick_menu_state = JoystickMenuState::Released;
-                } else if pos.abs() >= config.joystick.press_epsilon {
-                    if let JoystickMenuState::Released = self.joystick_menu_state {
-                        let direction = match (axis.is_horizontal(), pos > 0.) {
-                            (true,true)  => Direction::Right,
-                            (true,false) => Direction::Left,
-                            (false,true) => Direction::Up,
-                            (false,false) => Direction::Down,
-                        };
-                        self.joystick_menu_state = JoystickMenuState::Pressed(direction,config.joystick.time_to_start_repeating);
-                        self.dir_pressed(direction);
-                    };
+                match self.joystick_menu_state {
+                    JoystickMenuState::Released => {
+                        if pos.abs() >= config.joystick.press_epsilon {
+                            let direction = match (axis.is_horizontal(), pos > 0.) {
+                                (true,true)  => Direction::Right,
+                                (true,false) => Direction::Left,
+                                (false,true) => Direction::Up,
+                                (false,false) => Direction::Down,
+                            };
+                            self.joystick_menu_state = JoystickMenuState::Pressed(direction,config.joystick.time_to_start_repeating);
+                            self.dir_pressed(direction);
+                        }
+                    },
+                    JoystickMenuState::Pressed(direction,_) => {
+                        if pos.abs() <= config.joystick.release_epsilon && !(direction.perpendicular(&Direction::Up) ^ axis.is_horizontal()) {
+                            self.joystick_menu_state = JoystickMenuState::Released;
+                        }
+                    },
                 }
             }
             State::Pause(_) => (),

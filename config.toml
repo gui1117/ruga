@@ -137,10 +137,10 @@ right = [40,114,36]
 escape = [9]
 
 [joystick]
-time_to_repeat = 0.2
-time_to_start_repeating = 0.6
+time_to_repeat = 0.1
+time_to_start_repeating = 0.5
 press_epsilon = 0.5
-release_epsilon = 0.001
+release_epsilon = 0.01
 
 [audio]
 check_level = "debug"
