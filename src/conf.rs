@@ -8,6 +8,7 @@ use graphics::{ Color, Layer };
 pub type ShortEffects = Vec<String>;
 pub type Dimension = [u32;2];
 pub type Array4F32 = [f32;4];
+pub type Array4F64 = [f64;4];
 pub type VecF32 = Vec<f32>;
 pub type VecU8 = Vec<u8>;
 pub type Dungeons = Vec<levelss::Dungeon>;
@@ -59,6 +60,10 @@ configure!(
     physic: {
         rate: t f32,
         unit: t f32,
+    },
+    touch: {
+        joystick: t Array4F64,
+        escape: t Array4F64,
     },
     joystick: {
         time_to_repeat: t f32,

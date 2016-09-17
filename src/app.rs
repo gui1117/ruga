@@ -1,9 +1,9 @@
 use graphics;
 use specs;
-use utils::{Direction, HorizontalVerticalAxis};
+use utils::{self, Direction, HorizontalVerticalAxis};
 use event_loop;
 use config;
-use glium;
+use glium::{self, glutin};
 use specs::Join;
 use levels;
 use systems::*;
@@ -794,6 +794,21 @@ impl App {
             North | DPadUp => self.dir_released(Direction::Up),
             West | DPadLeft => self.dir_released(Direction::Left),
             _ => (),
+        }
+    }
+    pub fn touch(&mut self, touch: glutin::Touch) {
+        use glium::glutin::TouchPhase::*;
+        let loc = [touch.location.0,touch.location.1];
+        if utils::inside_rectangle(loc,config.touch.escape) {
+            if let Started = touch.phase {
+                self.escape_pressed();
+            }
+        } else if utils::inside_rectangle(loc,config.touch.escape) {
+            // TODO
+            // match touch.phase {
+            //     Started | Moved =>
+            //         Ended | Cancelled =>
+            // }
         }
     }
     pub fn axis_changed(&mut self, axis: gilrs::Axis, pos: f32) {

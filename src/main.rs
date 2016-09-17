@@ -193,6 +193,7 @@ fn main() {
             },
             Event::GlutinEvent(glutin::Event::Resized(width,height)) => app.resize(width,height),
             Event::GlutinEvent(glutin::Event::Focused(f)) => app.focused(f),
+            Event::GlutinEvent(glutin::Event::Touch(t)) => app.touch(t),
             Event::GlutinEvent(_) => (),
             Event::GilrsEvent(gilrs::Event::ButtonPressed(button)) => app.button_pressed(button),
             Event::GilrsEvent(gilrs::Event::ButtonReleased(button)) => app.button_released(button),

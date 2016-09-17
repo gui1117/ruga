@@ -100,3 +100,7 @@ impl HorizontalVerticalAxis for gilrs::Axis {
         }
     }
 }
+
+pub fn inside_rectangle(loc: [f64;2], rec: [f64;4]) -> bool {
+    (loc[0] - rec[0]).abs() < rec[3]/2. && (loc[1]-rec[1]).abs() < rec[4]/2.
+}
