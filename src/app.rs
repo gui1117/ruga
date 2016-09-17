@@ -799,16 +799,33 @@ impl App {
     pub fn touch(&mut self, touch: glutin::Touch) {
         use glium::glutin::TouchPhase::*;
         let loc = [touch.location.0,touch.location.1];
-        if utils::inside_rectangle(loc,config.touch.escape) {
+        if utils::inside_rectangle(loc,config.touch.escape_rec) {
             if let Started = touch.phase {
                 self.escape_pressed();
             }
-        } else if utils::inside_rectangle(loc,config.touch.escape) {
-            // TODO
-            // match touch.phase {
-            //     Started | Moved =>
-            //         Ended | Cancelled =>
-            // }
+        } else if utils::inside_rectangle(loc,config.touch.joystick_rec) {
+            let rec = config.touch.joystick_rec;
+
+            match touch.phase {
+                Started | Moved => {
+                    let pos_x = ((loc[0]-rec[0])/rec[3]/2.)
+                        .min(config.touch.joystick_radius)
+                        .max(-config.touch.joystick_radius)
+                        as f32;
+
+                    let pos_y = ((loc[1]-rec[1])/rec[4]/2.)
+                        .min(config.touch.joystick_radius)
+                        .max(-config.touch.joystick_radius)
+                        as f32;
+
+                    self.axis_changed(gilrs::Axis::LeftStickX,pos_x);
+                    self.axis_changed(gilrs::Axis::LeftStickY,pos_y);
+                },
+                Ended | Cancelled => {
+                    self.axis_changed(gilrs::Axis::LeftStickX,0.);
+                    self.axis_changed(gilrs::Axis::LeftStickY,0.);
+                }
+            }
         }
     }
     pub fn axis_changed(&mut self, axis: gilrs::Axis, pos: f32) {

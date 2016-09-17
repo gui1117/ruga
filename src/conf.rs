@@ -62,8 +62,9 @@ configure!(
         unit: t f32,
     },
     touch: {
-        joystick: t Array4F64,
-        escape: t Array4F64,
+        joystick_rec: t Array4F64,
+        joystick_radius: t f64,
+        escape_rec: t Array4F64,
     },
     joystick: {
         time_to_repeat: t f32,
