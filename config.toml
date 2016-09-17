@@ -137,7 +137,8 @@ right = [40,114,36]
 escape = [9]
 
 [joystick]
-time_to_repeat = 0.3
+time_to_repeat = 0.2
+time_to_start_repeating = 0.6
 press_epsilon = 0.5
 release_epsilon = 0.001
 

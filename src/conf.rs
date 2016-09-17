@@ -62,6 +62,7 @@ configure!(
     },
     joystick: {
         time_to_repeat: t f32,
+        time_to_start_repeating: t f32,
         press_epsilon: t f32,
         release_epsilon: t f32,
     },

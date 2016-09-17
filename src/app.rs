@@ -529,11 +529,11 @@ impl App {
             },
             State::Menu(_) | State::Text(_,_) => {
                 let dir = if let JoystickMenuState::Pressed(dir, ref mut time) = self.joystick_menu_state {
-                    if *time > config.joystick.time_to_repeat {
-                        *time = 0.;
+                    if *time <= 0. {
+                        *time = config.joystick.time_to_repeat;
                         Some(dir)
                     } else {
-                        *time += args.dt as f32;
+                        *time -= args.dt as f32;
                         None
                     }
                 } else { None };
@@ -822,7 +822,7 @@ impl App {
                             (false,true) => Direction::Up,
                             (false,false) => Direction::Down,
                         };
-                        self.joystick_menu_state = JoystickMenuState::Pressed(direction,0.);
+                        self.joystick_menu_state = JoystickMenuState::Pressed(direction,config.joystick.time_to_start_repeating);
                         self.dir_pressed(direction);
                     };
                 }
