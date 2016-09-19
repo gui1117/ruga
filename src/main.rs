@@ -127,7 +127,7 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
             "overlap" => baal::music::MusicTransition::Overlap(config.audio.transition_time),
             _ => unreachable!(),
         },
-    }).map_err(|e| format!("ERROR: audio init failed: {:#?}",e)));
+    }).map_err(|e| format!("ERROR: audio init failed: {}",e)));
 
     // init window
     // TODO if fail then disable vsync and then multisampling and then vsync and multisamping

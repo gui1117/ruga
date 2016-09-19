@@ -125,8 +125,10 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
-* touch + touch UI is boolean in config
-* different difficulty -> change velocity (and mass ?)
+* tester touch
+* touch UI is boolean in config with close button on left and return on right
+* different difficulty -> change velocity (and mass ?) just a time coefficient
+* no {:?} but {} because fmt now !
 
 * android
 
