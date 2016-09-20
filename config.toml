@@ -121,6 +121,7 @@ entry_music = "assets/musics/todo.ogg"
 corridor_length = 3
 hall_length = 1
 
+# colors
 empty_col = [0,43,54]
 char_col = [220,50,47]
 portal_col = [238,232,213]
@@ -158,9 +159,9 @@ frames_per_buffer = 64
 effect_dir = "assets/effects"
 music_dir = "."
 
-global_volume = 0.3
-music_volume = 0.8
-effect_volume = 0.5
+global_volume = 0.3 # override by save.toml
+music_volume = 0.8 # override by save.toml
+effect_volume = 0.5 # override by save.toml
 
 distance_model = "pow2"
 distance_model_min = 10.0
@@ -168,6 +169,7 @@ distance_model_max = 20.0
 music_loop = true
 
 persistent_effects = ["lights_loop.ogg","monster_persistent.ogg"]
+
 short_effects = [ "null.ogg"
                 , "clic.ogg"
                 , "destroy_ball.ogg"
@@ -182,12 +184,12 @@ transition_type = "smooth"
 transition_time = 2.0
 
 [window]
-dimension = [640,480]
 vsync = true
 multisampling = 8
 fullscreen = true
 fullscreen_on_primary_monitor = true
-fullscreen_monitor = 0
+fullscreen_monitor = 0 # if not fullscreen_on_primary_monitor
+dimension = [640,480] # if not fullscreen
 
 [camera]
 zoom = 0.08
@@ -214,8 +216,8 @@ blue    = [ 0.14901961, 0.54509807, 0.82352940, 1.0 ]
 cyan    = [ 0.16470589, 0.63137260, 0.59607846, 1.0 ]
 green   = [ 0.52156866, 0.60000000, 0.00000000, 1.0 ]
 
-mode = "dark"
-luminosity = 1.0
+mode = "dark" # override by save.toml
+luminosity = 1.0 # override by save.toml
 circle_precision = 32
 font_file = "assets/fonts/DejaVuSansMono-Bold.ttf"
 font_precision = 50
