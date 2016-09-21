@@ -19,7 +19,7 @@ goto menu:
 
 *links to downloads*
 
-### from source
+### build from source
 
 install portaudio and libsndfile libraries
 
