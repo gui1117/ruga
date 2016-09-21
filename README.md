@@ -28,6 +28,7 @@ on debian: `sudo apt-get install portaudio libsndfile`
 install rust environment using [standard download](https://www.rust-lang.org/en-US/downloads.html) or [rustup.rs](https://rustup.rs/)
 
 compile the project: `cargo build --release`
+
 run: `./target/release/ruga`
 
 be careful it must be run at the root of the ruga directory in order to access to assets and configuration files.
