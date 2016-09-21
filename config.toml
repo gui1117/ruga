@@ -1,6 +1,7 @@
 [general]
 number_of_thread = 2
 persistent_snd_cooldown = 10
+difficulty = 1.0
 
 [effect]
 color = "base5"

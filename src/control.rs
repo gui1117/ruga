@@ -41,7 +41,7 @@ impl specs::System<app::UpdateContext> for PlayerSystem {
         } else {
             self.restart_cooldown = if let Some(cooldown) = self.restart_cooldown {
                 if cooldown > 0. {
-                    Some(cooldown - context.dt as f32)
+                    Some(cooldown - context.dt)
                 } else {
                     context.control_tx.send(app::Control::ResetLevel).unwrap();
                     None
@@ -136,7 +136,7 @@ impl specs::System<app::UpdateContext> for MonsterSystem {
 
                 force.direction = angle;
 
-                monster.next_lookup -= context.dt as f32;
+                monster.next_lookup -= context.dt;
 
                 if monster.next_lookup <= 0. {
                     let length = ((player_pos[1] - pos[1]).powi(2) + (player_pos[0] - pos[0]).powi(2)).sqrt();

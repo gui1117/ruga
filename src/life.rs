@@ -188,7 +188,7 @@ impl specs::System<app::UpdateContext> for ColumnSystem {
         for (column, entity) in (&mut columns, &entities).iter() {
             column.cooldown = if let Some(cooldown) = column.cooldown {
                 if cooldown > 0. {
-                    Some(cooldown - context.dt as f32)
+                    Some(cooldown - context.dt)
                 } else {
                     let state = states.get(entity).expect("column component expect state component");
                     context.control_tx.send(app::Control::CreateBall(state.position,column.arc.clone())).unwrap();

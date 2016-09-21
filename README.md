@@ -6,9 +6,14 @@ it is in early development.
 
 ## Play
 
-use `a`,`w`,`s`,`d` or `arrow keys` to move and `escape` to go to menu
+move:
+ * `w`,`a`,`s`,`d` keys
+ * `↑`,`←`,`↓`,`→` keys
+ * joystick axis and DPad
 
-*gamepad*
+goto menu:
+ * `escape` key
+ * `Select` button
 
 *links to downloads*
 

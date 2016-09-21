@@ -217,7 +217,7 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
             )
         });
 
-        let dt = context.dt as f32;
+        let dt = context.dt;
 
         let mut resolutions = HashMap::<specs::Entity,Resolution>::new();
 

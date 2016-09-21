@@ -115,7 +115,7 @@ pub enum Control {
 pub struct UpdateContext {
     pub effect_tx: mpsc::Sender<Effect>,
     pub control_tx: mpsc::Sender<Control>,
-    pub dt: f64,
+    pub dt: f32,
 }
 
 #[derive(PartialEq,Clone)]
@@ -218,6 +218,7 @@ enum JoystickMenuState {
 }
 
 pub struct App {
+    difficulty: f32,
     menu: Vec<MenuEntry>,
     menu_interline: Vec<usize>,
     castles: Vec<levels::Castle>,
@@ -372,11 +373,21 @@ impl App {
         let (control_tx, control_rx) = mpsc::channel();
 
         // create menu
-        let menu_interline = vec!(0,3,6,8,11);
+        let menu_interline = vec!(0,1,4,7,9,12);
         let menu = vec!(
             MenuEntry::new_button(
                 Box::new(|_| "continue".into()),
                 Rc::new(Box::new(|app| app.state = State::Game))),
+            MenuEntry::new_left_right(
+                Box::new(|app| format!("difficulty: {}",((app.difficulty*10.).round() as usize))),
+                Rc::new(Box::new(|app| {
+                    app.difficulty = (app.difficulty - 0.1).max(0.1);
+                    app.save();
+                })),
+                Rc::new(Box::new(|app| {
+                    app.difficulty = (app.difficulty + 0.1).min(1.0);
+                    app.save();
+                }))),
             MenuEntry::new_button(
                 Box::new(|_| "restart room".into()),
                 Rc::new(Box::new(|app| {
@@ -393,7 +404,7 @@ impl App {
                     app.control_tx.send(Control::ResetGame).unwrap();
                 }))),
             MenuEntry::new_left_right(
-                Box::new(|_| format!("global volume: {}",(baal::volume()*10.) as usize)),
+                Box::new(|_| format!("global volume: {}",(baal::volume()*10.).round() as usize)),
                 Rc::new(Box::new(|app| {
                     baal::set_volume((baal::volume()-0.1).max(0.0));
                     app.save();
@@ -403,7 +414,7 @@ impl App {
                     app.save();
                 }))),
             MenuEntry::new_left_right(
-                Box::new(|_| format!("music volume: {}",(baal::music::volume()*10.) as usize)),
+                Box::new(|_| format!("music volume: {}",(baal::music::volume()*10.).round() as usize)),
                 Rc::new(Box::new(|app| {
                     baal::music::set_volume((baal::music::volume()-0.1).max(0.0));
                     app.save()
@@ -413,7 +424,7 @@ impl App {
                     app.save();
                 }))),
             MenuEntry::new_left_right(
-                Box::new(|_| format!("effects volume: {}",(baal::effect::volume()*10.) as usize)),
+                Box::new(|_| format!("effects volume: {}",(baal::effect::volume()*10.).round() as usize)),
                 Rc::new(Box::new(|app| {
                     baal::effect::set_volume((baal::effect::volume()-0.1).max(0.0));
                     app.save()
@@ -467,6 +478,7 @@ impl App {
             );
 
         Ok(App {
+            difficulty: config.general.difficulty,
             menu_interline: menu_interline,
             menu: menu,
             state: State::Game,
@@ -501,6 +513,7 @@ impl App {
         use std::io::Write;
 
         let result =  conf::save(conf::Save {
+            difficulty: self.difficulty,
             global_volume: baal::music::volume(),
             effect_volume: baal::effect::volume(),
             music_volume: baal::effect::volume(),
@@ -519,7 +532,7 @@ impl App {
             State::Game => {
                 self.joystick_menu_state = JoystickMenuState::Released;
                 let context = UpdateContext {
-                    dt: args.dt,
+                    dt: args.dt as f32 * self.difficulty,
                     effect_tx: self.effect_tx.clone(),
                     control_tx: self.control_tx.clone(),
                 };

@@ -125,23 +125,24 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
-* tester touch
-* touch UI is boolean in config with close button on left and return on right
-* different difficulty -> change velocity (and mass ?) just a time coefficient
-
-* android
-
 * sounds effect volume
 * maps
 * trailer
+  * RUGA
+    a game you can do nothing but move
+  * also you can create map quite easily
 
+* linux support
 * windows support
+
+* touch
+  * UI is boolean in config with close button on left and return on right
+  * tester touch
+  * write value
+
 * mac support
-* android UI
-  * menu on clic
-  * arrow on topleft that link to menu
-  * virtual joystick on bottomcenter
 * android support
+* web support
 
 * two laser persitent snd one for lasers and one for the laser in collision with de character?
 * title for castles and Ruga at corridor
@@ -151,11 +152,8 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * maybe print at top left the castle / dungeon / room
 
 * download dungeon
-* better circle rectangle collision: use math
-
-* input : + joysticks
-
 * note castle
+* better circle rectangle collision: use math
 * color with transparency for portal
 * window creation catch error and try whitout vsync and then without multisampling
 

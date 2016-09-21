@@ -41,6 +41,7 @@ configure!(
     general: {
         number_of_thread: t usize,
         persistent_snd_cooldown: t usize,
+        difficulty: t f32 save difficulty,
     },
     keys: {
         up: t VecU8,
