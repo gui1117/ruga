@@ -12,14 +12,29 @@ move:
  * joystick axis and DPad
 
 goto menu:
- * `escape` key
+ * `Escape` key
  * `Select` button
+
+## Install
 
 *links to downloads*
 
+### from source
+
+install portaudio and libsndfile libraries
+
+on debian: `sudo apt-get install portaudio libsndfile`
+
+install rust environment using [standard download](https://www.rust-lang.org/en-US/downloads.html) or [rustup.rs](https://rustup.rs/)
+
+compile the project: `cargo build --release`
+run: `./target/release/ruga`
+
+be careful it must be run at the root of the ruga directory in order to access to assets and configuration files.
+
 ## Modding
 
-[**config.toml**](config.toml) holds some constant that can be modified on the fly
+[**config.toml**](config.toml) holds constant that can be modified on the fly
 
 [**levels**](levels) directory holds castles definition, to add a castle just create a directory with **(take example on the official castle)** :
 * config.toml `file`
