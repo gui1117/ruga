@@ -138,10 +138,10 @@ right = [40,114,36]
 escape = [9]
 
 [touch]
-joystick_rec =
-escape_rec =
+joystick_rec = [0.0,0.0,10.0,10.0] #TODO
+escape_rec = [0.0,0.0,10.0,10.0] #TODO
 
-joystick_radius =
+joystick_radius = 10.0 #TODO
 
 [joystick]
 time_to_repeat = 0.1

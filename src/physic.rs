@@ -50,10 +50,10 @@ pub enum Shape {
 
 #[derive(Debug,Clone)]
 pub enum CollisionBehavior {
-    Bounce,
-    Back,
+    #[allow(dead_code)] Bounce,
+    #[allow(dead_code)] Back,
     Persist,
-    Stop,
+    #[allow(dead_code)] Stop,
 }
 
 #[derive(Debug,Clone)]

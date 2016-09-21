@@ -192,7 +192,7 @@ macro_rules! configure {
         }
 
         lazy_static! {
-            pub static ref config: Config = {
+            pub static ref CONFIG: Config = {
                 use std::process::exit;
 
                 match _load_config() {

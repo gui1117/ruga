@@ -8,6 +8,8 @@ it is in early development.
 
 use `a`,`w`,`s`,`d` or `arrow keys` to move and `escape` to go to menu
 
+*gamepad*
+
 *links to downloads*
 
 ## Modding

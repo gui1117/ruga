@@ -77,7 +77,7 @@ mod systems {
     pub use persistent_snd::PersistentSndSystem;
 }
 
-pub use conf::{config};
+pub use conf::CONFIG as config;
 
 use glium::glutin;
 use std::time::Duration;
