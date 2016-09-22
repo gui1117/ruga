@@ -180,7 +180,7 @@ impl Graphics {
         let circle_indices = index::NoIndices(index::PrimitiveType::TriangleFan);
 
         let vertex_shader_src = r#"
-            #version 140
+            #version 130
             in vec2 position;
             uniform mat4 trans;
             uniform mat4 camera;
@@ -190,7 +190,7 @@ impl Graphics {
             }
         "#;
         let fragment_shader_src = r#"
-            #version 140
+            #version 130
             out vec4 out_color;
             uniform vec4 color;
             void main() {

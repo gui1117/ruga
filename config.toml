@@ -186,7 +186,7 @@ transition_time = 2.0
 
 [window]
 vsync = true
-multisampling = 8
+multisampling = 2
 fullscreen = true
 fullscreen_on_primary_monitor = true
 fullscreen_monitor = 0 # if not fullscreen_on_primary_monitor
@@ -219,7 +219,7 @@ green   = [ 0.52156866, 0.60000000, 0.00000000, 1.0 ]
 
 mode = "dark" # override by save.toml
 luminosity = 1.0 # override by save.toml
-circle_precision = 32
+circle_precision = 64
 font_file = "assets/fonts/DejaVuSansMono-Bold.ttf"
 font_precision = 50
 font_ratio = 1.3
