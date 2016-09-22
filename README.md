@@ -23,7 +23,7 @@ goto menu:
 
 install portaudio and libsndfile libraries
 
-on debian: `sudo apt-get install portaudio libsndfile`
+on debian: `sudo apt-get install libportaudio2 libsndfile1`
 
 install rust environment using [standard download](https://www.rust-lang.org/en-US/downloads.html) or [rustup.rs](https://rustup.rs/)
 
