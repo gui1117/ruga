@@ -19,5 +19,11 @@ cd 'x86_64-unknown-linux-gnu'
 cp ../../release/ruga .
 cp -r ../../../README.md ../../../config.toml ../../../assets ../../../levels .
 
+echo '''#!/bin/sh
+
+cd $(dirname $0)
+./ruga''' > launch.sh
+chmod a+x launch.sh
+
 echo 'done x86_64-unknown-linux-gnu'
 

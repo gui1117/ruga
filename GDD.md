@@ -123,6 +123,10 @@ entree sortie:
 
 there is no gun anymore for the player, he can only move and maybe some other action like teleport or sth like this.
 
+## support
+
+* linux x86\_64 OK
+
 ## TODO
 
 * sounds effect volume
@@ -132,7 +136,7 @@ there is no gun anymore for the player, he can only move and maybe some other ac
     a game you can do nothing but move
   * also you can create map quite easily
 
-* linux support
+* linux i686  and i586 support
 * windows support
 
 * touch
