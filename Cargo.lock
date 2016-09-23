@@ -5,7 +5,7 @@ dependencies = [
  "baal 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "configuration 0.1.0",
  "fnv 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "gilrs 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gilrs 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graphics 0.1.0",
  "lazy_static 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -219,7 +219,7 @@ dependencies = [
 
 [[package]]
 name = "gilrs"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "ioctl 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
