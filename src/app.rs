@@ -119,36 +119,10 @@ pub struct UpdateContext {
 }
 
 #[derive(PartialEq,Clone)]
-enum PauseState {
-    Game,
-    Menu(usize),
-    Text(usize,String),
-}
-
-#[derive(PartialEq,Clone)]
 enum State {
     Game,
     Menu(usize),
     Text(usize,String),
-    Pause(PauseState),
-}
-impl State {
-    fn pause(&mut self) {
-        *self = match self.clone() {
-            State::Game => State::Pause(PauseState::Game),
-            State::Menu(c) => State::Pause(PauseState::Menu(c)),
-            State::Text(c,t) => State::Pause(PauseState::Text(c,t)),
-            p @ State::Pause(_) => p,
-        };
-    }
-    fn resume(&mut self) {
-        *self = match self.clone() {
-            State::Pause(PauseState::Game) => State::Game,
-            State::Pause(PauseState::Menu(c)) => State::Menu(c),
-            State::Pause(PauseState::Text(c,t)) => State::Text(c,t),
-            s @ _ => s,
-        }
-    }
 }
 
 struct MenuEntry {
@@ -234,6 +208,7 @@ pub struct App {
     effect_rx: mpsc::Receiver<Effect>,
     effect_storage: Vec<Effect>,
     effect_tx: mpsc::Sender<Effect>,
+    focus: bool,
     pub quit: bool,
 }
 
@@ -377,7 +352,7 @@ impl App {
         let menu = vec!(
             MenuEntry::new_button(
                 Box::new(|_| "continue".into()),
-                Rc::new(Box::new(|app| app.state = State::Game))),
+                Rc::new(Box::new(|app| app.goto_state_game()))),
             MenuEntry::new_left_right(
                 Box::new(|app| format!("difficulty: {}",((app.difficulty*10.).round() as usize))),
                 Rc::new(Box::new(|app| {
@@ -456,22 +431,13 @@ impl App {
                 }))),
             MenuEntry::new_button(
                 Box::new(|_| "help".into()),
-                Rc::new(Box::new(|app| {
-                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
-                    app.state = State::Text(entry,HELP.into());
-                }))),
+                Rc::new(Box::new(|app| app.goto_state_text(HELP.into())))),
             MenuEntry::new_button(
                 Box::new(|_| "donate".into()),
-                Rc::new(Box::new(|app| {
-                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
-                    app.state = State::Text(entry,DONATE.into());
-                }))),
+                Rc::new(Box::new(|app| app.goto_state_text(DONATE.into())))),
             MenuEntry::new_button(
                 Box::new(|_| "credit".into()),
-                Rc::new(Box::new(|app| {
-                    let entry = if let State::Menu(e) = app.state { e } else { 0 };
-                    app.state = State::Text(entry,CREDIT.into());
-                }))),
+                Rc::new(Box::new(|app| app.goto_state_text(CREDIT.into())))),
             MenuEntry::new_button(
                 Box::new(|_| "quit".into()),
                 Rc::new(Box::new(|app| app.quit = true))),
@@ -494,6 +460,7 @@ impl App {
             effect_tx: effect_tx,
             control_rx: control_rx,
             control_tx: control_tx,
+            focus: true,
             quit: false,
         })
     }
@@ -590,6 +557,22 @@ impl App {
             },
         }
     }
+    pub fn goto_state_menu(&mut self) {
+        match self.state {
+            State::Game => self.state = State::Menu(0),
+            State::Menu(_) => (),
+            State::Text(entry,_) => self.state = State::Menu(entry),
+        }
+    }
+    pub fn goto_state_game(&mut self) {
+        self.state = State::Game;
+    }
+    pub fn goto_state_text(&mut self, text: String) {
+        match self.state {
+            State::Game => self.state = State::Text(0,text),
+            State::Text(entry,_) | State::Menu(entry) => self.state = State::Text(entry,text),
+        }
+    }
     pub fn goto_level(&mut self, level: levels::Level) {
         while let Ok(_) = self.control_rx.try_recv() {}
         while let Ok(_) = self.effect_rx.try_recv() {}
@@ -611,16 +594,14 @@ impl App {
         self.update_player_control();
     }
     pub fn focused(&mut self, focus: bool) {
-        if focus {
-            baal::music::pause();
-            self.state.resume();
-        } else {
-            self.state.pause();
-            baal::effect::short::stop_all();
-            baal::music::resume();
-        }
+        //TODO music pause
+        self.focus = focus;
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
+        if !self.focus {
+            return
+        }
+
         match self.state {
             State::Game => {
                 self.joystick_menu_state = JoystickMenuState::Released;
@@ -648,7 +629,6 @@ impl App {
                     self.dir_pressed(dir);
                 }
             },
-            State::Pause(_) => (),
         }
         while let Ok(control) = self.control_rx.try_recv() {
             match control {
@@ -656,7 +636,7 @@ impl App {
                 Control::ResetLevel => {
                     let level = self.current_level.clone();
                     self.goto_level(level);
-                    self.state = State::Game;
+                    self.goto_state_game();
                 }
                 Control::ResetCastle => {
                     let level = match self.current_level {
@@ -665,11 +645,11 @@ impl App {
                         levels::Level::Entry => levels::Level::Entry,
                     };
                     self.goto_level(level);
-                    self.state = State::Game;
+                    self.goto_state_game();
                 }
                 Control::ResetGame => {
                     self.goto_level(levels::Level::Entry);
-                    self.state = State::Game;
+                    self.goto_state_game();
                 }
                 Control::CreateBall(pos,arc) => entities::add_ball(self.planner.mut_world(),pos,arc),
             }
@@ -679,7 +659,7 @@ impl App {
         let dt = 1. / config.event_loop.max_fps as f32;
 
         match self.state {
-            State::Game | State::Pause(PauseState::Game) => {
+            State::Game => {
                 let world = self.planner.mut_world();
 
                 // update camera
@@ -762,7 +742,7 @@ impl App {
 
                 frame.finish().unwrap();
             },
-            State::Menu(entry) | State::Pause(PauseState::Menu(entry)) => {
+            State::Menu(entry) => {
                 let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
                 let mut menu = String::new();
                 let mut cursor = String::new();
@@ -785,7 +765,7 @@ impl App {
                 frame.draw_billboard_centered_text(&*menu,config.menu.entry_color);
                 frame.finish().unwrap();
             }
-            State::Text(_,ref text) | State::Pause(PauseState::Text(_,ref text)) => {
+            State::Text(_,ref text) => {
                 let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
                 frame.draw_rectangle(0.,0.,25.0,18.0,graphics::Layer::BillBoard,config.menu.background_color);
                 frame.draw_billboard_centered_text(&*text,config.menu.entry_color);
@@ -815,7 +795,6 @@ impl App {
                 baal::effect::short::play_on_listener(config.menu.clic_snd);
                 self.state = State::Menu(entry)
             }
-            State::Pause(_) => (),
         }
     }
     pub fn dir_released(&mut self, direction: Direction) {
@@ -829,12 +808,10 @@ impl App {
     }
     pub fn escape_pressed(&mut self) {
         baal::effect::short::play_on_listener(config.menu.clic_snd);
-        baal::effect::persistent::mute_all();
+        //TODO move in gotostate baal::effect::persistent::mute_all();
         match self.state {
-            State::Game => self.state = State::Menu(0),
-            State::Menu(_) => self.state = State::Game,
-            State::Text(entry,_) => self.state = State::Menu(entry),
-            State::Pause(_) => unreachable!(),
+            State::Game | State::Text(_,_) => self.goto_state_menu(),
+            State::Menu(_) => self.goto_state_game(),
         }
     }
     pub fn key_pressed(&mut self, key: u8) {
@@ -950,7 +927,6 @@ impl App {
                     },
                 }
             }
-            State::Pause(_) => (),
         }
     }
     pub fn resize(&mut self, width: u32, height: u32) {
