@@ -497,16 +497,6 @@ impl App {
             quit: false,
         })
     }
-    pub fn focused(&mut self, focus: bool) {
-        if focus {
-            baal::music::pause();
-            self.state.resume();
-        } else {
-            self.state.pause();
-            baal::effect::short::stop_all();
-            baal::music::resume();
-        }
-    }
     pub fn save(&self) {
         use conf;
         use std;
@@ -525,6 +515,109 @@ impl App {
         });
         if let Some(err) = result.err() {
             writeln!(&mut std::io::stderr(), "ERROR failed to save save_file: {}", err).unwrap();
+        }
+    }
+    fn update_player_control(&mut self) {
+        use std::f32::consts::PI;
+
+        let world = self.planner.mut_world();
+
+        match self.player_control_state {
+            PlayerControlState::Joystick(x,y) => {
+                let angle = y.atan2(x);
+                let intensity = (x.powi(2)+y.powi(2)).sqrt();
+                let characters = world.read::<PlayerControl>();
+                let mut forces = world.write::<PhysicForce>();
+                for (_, force) in (&characters, &mut forces).iter() {
+                    force.direction = angle;
+                    force.intensity = intensity;
+                }
+            },
+            PlayerControlState::Keyboard(ref directions) => {
+                if let Some(dir) = directions.last() {
+
+                    let mut last_perpendicular: Option<&Direction> = None;
+                    for d in directions {
+                        if d.perpendicular(dir) {
+                            last_perpendicular = Some(d);
+                        }
+                    }
+
+                    let angle = match dir {
+                        &Direction::Up => {
+                            match last_perpendicular {
+                                Some(&Direction::Left) => 3.*PI/4.,
+                                Some(&Direction::Right) => PI/4.,
+                                _ => PI/2.,
+                            }
+                        },
+                        &Direction::Down => {
+                            match last_perpendicular {
+                                Some(&Direction::Left) => -3.*PI/4.,
+                                Some(&Direction::Right) => -PI/4.,
+                                _ => -PI/2.,
+                            }
+                        },
+                        &Direction::Right => {
+                            match last_perpendicular {
+                                Some(&Direction::Down) => -PI/4.,
+                                Some(&Direction::Up) => PI/4.,
+                                _ => 0.,
+                            }
+                        },
+                        &Direction::Left => {
+                            match last_perpendicular {
+                                Some(&Direction::Down) => -3.*PI/4.,
+                                Some(&Direction::Up) => 3.*PI/4.,
+                                _ => PI,
+                            }
+                        },
+                    };
+
+                    let characters = world.read::<PlayerControl>();
+                    let mut forces = world.write::<PhysicForce>();
+                    for (_, force) in (&characters, &mut forces).iter() {
+                        force.direction = angle;
+                        force.intensity = 1.;
+                    }
+                } else {
+                    let characters = world.read::<PlayerControl>();
+                    let mut forces = world.write::<PhysicForce>();
+                    for (_, force) in (&characters, &mut forces).iter() {
+                        force.intensity = 0.;
+                    }
+                }
+            },
+        }
+    }
+    pub fn goto_level(&mut self, level: levels::Level) {
+        while let Ok(_) = self.control_rx.try_recv() {}
+        while let Ok(_) = self.effect_rx.try_recv() {}
+
+        if let Some(e) = levels::load_level(&level,&self.castles,self.planner.mut_world()).err() {
+            let level_name = match level {
+                levels::Level::Room { castle: c, dungeon: d, room: r } => format!("room (castle: {:?}, dungeon: {:?}, room: {:?})",
+                self.castles.get(c),
+                self.castles.get(c).and_then(|c| c.dungeons.get(d)),
+                self.castles.get(c).and_then(|c| c.dungeons.get(d)).and_then(|d| d.rooms.get(r)),
+                ),
+                levels::Level::Corridor { castle: c } => format!("corridor (castle: {:?})",self.castles.get(c)),
+                levels::Level::Entry => "entry".into(),
+            };
+            panic!(format!("ERROR: failed to load level {}: {}",level_name,e));
+        }
+
+        self.current_level = level;
+        self.update_player_control();
+    }
+    pub fn focused(&mut self, focus: bool) {
+        if focus {
+            baal::music::pause();
+            self.state.resume();
+        } else {
+            self.state.pause();
+            baal::effect::short::stop_all();
+            baal::music::resume();
         }
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
@@ -581,26 +674,6 @@ impl App {
                 Control::CreateBall(pos,arc) => entities::add_ball(self.planner.mut_world(),pos,arc),
             }
         }
-    }
-    pub fn goto_level(&mut self, level: levels::Level) {
-        while let Ok(_) = self.control_rx.try_recv() {}
-        while let Ok(_) = self.effect_rx.try_recv() {}
-
-        if let Some(e) = levels::load_level(&level,&self.castles,self.planner.mut_world()).err() {
-            let level_name = match level {
-                levels::Level::Room { castle: c, dungeon: d, room: r } => format!("room (castle: {:?}, dungeon: {:?}, room: {:?})",
-                self.castles.get(c),
-                self.castles.get(c).and_then(|c| c.dungeons.get(d)),
-                self.castles.get(c).and_then(|c| c.dungeons.get(d)).and_then(|d| d.rooms.get(r)),
-                ),
-                levels::Level::Corridor { castle: c } => format!("corridor (castle: {:?})",self.castles.get(c)),
-                levels::Level::Entry => "entry".into(),
-            };
-            panic!(format!("ERROR: failed to load level {}: {}",level_name,e));
-        }
-
-        self.current_level = level;
-        self.update_player_control();
     }
     pub fn render(&mut self, args: event_loop::RenderArgs) {
         let dt = 1. / config.event_loop.max_fps as f32;
@@ -878,79 +951,6 @@ impl App {
                 }
             }
             State::Pause(_) => (),
-        }
-    }
-    fn update_player_control(&mut self) {
-        use std::f32::consts::PI;
-
-        let world = self.planner.mut_world();
-
-        match self.player_control_state {
-            PlayerControlState::Joystick(x,y) => {
-                let angle = y.atan2(x);
-                let intensity = (x.powi(2)+y.powi(2)).sqrt();
-                let characters = world.read::<PlayerControl>();
-                let mut forces = world.write::<PhysicForce>();
-                for (_, force) in (&characters, &mut forces).iter() {
-                    force.direction = angle;
-                    force.intensity = intensity;
-                }
-            },
-            PlayerControlState::Keyboard(ref directions) => {
-                if let Some(dir) = directions.last() {
-
-                    let mut last_perpendicular: Option<&Direction> = None;
-                    for d in directions {
-                        if d.perpendicular(dir) {
-                            last_perpendicular = Some(d);
-                        }
-                    }
-
-                    let angle = match dir {
-                        &Direction::Up => {
-                            match last_perpendicular {
-                                Some(&Direction::Left) => 3.*PI/4.,
-                                Some(&Direction::Right) => PI/4.,
-                                _ => PI/2.,
-                            }
-                        },
-                        &Direction::Down => {
-                            match last_perpendicular {
-                                Some(&Direction::Left) => -3.*PI/4.,
-                                Some(&Direction::Right) => -PI/4.,
-                                _ => -PI/2.,
-                            }
-                        },
-                        &Direction::Right => {
-                            match last_perpendicular {
-                                Some(&Direction::Down) => -PI/4.,
-                                Some(&Direction::Up) => PI/4.,
-                                _ => 0.,
-                            }
-                        },
-                        &Direction::Left => {
-                            match last_perpendicular {
-                                Some(&Direction::Down) => -3.*PI/4.,
-                                Some(&Direction::Up) => 3.*PI/4.,
-                                _ => PI,
-                            }
-                        },
-                    };
-
-                    let characters = world.read::<PlayerControl>();
-                    let mut forces = world.write::<PhysicForce>();
-                    for (_, force) in (&characters, &mut forces).iter() {
-                        force.direction = angle;
-                        force.intensity = 1.;
-                    }
-                } else {
-                    let characters = world.read::<PlayerControl>();
-                    let mut forces = world.write::<PhysicForce>();
-                    for (_, force) in (&characters, &mut forces).iter() {
-                        force.intensity = 0.;
-                    }
-                }
-            },
         }
     }
     pub fn resize(&mut self, width: u32, height: u32) {
