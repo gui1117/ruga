@@ -558,6 +558,8 @@ impl App {
         }
     }
     pub fn goto_state_menu(&mut self) {
+        baal::effect::persistent::mute_all();
+
         match self.state {
             State::Game => self.state = State::Menu(0),
             State::Menu(_) => (),
@@ -565,9 +567,14 @@ impl App {
         }
     }
     pub fn goto_state_game(&mut self) {
+        self.joystick_menu_state = JoystickMenuState::Released;
+        baal::effect::persistent::unmute_all();
+
         self.state = State::Game;
     }
     pub fn goto_state_text(&mut self, text: String) {
+        baal::effect::persistent::mute_all();
+
         match self.state {
             State::Game => self.state = State::Text(0,text),
             State::Text(entry,_) | State::Menu(entry) => self.state = State::Text(entry,text),
@@ -594,8 +601,13 @@ impl App {
         self.update_player_control();
     }
     pub fn focused(&mut self, focus: bool) {
-        //TODO music pause
         self.focus = focus;
+
+        if focus {
+            baal::music::play()
+        } else {
+            baal::music::pause()
+        }
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
         if !self.focus {
@@ -604,7 +616,6 @@ impl App {
 
         match self.state {
             State::Game => {
-                self.joystick_menu_state = JoystickMenuState::Released;
                 let context = UpdateContext {
                     dt: args.dt as f32 * self.difficulty,
                     effect_tx: self.effect_tx.clone(),
@@ -808,7 +819,6 @@ impl App {
     }
     pub fn escape_pressed(&mut self) {
         baal::effect::short::play_on_listener(config.menu.clic_snd);
-        //TODO move in gotostate baal::effect::persistent::mute_all();
         match self.state {
             State::Game | State::Text(_,_) => self.goto_state_menu(),
             State::Menu(_) => self.goto_state_game(),
