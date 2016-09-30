@@ -187,7 +187,7 @@ transition_time = 2.0
 [window]
 vsync = true
 multisampling = 2
-fullscreen = false
+fullscreen = true
 fullscreen_on_primary_monitor = true
 fullscreen_monitor = 0 # if not fullscreen_on_primary_monitor
 dimension = [640,480] # if not fullscreen
