@@ -129,6 +129,8 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
+* audio unsafe!
+* wargo workspace
 * sounds effect volume
 * maps
 * trailer
