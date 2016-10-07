@@ -129,8 +129,8 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
-* audio unsafe!
-* wargo workspace
+* maybe refactor app modes with a trait instead of match an enum
+* use audio instead of baal
 * sounds effect volume
 * maps
 * trailer

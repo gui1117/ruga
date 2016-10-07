@@ -3,6 +3,9 @@
 extern crate rustc_serialize;
 extern crate rodio;
 
+pub mod effect;
+pub mod music;
+
 use rodio::decoder::Decoder;
 use rodio::Sink;
 
@@ -93,383 +96,18 @@ pub struct Setting {
     pub check_level: CheckLevel,
 }
 
-pub mod effect {
-    //! this module allow to play short and persistent sound effects
-    //!
-    //! be careful that `set_volume`, `set_listener`, `set_distance_model`
-    //! only affect future short sound effects
-
-    use super::RAW_STATE;
-
-    fn update_volume() {
-        short::update_volume();
-        persistent::update_volume_for_all();
-    }
-
-    /// set the volume of sound effects
-    /// take effect for future sounds effects only
-    pub fn set_volume(v: f32) {
-        let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-        state.effect_volume = v;
-        update_volume();
-    }
-
-    /// return the volume of sound effects
-    pub fn volume() -> f32 {
-        let state = unsafe { (*RAW_STATE).read().unwrap() };
-        state.effect_volume
-    }
-
-    pub mod short {
-        //! this module allow to play short sound effects
-        //!
-        //! ```lua
-        //! volume = global_volume * effect_volume * distance(position,listener_position)
-        //! ```
-        //!
-        //! but once a sound effect is played at a volume it doesn't change its volume anymore
-        //!
-        //! this can lead to weird effects for not so short sound effects and with moving source
-
-        use super::super::{RAW_STATE};
-
-        /// play the sound effect at the volume: `global_volume * effect_volume *
-        /// distance(position, listener_position)`
-        pub fn play(effect: usize, pos: [f32;3]) {
-            let state = unsafe { (*RAW_STATE).read().unwrap() };
-            let volume = state.global_volume * state.effect_volume * state.distance_model.distance(pos,state.listener);
-            if volume > 0. {
-                Sink::new(state.endpoint).append(state.short_effect(effect).iter())
-                //TODO create sink
-                // state.sender.send(Msg::PlayShortEffect(effect,volume)).unwrap();
-            }
-        }
-
-        #[doc(hidden)]
-        pub fn update_volume() {
-            //TODO change due to effect volume
-        }
-
-        /// play the sound effect at the position of the listener
-        /// i.e. volume is `global_volume * effect_volume`
-        pub fn play_on_listener(effect: usize) {
-            play(effect,super::listener());
-        }
-
-        /// stop all short sound effects
-        pub fn stop_all() {
-            let state = unsafe { (*RAW_STATE).read().unwrap() };
-            //TODO drop short sink
-            // state.sender.send(Msg::StopAllShortEffects).unwrap();
-        }
-    }
-
-    pub mod persistent {
-        //! this module allow to play persistent sound effects
-        //!
-        //! ```lua
-        //! volume = global_volume * effect_volume * sum(distance(position,listener_position))
-        //! ```
-        //!
-        //! but once a sound effect is played at a volume it doesn't change its volume anymore
-        //!
-        //! this can lead to weird effects for not so short sound effects and with moving source
-        //!
-        //! also if its volume is zero then the sound is not played at all
-
-        use super::super::RAW_STATE;
-
-        /// add a new source of the effect
-        pub fn add_position(effect: usize, pos: [f32;3]) {
-            let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-            state.persistent_effect_positions[effect].push(pos);
-        }
-
-        /// add a vec of new sources of the effect
-        pub fn add_positions(effect: usize, mut pos: Vec<[f32;3]>) {
-            let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-            state.persistent_effect_positions[effect].append(&mut pos);
-        }
-
-        /// add a vec of new sources of the effects
-        pub fn add_positions_for_all(all: Vec<(usize,Vec<[f32;3]>)>) {
-            let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-            for (effect,mut pos) in all {
-                state.persistent_effect_positions[effect].append(&mut pos);
-            }
-        }
-
-        /// remove all sources of the effect
-        pub fn clear_positions(effect: usize) {
-            let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-            state.persistent_effect_positions[effect].clear()
-        }
-
-        /// remove all sources of all effects
-        pub fn clear_positions_for_all() {
-            let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-            for p in &mut state.persistent_effect_positions {
-                p.clear()
-            }
-        }
-
-        /// update the volume of effect computed from sources position and listener position at the
-        /// moment of this call
-        pub fn update_volume(effect: usize) {
-            use std::ops::Mul;
-
-            let state = unsafe { (*RAW_STATE).read().unwrap() };
-            let v = state.persistent_effect_positions[effect].iter()
-                .fold(0f32, |acc, &pos| acc + state.distance_model.distance(pos,state.listener))
-                .mul(state.effect_volume)
-                .mul(state.global_volume);
-
-            //TODO change volume of sink
-            //TODO take mute indo consideration
-            // state.sender.send(Msg::UpdatePersistentEffectVolume(effect,v)).unwrap();
-        }
-
-        /// update the volume of all effect
-        pub fn update_volume_for_all() {
-            use std::ops::Mul;
-
-            let state = unsafe { (*RAW_STATE).read().unwrap() };
-
-            let mut volumes = Vec::with_capacity(state.persistent_effect_positions.len());
-
-            for effect_positions in &state.persistent_effect_positions {
-                volumes.push(effect_positions.iter()
-                    .fold(0f32, |acc, &pos| acc + state.distance_model.distance(pos,state.listener))
-                    .mul(state.effect_volume)
-                    .mul(state.global_volume));
-            }
-
-            //TODO change volume of sink
-            //TODO take mute indo consideration
-            // state.sender.send(Msg::UpdatePersistentEffectsVolume(volumes)).unwrap();
-        }
-
-        /// pause all persistent effects
-        pub fn mute_all() {
-            let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-            if !state.persistent_mute {
-                state.persistent_mute = true;
-                // TODO set volume 0 for sink
-                // state.sender.send(Msg::SetAllPersistentMute(true)).unwrap();
-            }
-        }
-
-        /// resume all persistent effects
-        pub fn unmute_all() {
-            let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-            if state.persistent_mute {
-                state.persistent_mute = false;
-                // TODO set volume not 0
-                // state.sender.send(Msg::SetAllPersistentMute(false)).unwrap();
-            }
-        }
-
-        /// return whereas persistent effects are muted
-        pub fn is_all_mute() -> bool {
-            let state = unsafe { (*RAW_STATE).read().unwrap() };
-            state.persistent_mute
-        }
-    }
-
-    /// set the position of the listener
-    pub fn set_listener(pos: [f32;3]) {
-        let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-        state.listener = pos;
-    }
-
-    /// return the position of the listener
-    pub fn listener() -> [f32;3] {
-        let state = unsafe { (*RAW_STATE).read().unwrap() };
-        state.listener
-    }
-
-    /// set the distance model
-    pub fn set_distance_model(d: DistanceModel) {
-        let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-        state.distance_model = d;
-    }
-
-    /// distance model, used to compute sound effects volumes.
-    #[derive(Clone,Debug,PartialEq,RustcDecodable,RustcEncodable)]
-    pub enum DistanceModel {
-        /// if d <= a then 1
-        ///
-        /// if a <= d <= b then 1-((d-a)/(b-a))
-        ///
-        /// if d >= b then 0
-        Linear(f32,f32),
-        /// if d <= a then 1
-        ///
-        /// if a <= d <= b then (1-((d-a)/(b-a)))^2
-        ///
-        /// if d >= b then 0
-        Pow2(f32,f32),
-    }
-
-    impl DistanceModel {
-        fn distance(&self, pos: [f32;3], listener: [f32;3]) -> f32 {
-            let d = pos.iter()
-                .zip(&listener)
-                .map(|(a,b)| (a-b).powi(2))
-                .fold(0.,|sum,i| sum+i)
-                .sqrt();
-
-            match *self {
-                DistanceModel::Linear(a,b) => {
-                    if d <= a {
-                        1.
-                    } else if d <= b {
-                        1. - ((d-a)/(b-a))
-                    } else {
-                        0.
-                    }
-                }
-                DistanceModel::Pow2(a,b) => {
-                    if d <= a {
-                        1.
-                    } else if d <= b {
-                        (1. - ((d-a)/(b-a))).powi(2)
-                    } else {
-                        0.
-                    }
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn test_distance() {
-        let origin = [0.,0.,0.];
-        let d = DistanceModel::Linear(10.,110.);
-        assert_eq!(d.distance(origin,origin), 1.);
-        assert_eq!(d.distance(origin,[10.,0.,0.]), 1.);
-        assert_eq!(d.distance(origin,[60.,0.,0.]), 0.5);
-        assert!(d.distance(origin,[100.,0.,0.]) - 0.1 < 0.00001);
-        assert_eq!(d.distance(origin,[150.,0.,0.]), 0.);
-    }
-
-}
-
-pub mod music {
-    //! this module allow to play music
-
-    use super::RAW_STATE;
-
-    /// set the volume of the music
-    /// the actual music volume is `music_volume * global_volume`
-    pub fn set_volume(v: f32) {
-        let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-        state.music_volume = v;
-        //TODO set sink volume
-        // state.sender.send(Msg::SetMusicVolume(state.music_volume*state.global_volume)).unwrap();
-    }
-
-    /// return the volume of the music
-    pub fn volume() -> f32 {
-        let state = unsafe { (*RAW_STATE).read().unwrap() };
-        state.music_volume
-    }
-
-    /// play the music
-    //TODO rename set_music
-    pub fn play(music: usize) {
-        let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-
-        state.music_index = Some(music);
-        //TODO create a new sink
-        // let snd_file = SndFile::new(&state.music[music],OpenMode::Read).unwrap();
-        // state.sender.send(Msg::PlayMusic(snd_file)).unwrap();
-    }
-
-    /// play the music if is different from the current one
-    pub fn play_or_continue(music: usize) {
-        let must_play = if let Some(index) = index() {
-            music != index
-        } else {
-            true
-        };
-
-        if must_play {
-            play(music);
-        }
-    }
-
-    /// pause the music
-    //TODO rename mute
-    pub fn pause() {
-        let state = unsafe { (*RAW_STATE).read().unwrap() };
-        //TODO set volume
-        // state.sender.send(Msg::PauseMusic).unwrap();
-    }
-
-    /// resume the music
-    //TODO rename unmute
-    pub fn resume() {
-        let state = unsafe { (*RAW_STATE).read().unwrap() };
-        //TODO set volume
-        // state.sender.send(Msg::ResumeMusic).unwrap();
-    }
-
-    /// stop the music
-    pub fn stop() {
-        let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-        state.music_index = None;
-        //TODO drop sink
-        // state.sender.send(Msg::StopMusic).unwrap();
-    }
-
-    /// return the current type of transition
-    pub fn transition() -> MusicTransition {
-        let state = unsafe { (*RAW_STATE).read().unwrap() };
-        state.music_transition
-    }
-
-    /// set the type of transition between musics
-    pub fn set_transition(trans: MusicTransition) {
-        let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-        state.music_transition = trans;
-    }
-
-    /// return the index of the current music if any
-    pub fn index() -> Option<usize> {
-        let state = unsafe { (*RAW_STATE).read().unwrap() };
-        state.music_index
-    }
-
-    /// the type of transition between musics
-    #[derive(Clone,Copy,Debug,PartialEq,RustcDecodable,RustcEncodable)]
-    pub enum MusicTransition {
-        /// the current music end smoothly and then the new one is played. (in second)
-        Smooth(f32),
-        /// the current music end smoothly while the new one begin smoothly. (in second)
-        Overlap(f32),
-        /// the current music is stopped and the new one is played.
-        Instant,
-    }
-
-    impl MusicTransition {
-        /// whether music transition is smooth
-        pub fn is_smooth(&self) -> bool {
-            if let &MusicTransition::Smooth(_) = self {
-                true
-            } else {
-                false
-            }
-        }
-    }
-}
-
 /// set the global volume
 pub fn set_volume(v: f32) {
-    let mut state = unsafe { (*RAW_STATE).write().unwrap() };
-    state.global_volume = v;
-    // TODO change sink volume
-    // state.sender.send(Msg::SetMusicVolume(state.music_volume*state.global_volume)).unwrap();
+    {
+        let mut state = unsafe { (*RAW_STATE).write().unwrap() };
+        state.global_volume = v;
+    }
+    update_volume();
+}
+
+fn update_volume() {
+    effect::update_volume();
+    music::update_volume();
 }
 
 /// return the global volume
@@ -480,10 +118,8 @@ pub fn volume() -> f32 {
 
 /// stop music and effects
 pub fn stop() {
-    let state = unsafe { (*RAW_STATE).read().unwrap() };
     music::stop();
-    effect::short::stop_all();
-    effect::persistent::mute_all();
+    effect::stop();
 }
 
 /// error possible on init
@@ -561,6 +197,8 @@ struct State {
     persistent_effect_positions: Vec<Vec<[f32;3]>>,
     persistent_mute: bool,
     short_effect: Vec<Decoder<File>>,
+    music_sink: Sink,
+
 }
 
 impl State {

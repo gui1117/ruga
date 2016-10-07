@@ -6,3 +6,4 @@ authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 [dependencies]
 lazy_static = "*"
 toml = "*"
+

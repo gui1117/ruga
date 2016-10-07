@@ -9,6 +9,7 @@ pub enum Direction {
 }
 
 impl Direction {
+    #[inline]
     pub fn perpendicular(&self, other: &Direction) -> bool {
         match self {
             &Direction::Up | &Direction::Down => {
@@ -27,6 +28,7 @@ impl Direction {
         }
     }
 
+    #[inline]
     #[allow(dead_code)]
     pub fn opposite(&self) -> Direction {
         match self {
@@ -39,6 +41,7 @@ impl Direction {
 }
 
 ///return the angle in ]-PI,PI]
+#[inline]
 pub fn minus_pi_pi(a: f32) -> f32 {
     use std::f32::consts::PI;
     use std::ops::Rem;
@@ -85,6 +88,7 @@ pub trait HorizontalVerticalAxis {
 }
 
 impl HorizontalVerticalAxis for gilrs::Axis {
+    #[inline]
     fn is_horizontal(&self) -> bool {
         use gilrs::Axis::*;
         match *self {
@@ -92,6 +96,7 @@ impl HorizontalVerticalAxis for gilrs::Axis {
             _ => false,
         }
     }
+    #[inline]
     fn is_vertical(&self) -> bool {
         use gilrs::Axis::*;
         match *self {
@@ -101,6 +106,7 @@ impl HorizontalVerticalAxis for gilrs::Axis {
     }
 }
 
+#[inline]
 pub fn inside_rectangle(loc: [f64;2], rec: [f64;4]) -> bool {
-    (loc[0] - rec[0]).abs() < rec[3]/2. && (loc[1]-rec[1]).abs() < rec[4]/2.
+    (loc[0] - rec[0]).abs() < rec[2]/2. && (loc[1]-rec[1]).abs() < rec[3]/2.
 }

@@ -9,3 +9,4 @@ vecmath = "*"
 toml = "*"
 glium_text = { path = "src/glium_text" }
 configuration = { path = "../configuration" }
+

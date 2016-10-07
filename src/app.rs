@@ -604,7 +604,7 @@ impl App {
         self.focus = focus;
 
         if focus {
-            baal::music::play()
+            baal::music::resume()
         } else {
             baal::music::pause()
         }
@@ -881,12 +881,12 @@ impl App {
 
             match touch.phase {
                 Started | Moved => {
-                    let pos_x = ((loc[0]-rec[0])/rec[3]/2.)
+                    let pos_x = ((loc[0]-rec[0])/rec[2]/2.)
                         .min(config.touch.joystick_radius)
                         .max(-config.touch.joystick_radius)
                         as f32;
 
-                    let pos_y = ((loc[1]-rec[1])/rec[4]/2.)
+                    let pos_y = ((loc[1]-rec[1])/rec[3]/2.)
                         .min(config.touch.joystick_radius)
                         .max(-config.touch.joystick_radius)
                         as f32;
