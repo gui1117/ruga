@@ -170,9 +170,6 @@ configure!(
         wall_col: t Array3U8,
     },
     audio: {
-        channels: t i32,
-        sample_rate: t f64,
-        frames_per_buffer: t u32,
         effect_dir: t String,
         music_dir: t String,
         global_volume: t f32 save global_volume,
@@ -181,12 +178,10 @@ configure!(
         distance_model: e String [linear,pow2],
         distance_model_min: t f32,
         distance_model_max: t f32,
-        music_loop: t bool,
         short_effects: t ShortEffects,
         persistent_effects: t PersistentEffects,
-        check_level: e String [always,debug,never],
         transition_type: e String [instant,smooth,overlap],
-        transition_time: t f32,
+        transition_time: t u64,
     },
     window: {
         dimension: t Dimension,

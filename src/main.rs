@@ -98,9 +98,6 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
 
     // init baal
     try!(baal::init(&baal::Setting {
-        channels: config.audio.channels,
-        sample_rate: config.audio.sample_rate,
-        frames_per_buffer: config.audio.frames_per_buffer,
         effect_dir: config.audio.effect_dir.clone().into(),
         music_dir: config.audio.music_dir.clone().into(),
         global_volume: config.audio.global_volume,
@@ -111,20 +108,13 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
             "pow2" => baal::effect::DistanceModel::Pow2(config.audio.distance_model_min,config.audio.distance_model_max),
             _ => unreachable!(),
         },
-        music_loop: config.audio.music_loop,
-        short_effect: config.audio.short_effects.iter().cloned().map(|n| n.into()).collect(),
-        persistent_effect: config.audio.persistent_effects.iter().cloned().map(|n| n.into()).collect(),
-        music: musics.drain(..).map(|music| music.into()).collect(),
-        check_level: match &*config.audio.check_level {
-            "never" => baal::CheckLevel::Never,
-            "always" => baal::CheckLevel::Always,
-            "debug" => baal::CheckLevel::Debug,
-            _ => unreachable!(),
-        },
+        short_effects: config.audio.short_effects.iter().cloned().map(|n| n.into()).collect(),
+        persistent_effects: config.audio.persistent_effects.iter().cloned().map(|n| n.into()).collect(),
+        musics: musics.drain(..).map(|music| music.into()).collect(),
         music_transition: match &*config.audio.transition_type {
             "instant" => baal::music::MusicTransition::Instant,
-            "smooth" => baal::music::MusicTransition::Smooth(config.audio.transition_time),
-            "overlap" => baal::music::MusicTransition::Overlap(config.audio.transition_time),
+            "smooth" => baal::music::MusicTransition::Smooth(Duration::from_millis(config.audio.transition_time)),
+            "overlap" => baal::music::MusicTransition::Overlap(Duration::from_millis(config.audio.transition_time)),
             _ => unreachable!(),
         },
     }).map_err(|e| format!("ERROR: audio init failed: {}",e)));

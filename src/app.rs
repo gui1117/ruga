@@ -379,13 +379,13 @@ impl App {
                     app.control_tx.send(Control::ResetGame).unwrap();
                 }))),
             MenuEntry::new_left_right(
-                Box::new(|_| format!("global volume: {}",(baal::volume()*10.).round() as usize)),
+                Box::new(|_| format!("global volume: {}",(baal::global_volume()*10.).round() as usize)),
                 Rc::new(Box::new(|app| {
-                    baal::set_volume((baal::volume()-0.1).max(0.0));
+                    baal::set_global_volume((baal::global_volume()-0.1).max(0.0));
                     app.save();
                 })),
                 Rc::new(Box::new(|app| {
-                    baal::set_volume((baal::volume()+0.1).min(1.0));
+                    baal::set_global_volume((baal::global_volume()+0.1).min(1.0));
                     app.save();
                 }))),
             MenuEntry::new_left_right(
@@ -558,7 +558,7 @@ impl App {
         }
     }
     pub fn goto_state_menu(&mut self) {
-        baal::effect::persistent::mute_all();
+        baal::effect::pause();
 
         match self.state {
             State::Game => self.state = State::Menu(0),
@@ -568,12 +568,12 @@ impl App {
     }
     pub fn goto_state_game(&mut self) {
         self.joystick_menu_state = JoystickMenuState::Released;
-        baal::effect::persistent::unmute_all();
+        baal::effect::resume();
 
         self.state = State::Game;
     }
     pub fn goto_state_text(&mut self, text: String) {
-        baal::effect::persistent::mute_all();
+        baal::effect::pause();
 
         match self.state {
             State::Game => self.state = State::Text(0,text),

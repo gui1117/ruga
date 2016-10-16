@@ -21,10 +21,6 @@ goto menu:
 
 ### build from source
 
-install portaudio and libsndfile libraries
-
-on debian: `sudo apt-get install libportaudio2 libsndfile1`
-
 install rust environment using [standard download](https://www.rust-lang.org/en-US/downloads.html) or [rustup.rs](https://rustup.rs/)
 
 compile the project: `cargo build --release`
@@ -42,8 +38,8 @@ be careful it must be run at the root of the ruga directory in order to access t
   * music `string`: name of the sond to play in the corridor
   * dungeons `array`:
     * name `string`: name of the dungeon
-	* music `string`: name of the music to play in the dungeon
-	* rooms `array`: array of names of texts or maps
+    * music `string`: name of the music to play in the dungeon
+    * rooms `array`: array of names of texts or maps
 * music `directory`
   * musics in ogg format and in 44100Hz
 * maps `directory`

@@ -9,9 +9,7 @@ name = "ruga"
 [dependencies]
 graphics = { path = "src/graphics" }
 configuration = { path = "src/configuration" }
-baal = "*"
-#baal = { path = "../baal" }
-#audio = { path = "src/audio" }
+baal = { git = "https://github.com/thiolliere/baal" }
 glium = "*"
 specs = "*"
 time = "*"

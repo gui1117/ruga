@@ -151,12 +151,6 @@ press_epsilon = 0.5
 release_epsilon = 0.01
 
 [audio]
-check_level = "debug"
-
-channels = 2
-sample_rate = 44100.0
-frames_per_buffer = 64
-
 effect_dir = "assets/effects"
 music_dir = "."
 
@@ -167,7 +161,6 @@ effect_volume = 0.5 # override by save.toml
 distance_model = "pow2"
 distance_model_min = 10.0
 distance_model_max = 20.0
-music_loop = true
 
 persistent_effects = ["lights_loop.ogg","monster_persistent.ogg"]
 
@@ -178,11 +171,11 @@ short_effects = [ "null.ogg"
                 , "monster_die.ogg"
                 , "portal.ogg"
                 , "spawn_ball.ogg"
-				, "ball_vel.ogg"
+                , "ball_vel.ogg"
                 ]
 
 transition_type = "smooth"
-transition_time = 2.0
+transition_time = 2000
 
 [window]
 vsync = true
