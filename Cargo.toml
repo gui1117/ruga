@@ -19,5 +19,3 @@ rand = "*"
 png = "*"
 fnv = "*"
 gilrs = "*"
-
-[workspace]

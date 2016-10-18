@@ -1,5 +1,7 @@
 /*!
 
+TAKEN FROM : https://github.com/tomaka/glium_text
+
 This crate allows you to easily write text.
 
 Usage:
@@ -33,10 +35,10 @@ glium_text::draw(&text, &system, &mut display.draw(), matrix, (1.0, 1.0, 0.0, 1.
 
 #![warn(missing_docs)]
 
-extern crate libc;
-extern crate freetype_sys as freetype;
-#[macro_use]
-extern crate glium;
+use libc;
+use freetype_sys as freetype;
+use glium;
+use std;
 
 use glium::DrawParameters;
 use glium::backend::Context;

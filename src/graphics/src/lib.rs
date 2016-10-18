@@ -1,10 +1,18 @@
-#[macro_use] extern crate glium;
 extern crate vecmath;
-extern crate glium_text;
 extern crate toml;
+// extern crate libc;
+extern crate rusttype;
+extern crate unicode_normalization;
+extern crate itertools;
+extern crate arrayvec;
+#[macro_use] extern crate glium;
 #[macro_use] extern crate configuration;
 
+// mod glium_text;
+
+use itertools::Itertools;
 use glium::{
+    Blend,
     SwapBuffersError,
     Surface,
     VertexBuffer,
@@ -14,14 +22,23 @@ use glium::{
     Depth,
     DepthTest,
 };
-use glium::backend::Facade;
+use glium::backend::{Facade, Context};
 use glium::program::ProgramCreationError;
 use glium::vertex::BufferCreationError;
 use glium::draw_parameters::Smooth;
-use glium_text::{
-    TextSystem,
-    FontTexture,
+use glium::texture::Texture2d;
+use rusttype::{
+    FontCollection,
+    Font,
+    Scale,
+    point,
+    vector,
+    Rect,
 };
+use rusttype::gpu_cache::Cache;
+
+use std::rc::Rc;
+use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
@@ -77,12 +94,8 @@ pub struct GraphicsSetting {
     pub mode: Mode,
     pub luminosity: f32,
     pub circle_precision: usize,
-    pub font_precision: u32,
-    /// should be mono
-    pub font_file: String,
-    pub font_ratio: f32,
-    pub billboard_font_length: f32,
-    pub billboard_font_interline: f32,
+    pub billboard_font_scale: f32,
+    pub font: String,
 }
 
 
@@ -92,7 +105,16 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position);
 
+#[derive(Copy, Clone)]
+struct FontVertex {
+    position: [f32; 2],
+    tex_coords: [f32; 2],
+}
+implement_vertex!(FontVertex, position, tex_coords);
+
 pub struct Graphics {
+    context: Rc<Context>,
+
     colors: ColorsValue,
     colors_setting: ColorsValue,
     mode: Mode,
@@ -101,12 +123,15 @@ pub struct Graphics {
     circle_vertex_buffer: VertexBuffer<Vertex>,
     circle_indices: index::NoIndices,
     program: Program,
-    text_system: TextSystem,
-    font: FontTexture,
-    font_ratio: f32,
-    billboard_font_length: f32,
-    billboard_font_interline: f32,
     luminosity: f32,
+
+    billboard_font_scale: Scale,
+    font: Font<'static>,
+    font_cache: Cache,
+    font_cache_tex: Texture2d,
+    font_program: Program,
+
+    draw_parameters: DrawParameters<'static>,
 }
 
 #[derive(Debug)]
@@ -114,7 +139,9 @@ pub enum GraphicsCreationError {
     ProgramCreationError(ProgramCreationError),
     BufferCreationError(BufferCreationError),
     FontFileOpenError(std::io::Error),
+    FontFileReadError(std::io::Error),
     FontTextureCreationError,
+    InvalidFont,
 }
 
 impl Error for GraphicsCreationError {
@@ -124,6 +151,8 @@ impl Error for GraphicsCreationError {
             ProgramCreationError(_) => "program creation failed",
             BufferCreationError(_) => "buffer creation failed",
             FontFileOpenError(_) => "open font file failed",
+            FontFileReadError(_) => "an error occured while reading the font file",
+            InvalidFont => "font not supported",
             FontTextureCreationError => "font texture creation failed",
         }
     }
@@ -133,6 +162,8 @@ impl Error for GraphicsCreationError {
             ProgramCreationError(ref e) => e.cause(),
             BufferCreationError(ref e) => e.cause(),
             FontFileOpenError(ref e) => e.cause(),
+            FontFileReadError(ref e) => e.cause(),
+            InvalidFont => None,
             FontTextureCreationError => None,
         }
     }
@@ -145,12 +176,15 @@ impl fmt::Display for GraphicsCreationError {
             ProgramCreationError(ref e) => write!(fmt,"{}: {}",self.description(),e),
             BufferCreationError(ref e) => write!(fmt,"{}: {}",self.description(),e),
             FontFileOpenError(ref e) => write!(fmt,"{}: {}",self.description(),e),
+            FontFileReadError(ref e) => write!(fmt,"{}: {}",self.description(),e),
+            InvalidFont => write!(fmt,"{}",self.description()),
             FontTextureCreationError => write!(fmt,"{}",self.description()),
         }
     }
 }
 impl Graphics {
     pub fn new<F: Facade>(facade: &F, setting: GraphicsSetting) -> Result<Graphics,GraphicsCreationError> {
+        use std::io::Read;
 
         let quad_vertex = vec![
             Vertex { position: [-1., -1.] },
@@ -207,13 +241,71 @@ impl Graphics {
             color[2] *= setting.luminosity;
         });
 
-        let text_system = glium_text::TextSystem::new(facade);
-        let font_file = try!(std::fs::File::open(&std::path::Path::new(&setting.font_file))
-            .map_err(|ioe| GraphicsCreationError::FontFileOpenError(ioe)));
-        let font = try!(glium_text::FontTexture::new(facade, font_file, setting.font_precision)
-            .map_err(|_| GraphicsCreationError::FontTextureCreationError));
+        let draw_parameters = DrawParameters {
+            smooth: Some(Smooth::DontCare),
+            blend: Blend::alpha_blending(),
+            depth: Depth {
+                test: DepthTest::IfMoreOrEqual,
+                write: true,
+                .. Default::default()
+            },
+            .. Default::default()
+        };
+
+        let mut font_file = try!(std::fs::File::open(&std::path::Path::new(&setting.font)).map_err(|ioe| GraphicsCreationError::FontFileOpenError(ioe)));
+        let mut font_data = vec!();
+        try!(font_file.read_to_end(&mut font_data).map_err(|e| GraphicsCreationError::FontFileReadError(e)));
+        let font = try!(FontCollection::from_bytes(font_data).into_font().ok_or(GraphicsCreationError::InvalidFont));
+
+        let dpi_factor = 1; // FIXME: different from one in retina display
+        let (screen_width, screen_height) = facade.get_context().get_framebuffer_dimensions();
+        let (cache_width, cache_height) = (screen_width * dpi_factor, screen_height * dpi_factor);
+
+        let font_cache = Cache::new(cache_width, cache_height, 0.1, 0.1);
+
+        //TODO maybe 130 ?
+        let font_program = program!(
+            facade,
+            140 => {
+            vertex: "
+                #version 140
+                uniform float z;
+                in vec2 position;
+                in vec2 tex_coords;
+                out vec2 v_tex_coords;
+
+                void main() {
+                    gl_Position = vec4(position, z, 1.0);
+                    v_tex_coords = tex_coords;
+                }
+            ",
+
+            fragment: "
+                #version 140
+                uniform sampler2D tex;
+                uniform vec4 color;
+                in vec2 v_tex_coords;
+                out vec4 f_colour;
+
+                void main() {
+                    f_colour = color * vec4(1.0, 1.0, 1.0, texture(tex, v_tex_coords).r);
+                }
+            "
+            }).unwrap();
+
+        let font_cache_tex = glium::texture::Texture2d::with_format(
+            facade,
+            glium::texture::RawImage2d {
+                data: Cow::Owned(vec![128u8; cache_width as usize * cache_height as usize]),
+                width: cache_width,
+                height: cache_height,
+                format: glium::texture::ClientFormat::U8
+            },
+            glium::texture::UncompressedFloatFormat::U8,
+            glium::texture::MipmapsOption::NoMipmap).unwrap();
 
         Ok(Graphics {
+            context: facade.get_context().clone(),
             colors: colors,
             colors_setting: setting.colors,
             mode: setting.mode,
@@ -222,12 +314,15 @@ impl Graphics {
             circle_vertex_buffer: circle_vertex_buffer,
             circle_indices: circle_indices,
             program: program,
-            text_system: text_system,
-            font: font,
-            font_ratio: setting.font_ratio,
             luminosity: setting.luminosity,
-            billboard_font_length: setting.billboard_font_length,
-            billboard_font_interline: setting.billboard_font_interline,
+
+            billboard_font_scale: Scale::uniform(setting.billboard_font_scale * screen_height as f32),
+            font_cache: font_cache,
+            font: font,
+            font_cache_tex: font_cache_tex,
+            font_program: font_program,
+
+            draw_parameters: draw_parameters,
         })
     }
 
@@ -259,10 +354,9 @@ impl Graphics {
 
 pub struct Frame<'a> {
     frame: glium::Frame,
-    t_graphics: &'a Graphics,
+    graphics: &'a mut  Graphics,
     camera: [[f32;4];4],
     billboard_camera: [[f32;4];4],
-    draw_parameters: DrawParameters<'a>,
 }
 
 #[derive(Clone,Debug)]
@@ -286,15 +380,8 @@ impl Camera {
     }
 }
 
-#[derive(Debug,Clone)]
-pub struct Line {
-    pub x: i32,
-    pub y: i32,
-    pub length: usize,
-}
-
 impl<'a> Frame<'a> {
-    pub fn new(t_graphics: &'a Graphics, mut frame: glium::Frame, camera: &Camera) -> Frame<'a> {
+    pub fn new(graphics: &'a mut Graphics, mut frame: glium::Frame, camera: &Camera) -> Frame<'a> {
         let camera_matrix = {
             let kx = camera.zoom;
             let ky = camera.zoom*camera.ratio;
@@ -308,8 +395,8 @@ impl<'a> Frame<'a> {
             ]
         };
         let billboard_camera = {
-            let kx = t_graphics.billboard_font_length;
-            let ky = kx*camera.ratio;
+            let kx = 1.0;
+            let ky = camera.ratio;
             [
                 [   kx,    0., 0., 0.],
                 [   0.,    ky, 0., 0.],
@@ -318,17 +405,6 @@ impl<'a> Frame<'a> {
             ]
         };
 
-        let draw_parameters = DrawParameters {
-            smooth: Some(Smooth::DontCare),
-            depth: Depth {
-                test: DepthTest::IfMoreOrEqual,
-                write: true,
-                .. Default::default()
-            },
-            .. Default::default()
-        };
-
-        // clear color and depth
         frame.clear_depth(0f32);;
 
         let uniform = uniform!{
@@ -338,22 +414,21 @@ impl<'a> Frame<'a> {
                 trans
             },
             camera: vecmath::mat4_id::<f32>(),
-            color: Color::Base1.into_vec4(t_graphics.mode,&t_graphics.colors),
+            color: Color::Base1.into_vec4(graphics.mode, &graphics.colors),
         };
 
         frame.draw(
-            &t_graphics.quad_vertex_buffer,
-            &t_graphics.quad_indices,
-            &t_graphics.program,
+            &graphics.quad_vertex_buffer,
+            &graphics.quad_indices,
+            &graphics.program,
             &uniform,
-            &draw_parameters).unwrap();
+            &graphics.draw_parameters).unwrap();
 
         Frame {
             billboard_camera: billboard_camera,
             camera: camera_matrix,
             frame: frame,
-            t_graphics: t_graphics,
-            draw_parameters: draw_parameters,
+            graphics: graphics,
         }
     }
 
@@ -374,15 +449,15 @@ impl<'a> Frame<'a> {
         let uniform = uniform!{
             trans: trans,
             camera: if layer == Layer::BillBoard { self.billboard_camera } else { self.camera },
-            color: color.into_vec4(self.t_graphics.mode,&self.t_graphics.colors),
+            color: color.into_vec4(self.graphics.mode,&self.graphics.colors),
         };
 
         self.frame.draw(
-            &self.t_graphics.quad_vertex_buffer,
-            &self.t_graphics.quad_indices,
-            &self.t_graphics.program,
+            &self.graphics.quad_vertex_buffer,
+            &self.graphics.quad_indices,
+            &self.graphics.program,
             &uniform,
-            &self.draw_parameters).unwrap();
+            &self.graphics.draw_parameters).unwrap();
     }
 
     pub fn draw_circle(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: Color) {
@@ -397,87 +472,197 @@ impl<'a> Frame<'a> {
 
         let uniform = uniform!{
             trans: trans,
-            camera: self.camera,
-            color: color.into_vec4(self.t_graphics.mode,&self.t_graphics.colors),
+            camera: if layer == Layer::BillBoard { self.billboard_camera } else { self.camera },
+            color: color.into_vec4(self.graphics.mode,&self.graphics.colors),
         };
 
         self.frame.draw(
-            &self.t_graphics.circle_vertex_buffer,
-            &self.t_graphics.circle_indices,
-            &self.t_graphics.program,
+            &self.graphics.circle_vertex_buffer,
+            &self.graphics.circle_indices,
+            &self.graphics.program,
             &uniform,
-            &self.draw_parameters).unwrap();
+            &self.graphics.draw_parameters).unwrap();
     }
 
-    pub fn draw_billboard_centered_text(&mut self, text: &str, color: Color) {
-        let color = {
-            let c = color.into_vec4(self.t_graphics.mode,&self.t_graphics.colors);
-            (c[0],c[2],c[2],c[3])
-        };
+    pub fn draw_billbaord_centered_text(&mut self, text: &str, color: Color) {
+        let glyphs = {
+            use unicode_normalization::UnicodeNormalization;
 
-        let number_of_line = text.lines().count();
-
-        for (index,line) in text.lines().enumerate() {
-            let dx = -(line.len() as f32 / 2.0)*0.75;
-            let dy = (number_of_line as f32 / 2.0 - 1.0 - index as f32) * self.t_graphics.font_ratio * self.t_graphics.billboard_font_interline;
-            let dz = Layer::BillBoard.into();
-
-            let text_display = glium_text::TextDisplay::new(&self.t_graphics.text_system, &self.t_graphics.font, line);
-
-            let ratio = self.t_graphics.font_ratio;
-            let trans = [
-                [ 1.,    0., 0., 0.],
-                [ 0., ratio, 0., 0.],
-                [ 0.,    0., 1., 0.],
-                [ dx,    dy, dz, 1.]
-            ];
-
-            let matrix = vecmath::row_mat4_mul(trans,self.billboard_camera);
-            glium_text::draw(&text_display, &self.t_graphics.text_system, &mut self.frame, matrix, color);
-        }
-    }
-
-    pub fn draw_text(&mut self, text: &str, lines: &Vec<Line>, layer: Layer, color: Color) {
-        use std::io::Write;
-
-        let color = {
-            let c = color.into_vec4(self.t_graphics.mode,&self.t_graphics.colors);
-            (c[0],c[2],c[2],c[3])
-        };
-
-        let mut index = 0;
-        let mut remain = text;
-        while remain.len() > 0 {
-            if index == lines.len() {
-                writeln!(&mut std::io::stderr(), "draw_text: text doesn't fit in lines: \t\"{}\"",text).unwrap();
-                break;
-            }
-
-            let split = if lines[index].length*2 > remain.len() {
-                remain.len()
-            } else {
-                lines[index].length*2
+            let mut lines = vec!();
+            let mut current_line = vec!();
+            for chr in text.nfc() {
+                if let '\n' = chr {
+                    lines.push(current_line.drain(..).collect());
+                } else if let Some(glyph) = self.graphics.font.glyph(chr) {
+                    current_line.push(glyph.scaled(self.graphics.billboard_font_scale));
+                }
             };
-            let (burn,not_burn) = remain.split_at(split);
-            remain = not_burn;
+            lines.push(current_line);
 
-            let text_display = glium_text::TextDisplay::new(&self.t_graphics.text_system, &self.t_graphics.font, burn);
+            let v_metrics = self.graphics.font.v_metrics(self.graphics.billboard_font_scale);
+            let advance_height = v_metrics.ascent - v_metrics.descent + v_metrics.line_gap;
 
-            let dx = lines[index].x as f32;
-            let dy = lines[index].y as f32 + 0.2;
-            let dz = layer.into();
-            let ratio = self.t_graphics.font_ratio;
-            let trans = [
-                [ 0.5,    0., 0., 0.],
-                [ 0., ratio/2., 0., 0.],
-                [ 0.,    0., 1., 0.],
-                [ dx,    dy, dz, 1.]
-            ];
+            let nbr_of_lines = lines.len();
+            let glyphs = lines.drain(..).enumerate().flat_map(|(id, mut line)| {
+                if line.len() == 0 { return vec!() };
 
-            let matrix = vecmath::row_mat4_mul(trans,self.camera);
-            glium_text::draw(&text_display, &self.t_graphics.text_system, &mut self.frame, matrix, color);
-            index += 1;
+                let height = if nbr_of_lines % 2 == 0 {
+                    (((nbr_of_lines/2) as i32 - id as i32) as f32 - 0.5) * advance_height
+                } else {
+                    ((nbr_of_lines/2) as i32 - id as i32) as f32 * advance_height
+                };
+
+                let first_width = line.first().unwrap().h_metrics().advance_width;
+                let total_width = line.iter().tuple_windows().fold(first_width, |mut sum, (a, b)| {
+                    sum += self.graphics.font.pair_kerning(self.graphics.billboard_font_scale, a.id(), b.id());
+                    sum += b.h_metrics().advance_width;
+
+                    sum
+                });
+
+                let mut caret = point(-total_width / 2., height);
+                let mut last_glyph_id = None;
+
+                line.drain(..).map(|glyph| {
+                    if let Some(id) = last_glyph_id.take() {
+                        caret.x += self.graphics.font.pair_kerning(self.graphics.billboard_font_scale, id, glyph.id());
+                    }
+                    last_glyph_id = Some(glyph.id());
+                    let glyph = glyph.positioned(caret);
+                    caret.x += glyph.unpositioned().h_metrics().advance_width;
+                    glyph
+                }).collect::<Vec<_>>()
+            }).collect::<Vec<_>>();
+
+            glyphs
+        };
+
+        for glyph in &glyphs {
+            self.graphics.font_cache.queue_glyph(0, glyph.clone());
         }
+
+        {
+            let ref mut font_cache_tex = self.graphics.font_cache_tex;
+            self.graphics.font_cache.cache_queued(|rect, data| {
+                font_cache_tex.main_level().write(glium::Rect {
+                    left: rect.min.x,
+                    bottom: rect.min.y,
+                    width: rect.width(),
+                    height: rect.height()
+                }, glium::texture::RawImage2d {
+                    data: Cow::Borrowed(data),
+                    width: rect.width(),
+                    height: rect.height(),
+                    format: glium::texture::ClientFormat::U8
+                });
+            }).unwrap();
+        }
+
+        let z: f32 = Layer::BillBoard.into();
+        let uniforms = uniform! {
+            tex: self.graphics.font_cache_tex.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
+            color: color.into_vec4(self.graphics.mode,&self.graphics.colors), //TODO luminosity ?
+            z: z,
+        };
+
+        let vertex_buffer = {
+            let origin = point(1.0, -1.0);
+            let (screen_width, screen_height) = {
+                let (w,h) = self.graphics.context.get_framebuffer_dimensions();
+                (w as f32, h as f32)
+            };
+            let vertices: Vec<FontVertex> = glyphs.iter().flat_map(|g| {
+                if let Ok(Some((uv_rect, screen_rect))) = self.graphics.font_cache.rect_for(0, g) {
+                    let gl_rect = Rect {
+                        min: origin
+                            + (vector(screen_rect.min.x as f32 / screen_width - 0.5,
+                                      1.0 - screen_rect.min.y as f32 / screen_height - 0.5)) * 2.0,
+                        max: origin
+                            + (vector(screen_rect.max.x as f32 / screen_width - 0.5,
+                                      1.0 - screen_rect.max.y as f32 / screen_height - 0.5)) * 2.0
+                    };
+                    arrayvec::ArrayVec::<[FontVertex; 6]>::from([
+                        FontVertex {
+                            position: [gl_rect.min.x, gl_rect.max.y],
+                            tex_coords: [uv_rect.min.x, uv_rect.max.y],
+                        },
+                        FontVertex {
+                            position: [gl_rect.min.x,  gl_rect.min.y],
+                            tex_coords: [uv_rect.min.x, uv_rect.min.y],
+                        },
+                        FontVertex {
+                            position: [gl_rect.max.x,  gl_rect.min.y],
+                            tex_coords: [uv_rect.max.x, uv_rect.min.y],
+                        },
+                        FontVertex {
+                            position: [gl_rect.max.x,  gl_rect.min.y],
+                            tex_coords: [uv_rect.max.x, uv_rect.min.y],
+                        },
+                        FontVertex {
+                            position: [gl_rect.max.x, gl_rect.max.y],
+                            tex_coords: [uv_rect.max.x, uv_rect.max.y],
+                        },
+                        FontVertex {
+                            position: [gl_rect.min.x, gl_rect.max.y],
+                            tex_coords: [uv_rect.min.x, uv_rect.max.y],
+                        }])
+                } else {
+                    arrayvec::ArrayVec::new()
+                }
+            }).collect();
+            glium::VertexBuffer::new(&self.graphics.context, &vertices).unwrap()
+        };
+
+        self.frame.draw(&vertex_buffer,
+                    &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+                    &self.graphics.font_program,
+                    &uniforms,
+                    &self.graphics.draw_parameters).unwrap();
+    }
+
+    /// (x,y) correspond to the down-left anchor
+    pub fn draw_text(&mut self, x: f32, y: f32, text: &str, layer: Layer, color: Color) {
+        // TODO
+        // use std::io::Write;
+
+        // let color = {
+        //     let c = color.into_vec4(self.graphics.mode,&self.graphics.colors);
+        //     (c[0],c[2],c[2],c[3])
+        // };
+
+        // let mut index = 0;
+        // let mut remain = text;
+        // while remain.len() > 0 {
+        //     if index == lines.len() {
+        //         writeln!(&mut std::io::stderr(), "draw_text: text doesn't fit in lines: \t\"{}\"",text).unwrap();
+        //         break;
+        //     }
+
+        //     let split = if lines[index].length*2 > remain.len() {
+        //         remain.len()
+        //     } else {
+        //         lines[index].length*2
+        //     };
+        //     let (burn,not_burn) = remain.split_at(split);
+        //     remain = not_burn;
+
+        //     let text_display = glium_text::TextDisplay::new(&self.graphics.text_system, &self.graphics.font, burn);
+
+        //     let dx = lines[index].x as f32;
+        //     let dy = lines[index].y as f32 + 0.2;
+        //     let dz = layer.into();
+        //     let ratio = self.graphics.font_ratio;
+        //     let trans = [
+        //         [ 0.5,    0., 0., 0.],
+        //         [ 0., ratio/2., 0., 0.],
+        //         [ 0.,    0., 1., 0.],
+        //         [ dx,    dy, dz, 1.]
+        //     ];
+
+        //     let matrix = vecmath::row_mat4_mul(trans,self.camera);
+        //     glium_text::draw(&text_display, &self.graphics.text_system, &mut self.frame, matrix, color);
+        //     index += 1;
+        // }
     }
 
     pub fn draw_quad(&mut self, trans: Transformation, layer: Layer, color: Color) {
@@ -489,16 +674,16 @@ impl<'a> Frame<'a> {
         ];
         let uniform = uniform!{
             trans: trans,
-            camera: self.camera,
-            color: color.into_vec4(self.t_graphics.mode,&self.t_graphics.colors),
+            camera: if layer == Layer::BillBoard { self.billboard_camera } else { self.camera },
+            color: color.into_vec4(self.graphics.mode,&self.graphics.colors),
         };
 
         self.frame.draw(
-            &self.t_graphics.quad_vertex_buffer,
-            &self.t_graphics.quad_indices,
-            &self.t_graphics.program,
+            &self.graphics.quad_vertex_buffer,
+            &self.graphics.quad_indices,
+            &self.graphics.program,
             &uniform,
-            &self.draw_parameters).unwrap();
+            &self.graphics.draw_parameters).unwrap();
     }
 
     pub fn draw_line(&mut self, x: f32, y: f32, angle: f32, length: f32, width: f32, layer: Layer, color: Color) {
@@ -775,7 +960,6 @@ fn main_test() {
         target.draw_quad(trans,Layer::Ceil,Color::Base4);
         target.draw_line(0.,0.,1.,10.,0.1,Layer::Ceil,Color::Base5);
         target.draw_line(1.,1.,1.,10.,0.1,Layer::Ceil,Color::Base5);
-        target.draw_text("target.draw_text",&vec!(Line {x:0,y:0,length:10}),Layer::Ceil,Color::Base5);
         target.draw_billboard_centered_text("_\n_\ntoto\nest\na\nla\nplage",Color::Green);
         target.finish().unwrap();
         for ev in display.poll_events() {
