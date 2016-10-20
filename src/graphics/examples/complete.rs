@@ -21,12 +21,12 @@ fn main() {
             base3: [1.0, 1.0, 1.0, 1.0],
             yellow: [1.0, 1.0, 1.0, 1.0],
             orange: [1.0, 1.0, 1.0, 1.0],
-            red: [1.0, 0.0, 0.0, 1.0],
+            red: [1.0, 0.0, 0.0, 0.5],
             magenta: [1.0, 1.0, 1.0, 1.0],
             violet: [1.0, 1.0, 1.0, 1.0],
-            blue: [0.0, 0.0, 1.0, 1.0],
+            blue: [0.0, 0.0, 1.0, 0.5],
             cyan: [1.0, 1.0, 1.0, 1.0],
-            green: [0.0, 1.0, 0.0, 1.0],
+            green: [0.0, 1.0, 0.0, 0.5],
         },
         mode: graphics::Mode::Dark,
         circle_precision: 32,
@@ -35,21 +35,21 @@ fn main() {
         font: "assets/DejaVuSansMono-Bold.ttf".into(),
     }).unwrap();
 
-    let mut camera = graphics::Camera::new(&window, 0.001);
+    let mut camera = graphics::Camera::new(0.0,0.0, 0.001);
 
     let mut _t = 1f32;
 
     loop {
         _t += 0.05;
         camera.x = 100.0;
-        camera.y = 100.0;
+        camera.y = 10.0;
         camera.zoom = 0.01;
 
         let mut frame = graphics::Frame::new(&mut graphics, window.draw(), &camera);
-        frame.draw_rectangle(100.0, 110.0, 20.0, 10.0, graphics::Layer::Floor, graphics::Color::Red);
-        frame.draw_billbaord_centered_text("Aôttttt\np",graphics::Color::Blue);
-        frame.draw_billbaord_centered_text("p",graphics::Color::Green);
-        // frame.draw_text(100.0, 110.0, 0.2, "tata", graphics::Layer::Floor, graphics::Color::Red);
+        frame.draw_billboard_centered_text("Aôttttt\np",graphics::Color::Blue);
+        // frame.draw_billboard_centered_text("p",graphics::Color::Green);
+        // frame.draw_rectangle(110.0, 20.0, 1.0, 1.0, graphics::Layer::Floor, graphics::Color::Red);
+        // frame.draw_text(110.0, 20.0, 1.0, "O", graphics::Layer::Floor, graphics::Color::Blue);
         frame.finish().unwrap();
 
         for ev in window.poll_events() {

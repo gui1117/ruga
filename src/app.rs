@@ -37,14 +37,14 @@ powered by rust language [rust-lang.org]
 
 ";
 
-static DONATE: &'static str = "
-if you want to
-please consider donate
-maybe $2 or $5 to:
+// static DONATE: &'static str = "
+// if you want to
+// please consider donate
+// maybe $2 or $5 to:
 
-TODO paypal
+// TODO paypal
 
-";
+// ";
 
 pub struct Graphic {
     color: graphics::Color,
@@ -256,15 +256,12 @@ impl App {
             },
             luminosity: config.graphics.luminosity,
             circle_precision: config.graphics.circle_precision,
-            font_precision: config.graphics.font_precision,
-            font_file: config.graphics.font_file.clone(),
-            font_ratio: config.graphics.font_ratio,
-            billboard_font_length: config.graphics.billboard_font_length,
-            billboard_font_interline: config.graphics.billboard_font_interline,
+            font: config.graphics.font_file.clone(),
+            billboard_font_scale: config.graphics.billboard_font_scale,
         }).map_err(|e| AppError::InitGraphics(e)));
 
         // init camera
-        let camera = graphics::Camera::new(facade, config.camera.zoom);
+        let camera = graphics::Camera::new(0.0, 0.0, config.camera.zoom);
 
         // init world
         let mut world = specs::World::new();
@@ -348,7 +345,7 @@ impl App {
         let (control_tx, control_rx) = mpsc::channel();
 
         // create menu
-        let menu_interline = vec!(0,1,4,7,9,12);
+        let menu_interline = vec!(0,1,4,7,9,11);
         let menu = vec!(
             MenuEntry::new_button(
                 Box::new(|_| "continue".into()),
@@ -432,9 +429,9 @@ impl App {
             MenuEntry::new_button(
                 Box::new(|_| "help".into()),
                 Rc::new(Box::new(|app| app.goto_state_text(HELP.into())))),
-            MenuEntry::new_button(
-                Box::new(|_| "donate".into()),
-                Rc::new(Box::new(|app| app.goto_state_text(DONATE.into())))),
+            // MenuEntry::new_button(
+            //     Box::new(|_| "donate".into()),
+            //     Rc::new(Box::new(|app| app.goto_state_text(DONATE.into())))),
             MenuEntry::new_button(
                 Box::new(|_| "credit".into()),
                 Rc::new(Box::new(|app| app.goto_state_text(CREDIT.into())))),
@@ -683,13 +680,13 @@ impl App {
                         self.camera.x = state.position[0];
                         self.camera.y = state.position[1];
                     }
-                    for _ in fixed_cameras.iter() {
+                    if fixed_cameras.iter().next().is_some() {
                         self.camera.x = 0.;
                         self.camera.y = 0.;
                     }
                 }
 
-                let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
+                let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
 
                 // draw entities
                 {
@@ -717,18 +714,13 @@ impl App {
                     if config.text.right > config.text.left {
                         for text in fixed_camera_texts.iter() {
                             for (y,text_line) in (config.text.bottom+3..config.text.top+1).rev().zip(text.string.lines()) {
-                                let lines = vec!(graphics::Line {
-                                    x: config.text.left,
-                                    y: y,
-                                    length: (config.text.right - config.text.left) as usize,
-                                });
-                                frame.draw_text(text_line,&lines,graphics::Layer::Ceil,config.entities.text_color);
+                                frame.draw_text(config.text.left as f32, y as f32, config.graphics.font_scale, text_line,graphics::Layer::Floor, config.entities.text_color);
                             }
                         }
                     }
 
                     for text in texts.iter() {
-                        frame.draw_text(&*text.string,&text.lines,graphics::Layer::Ceil,config.entities.text_color);
+                        frame.draw_text(text.x, text.y, text.scale, &*text.string, graphics::Layer::Floor, config.entities.text_color);
                     }
                 }
 
@@ -754,7 +746,6 @@ impl App {
                 frame.finish().unwrap();
             },
             State::Menu(entry) => {
-                let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
                 let mut menu = String::new();
                 let mut cursor = String::new();
                 for (index,menu_entry) in self.menu.iter().enumerate() {
@@ -771,13 +762,14 @@ impl App {
                         menu.push('\n');
                     }
                 }
+                let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
                 frame.draw_rectangle(0.,0.,config.menu.background_width,config.menu.background_height,graphics::Layer::BillBoard,config.menu.background_color);
                 frame.draw_billboard_centered_text(&*cursor,config.menu.cursor_color);
                 frame.draw_billboard_centered_text(&*menu,config.menu.entry_color);
                 frame.finish().unwrap();
             }
             State::Text(_,ref text) => {
-                let mut frame = graphics::Frame::new(&self.graphics, args.frame, &self.camera);
+                let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
                 frame.draw_rectangle(0.,0.,25.0,18.0,graphics::Layer::BillBoard,config.menu.background_color);
                 frame.draw_billboard_centered_text(&*text,config.menu.entry_color);
                 frame.finish().unwrap();
@@ -938,8 +930,5 @@ impl App {
                 }
             }
         }
-    }
-    pub fn resize(&mut self, width: u32, height: u32) {
-        self.camera.ratio = width as f32 / height as f32;
     }
 }

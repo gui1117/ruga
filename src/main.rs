@@ -181,7 +181,6 @@ fn main() {
                     app.key_released(keycode);
                 }
             },
-            Event::GlutinEvent(glutin::Event::Resized(width,height)) => app.resize(width,height),
             Event::GlutinEvent(glutin::Event::Focused(f)) => app.focused(f),
             Event::GlutinEvent(glutin::Event::Touch(t)) => app.touch(t),
             Event::GlutinEvent(_) => (),

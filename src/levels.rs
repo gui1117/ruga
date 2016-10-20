@@ -1,4 +1,3 @@
-use graphics;
 use specs;
 use entities;
 use resource;
@@ -401,11 +400,7 @@ fn create_corridor(back: Option<Level>, mut levels: Vec<(String,Level)>, world: 
     if let Some(back) = back {
         entities::add_character(world,[-corridor_length-1,0]);
         entities::add_portal(world,[-corridor_length-1,-2],back);
-        entities::add_text(world,"Exit".into(),vec!(graphics::Line {
-            x: -hall_length as i32 -corridor_length as i32 -3,
-            y: -2,
-            length: 2,
-        }));
+        entities::add_text(world,-hall_length as f32 - corridor_length as f32 - 3.0, -2.0, config.graphics.font_scale, "Exit".into());
 
         for x in 1..corridor_length+2 {
             entities::add_wall(world,[-x,-1]);
@@ -436,6 +431,7 @@ fn create_corridor(back: Option<Level>, mut levels: Vec<(String,Level)>, world: 
             }
         }
     } else {
+        entities::add_text(world, -7.0, 5.5, 3.0, "Ruga".into());
         for x in hall_length..hall_length+corridor_length+2 {
             entities::add_wall(world,[x,3]);
         }
@@ -469,11 +465,7 @@ fn create_corridor(back: Option<Level>, mut levels: Vec<(String,Level)>, world: 
     for (i,(name,level)) in levels.drain(..).enumerate() {
         let y = -((i*2) as isize);
 
-        entities::add_text(world,name,vec!(graphics::Line {
-            x: hall_length as i32 + corridor_length as i32 + 3,
-            y: y as i32,
-            length: 15,
-        }));
+        entities::add_text(world, hall_length as f32+corridor_length as f32+3.0, y as f32, config.graphics.font_scale, name);
 
         if i != 0 && i != 1 {
             entities::add_wall(world,[-1,y]);

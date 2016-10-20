@@ -3,7 +3,6 @@ use specs;
 use config;
 use levels;
 use std::sync::Arc;
-use graphics;
 use baal;
 use utils::Into3D;
 use physic::IntoGrid;
@@ -162,8 +161,8 @@ pub fn add_fixed_camera_text(world: &mut specs::World, text: String) {
         .build();
 }
 
-pub fn add_text(world: &mut specs::World, text: String, lines: Vec<graphics::Line>) {
+pub fn add_text(world: &mut specs::World, x: f32, y: f32, scale: f32, text: String) {
     world.create_now()
-        .with::<Text>(Text::new(text,lines))
+        .with::<Text>(Text::new(x,y,scale,text))
         .build();
 }

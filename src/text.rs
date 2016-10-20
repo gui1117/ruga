@@ -1,5 +1,4 @@
 use specs;
-use graphics;
 
 #[derive(Clone,Default)]
 pub struct FixedCamera;
@@ -24,18 +23,22 @@ impl FixedCameraText {
 }
 
 pub struct Text {
-    pub lines: Vec<graphics::Line>,
     pub string: String,
+    pub x: f32,
+    pub y: f32,
+    pub scale: f32,
 }
 impl specs::Component for Text {
     type Storage = specs::VecStorage<Self>;
 }
 
 impl Text {
-    pub fn new(text: String, lines: Vec<graphics::Line>) -> Self {
+    pub fn new(x: f32, y: f32, scale: f32, text: String) -> Self {
         Text {
-            lines: lines,
             string: text,
+            scale: scale,
+            x: x,
+            y: y,
         }
     }
 }

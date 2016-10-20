@@ -214,10 +214,8 @@ mode = "dark" # override by save.toml
 luminosity = 1.0 # override by save.toml
 circle_precision = 64
 font_file = "assets/fonts/DejaVuSansMono-Bold.ttf"
-font_precision = 50
-font_ratio = 1.3
-billboard_font_length = 0.03
-billboard_font_interline = 1.2
+billboard_font_scale = 0.04
+font_scale = 0.4
 
 [text]
 top = 4

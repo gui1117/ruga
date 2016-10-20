@@ -211,11 +211,9 @@ configure!(
         mode: e String [light,dark] save mode,
         luminosity: t f32 save luminosity,
         circle_precision: t usize,
-        font_precision: t u32,
         font_file: t String,
-        font_ratio: t f32,
-        billboard_font_length: t f32,
-        billboard_font_interline: t f32,
+        billboard_font_scale: t f32,
+        font_scale: t f32,
     },
     text: {
         top: t i32,
