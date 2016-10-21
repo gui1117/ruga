@@ -117,8 +117,8 @@ unit = 2.0
 
 [levels]
 check_level = "debug"
-dir = "levels"
-entry_music = "assets/musics/todo.ogg"
+dir = ["levels"]
+entry_music = ["assets","musics","todo.ogg"]
 corridor_length = 3
 hall_length = 1
 
@@ -151,8 +151,8 @@ press_epsilon = 0.5
 release_epsilon = 0.01
 
 [audio]
-effect_dir = "assets/effects"
-music_dir = "."
+effect_dir = ["assets","effects"]
+music_dir = ["."]
 
 global_volume = 0.3 # override by save.toml
 music_volume = 0.8 # override by save.toml
@@ -162,16 +162,16 @@ distance_model = "pow2"
 distance_model_min = 10.0
 distance_model_max = 20.0
 
-persistent_effects = ["lights_loop.ogg","monster_persistent.ogg"]
+persistent_effects = [["lights_loop.ogg"],["monster_persistent.ogg"]]
 
-short_effects = [ "null.ogg"
-                , "clic.ogg"
-                , "destroy_ball.ogg"
-                , "laser.ogg"
-                , "monster_die.ogg"
-                , "portal.ogg"
-                , "spawn_ball.ogg"
-                , "ball_vel.ogg"
+short_effects = [ ["null.ogg"]
+                , ["clic.ogg"]
+                , ["destroy_ball.ogg"]
+                , ["laser.ogg"]
+                , ["monster_die.ogg"]
+                , ["portal.ogg"]
+                , ["spawn_ball.ogg"]
+                , ["ball_vel.ogg"]
                 ]
 
 transition_type = "smooth"
@@ -213,7 +213,7 @@ green   = [ 0.52156866, 0.60000000, 0.00000000, 1.0 ]
 mode = "dark" # override by save.toml
 luminosity = 1.0 # override by save.toml
 circle_precision = 64
-font_file = "assets/fonts/DejaVuSansMono-Bold.ttf"
+font_file = ["assets","fonts","DejaVuSansMono-Bold.ttf"]
 billboard_font_scale = 0.04
 font_scale = 0.4
 
