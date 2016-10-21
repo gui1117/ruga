@@ -256,7 +256,7 @@ impl App {
             },
             luminosity: config.graphics.luminosity,
             circle_precision: config.graphics.circle_precision,
-            font: config.graphics.font_file.clone(),
+            font: config.graphics.font_file.val.clone(),
             billboard_font_scale: config.graphics.billboard_font_scale,
         }).map_err(|e| AppError::InitGraphics(e)));
 
@@ -763,7 +763,6 @@ impl App {
                     }
                 }
                 let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
-                frame.draw_rectangle(0.,0.,config.menu.background_width,config.menu.background_height,graphics::Layer::BillBoard,config.menu.background_color);
                 frame.draw_billboard_centered_text(&*cursor,config.menu.cursor_color);
                 frame.draw_billboard_centered_text(&*menu,config.menu.entry_color);
                 frame.finish().unwrap();

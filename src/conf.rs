@@ -1,11 +1,11 @@
-use configuration::{ self, BitflagU32 };
+use configuration::{ self, BitflagU32, VecStringPath };
 use toml;
 use std;
 
 use levels as levelss;
 use graphics::{ Color, Layer };
 
-pub type ShortEffects = Vec<String>;
+pub type VecVecStringPath = Vec<VecStringPath>;
 pub type Dimension = [u32;2];
 pub type Array4F32 = [f32;4];
 pub type Array4F64 = [f64;4];
@@ -13,7 +13,6 @@ pub type VecF32 = Vec<f32>;
 pub type VecU8 = Vec<u8>;
 pub type Dungeons = Vec<levelss::Dungeon>;
 pub type Array3U8 = [u8;3];
-pub type PersistentEffects = Vec<String>;
 
 fn config_constraint(conf: &Config) -> Result<(),String> {
     if conf.keys.up.len() == 0
@@ -157,8 +156,8 @@ configure!(
     levels: {
         hall_length: t usize,
         corridor_length: t usize,
-        dir: t String,
-        entry_music: t String,
+        dir: t VecStringPath,
+        entry_music: t VecStringPath,
         check_level: e String [always,debug,never],
 
         empty_col: t Array3U8,
@@ -170,16 +169,16 @@ configure!(
         wall_col: t Array3U8,
     },
     audio: {
-        effect_dir: t String,
-        music_dir: t String,
+        effect_dir: t VecStringPath,
+        music_dir: t VecStringPath,
         global_volume: t f32 save global_volume,
         music_volume: t f32 save music_volume,
         effect_volume: t f32 save effect_volume,
         distance_model: e String [linear,pow2],
         distance_model_min: t f32,
         distance_model_max: t f32,
-        short_effects: t ShortEffects,
-        persistent_effects: t PersistentEffects,
+        short_effects: t VecVecStringPath,
+        persistent_effects: t VecVecStringPath,
         transition_type: e String [instant,smooth,overlap],
         transition_time: t u64,
     },
@@ -211,7 +210,7 @@ configure!(
         mode: e String [light,dark] save mode,
         luminosity: t f32 save luminosity,
         circle_precision: t usize,
-        font_file: t String,
+        font_file: t VecStringPath,
         billboard_font_scale: t f32,
         font_scale: t f32,
     },

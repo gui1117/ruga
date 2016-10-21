@@ -512,3 +512,24 @@ impl IntoToml for BitflagU32 {
     }
 }
 
+#[derive(Clone)]
+pub struct VecStringPath {
+    pub val: String,
+}
+impl FromToml for VecStringPath {
+    fn from_toml(val: &toml::Value) -> Result<Self,String> {
+        use std::path::PathBuf;
+
+        let err = " expect array of string";
+        let mut path = PathBuf::new();
+        for elt in try!(val.as_slice().ok_or(err)) {
+            path.push(try!(elt.as_str().ok_or(err)));
+        }
+        let string = try!(path.to_str().ok_or(" unvalid UTF-8")).into();
+
+        Ok(VecStringPath {
+            val: string,
+        })
+    }
+}
+

@@ -91,15 +91,15 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
     use glium::DisplayBuild;
 
     let mut musics = vec!();
-    musics.push(config.levels.entry_music.clone());
+    musics.push(config.levels.entry_music.val.clone());
 
     // load casltes
     let (castles,mut musics) = try!(levels::load_castles(musics).map_err(|e| format!("ERROR: levels castles load failed: {}",e)));
 
     // init baal
     try!(baal::init(&baal::Setting {
-        effect_dir: config.audio.effect_dir.clone().into(),
-        music_dir: config.audio.music_dir.clone().into(),
+        effect_dir: config.audio.effect_dir.val.clone().into(),
+        music_dir: config.audio.music_dir.val.clone().into(),
         global_volume: config.audio.global_volume,
         music_volume: config.audio.music_volume,
         effect_volume: config.audio.effect_volume,
@@ -108,8 +108,8 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
             "pow2" => baal::effect::DistanceModel::Pow2(config.audio.distance_model_min,config.audio.distance_model_max),
             _ => unreachable!(),
         },
-        short_effects: config.audio.short_effects.iter().cloned().map(|n| n.into()).collect(),
-        persistent_effects: config.audio.persistent_effects.iter().cloned().map(|n| n.into()).collect(),
+        short_effects: config.audio.short_effects.iter().cloned().map(|n| n.val.into()).collect(),
+        persistent_effects: config.audio.persistent_effects.iter().cloned().map(|n| n.val.into()).collect(),
         musics: musics.drain(..).map(|music| music.into()).collect(),
         music_transition: match &*config.audio.transition_type {
             "instant" => baal::music::MusicTransition::Instant,

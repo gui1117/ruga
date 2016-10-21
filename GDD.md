@@ -136,9 +136,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
     a game you can do nothing but move
   * also you can create map quite easily
 
-* linux i686  and i586 support
-* windows support
-
 * touch
   * UI is boolean in config with close button on left and return on right
   * tester touch

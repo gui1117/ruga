@@ -674,7 +674,7 @@ impl<'a> Frame<'a> {
             }).unwrap();
         }
 
-        let z: f32 = layer.into();
+        let z: f32 = Layer::BillBoard.into();
         let uniforms = uniform! {
             tex: self.graphics.font_cache_tex.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
             color: color.into_vec4(self.graphics.mode,&self.graphics.colors),

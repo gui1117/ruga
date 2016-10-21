@@ -83,7 +83,7 @@ impl From<io::Error> for LoadCastlesError {
 pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>,Vec<String>),LoadCastlesError> {
     let mut castles = Vec::new();
 
-    for dir_entry in try!(fs::read_dir(config.levels.dir.clone()).map_err(|e| LoadCastlesError::ReadDirError(e))) {
+    for dir_entry in try!(fs::read_dir(config.levels.dir.val.clone()).map_err(|e| LoadCastlesError::ReadDirError(e))) {
         let dir_entry = try!(dir_entry);
 
         let castle_name = try!(dir_entry.file_name().into_string().map_err(|_| LoadCastlesError::FileNameInvalidUTF8));
@@ -106,7 +106,7 @@ pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>,Vec<String>)
             .map_err(|e| LoadCastlesError::InvalidTomlValue(e)));
 
         let castle_music = PathBuf::new()
-            .join(Path::new(&*config.levels.dir))
+            .join(Path::new(&*config.levels.dir.val))
             .join(Path::new(&*castle_name))
             .join(Path::new("musics"))
             .join(Path::new(&*castle_setting.music))
@@ -124,7 +124,7 @@ pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>,Vec<String>)
 
         for dungeon in castle_setting.dungeons {
             let dungeon_music = PathBuf::new()
-                .join(Path::new(&*config.levels.dir))
+                .join(Path::new(&*config.levels.dir.val))
                 .join(Path::new(&*castle.name))
                 .join(Path::new("musics"))
                 .join(Path::new(&*dungeon.music))
@@ -266,13 +266,13 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
             let room = try!(dungeon.rooms.get(room_id).ok_or(LoadLevelError::GetRoomError));
 
             let txt_path = PathBuf::new()
-                .join(Path::new(&*config.levels.dir))
+                .join(Path::new(&*config.levels.dir.val))
                 .join(Path::new(&*castle.name))
                 .join(Path::new("texts"))
                 .join(Path::new(&*room));
 
             let png_path = PathBuf::new()
-                .join(Path::new(&*config.levels.dir))
+                .join(Path::new(&*config.levels.dir.val))
                 .join(Path::new(&*castle.name))
                 .join(Path::new("maps"))
                 .join(Path::new(&*room));
