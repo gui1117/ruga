@@ -160,7 +160,7 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## possibilité de mécanique - trop complexe
 
-* si les monstres ne voit pas travers les autres monstres utiliser des monstre lent pour se protéger de monstre rapide
+* si les monstres ne voit pas travers les autres monstres utiliser des monstres lents pour se protéger de monstres rapides
 * inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
 
 ## Ruga3D
