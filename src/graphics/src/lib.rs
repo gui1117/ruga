@@ -637,14 +637,7 @@ impl<'a> Frame<'a> {
                 Scale::uniform(scale * self.camera.zoom * screen_width)
             };
 
-            let mut caret = if layer == Layer::BillBoard {
-                unimplemented!();
-            } else {
-                let px = (x - self.camera.x)*self.camera.zoom*screen_width/2.0;
-                let py = -(y - self.camera.y)*self.camera.zoom*screen_width/2.0;
-                point(px,py)
-            };
-
+            let mut caret = point(0.0, 0.0);
             let mut last_glyph_id = None;
             let mut res = vec!();
 
@@ -693,11 +686,22 @@ impl<'a> Frame<'a> {
         };
 
         let vertex_buffer = {
-            let origin = point(1.0, -1.0);
             let (screen_width, screen_height) = {
                 let (w,h) = self.graphics.context.get_framebuffer_dimensions();
                 (w as f32, h as f32)
             };
+
+            let origin = if layer == Layer::BillBoard {
+                unimplemented!();
+            } else {
+                let px = 1.0 + (x - self.camera.x)*self.camera.zoom;
+                let py = -1.0 + (y - self.camera.y)*self.camera.zoom*screen_width/screen_height;
+
+                let px = (px*screen_width/2.0).round()/screen_width*2.0;
+                let py = (py*screen_height/2.0).round()/screen_height*2.0;
+                point(px,py)
+            };
+
             let vertices: Vec<FontVertex> = glyphs.iter().flat_map(|g| {
                 if let Ok(Some((uv_rect, screen_rect))) = self.graphics.font_cache.rect_for(0, g) {
                     let gl_rect = Rect {
