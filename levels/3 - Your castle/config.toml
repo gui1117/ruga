@@ -1,0 +1,16 @@
+music = "main.ogg"
+
+[[dungeons]]
+name = "Explanation"
+music = "main.ogg"
+rooms = ["explanation.txt"]
+
+[[dungeons]]
+name = "Example"
+music = "main.ogg"
+rooms = ["map.png","text.txt","map.png"]
+
+[[dungeons]]
+name = "Example"
+music = "main.ogg"
+rooms = ["map.png","text.txt","map.png"]

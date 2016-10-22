@@ -1,0 +1,6 @@
+music = "main.ogg"
+
+[[dungeons]]
+name = "Nerval"
+music = "main.ogg"
+rooms = ["nerval_1.txt","nerval_2.txt","nerval_3.txt","nerval_4.txt"]
