@@ -19,7 +19,7 @@ goto menu:
 
 *links to downloads*
 
-### build from source
+## Build from sources
 
 install rust environment using [standard download](https://www.rust-lang.org/en-US/downloads.html) or [rustup.rs](https://rustup.rs/)
 
