@@ -400,7 +400,7 @@ fn create_corridor(back: Option<Level>, mut levels: Vec<(String,Level)>, world: 
     if let Some(back) = back {
         entities::add_character(world,[-corridor_length-1,0]);
         entities::add_portal(world,[-corridor_length-1,-2],back);
-        entities::add_text(world,-hall_length as f32 - corridor_length as f32 - 3.0, -2.0, config.graphics.font_scale, "Exit".into());
+        entities::add_text(world,-hall_length as f32 - corridor_length as f32 - 3.0, -1.75, config.graphics.font_scale, "Exit".into());
 
         for x in 1..corridor_length+2 {
             entities::add_wall(world,[-x,-1]);
@@ -465,7 +465,7 @@ fn create_corridor(back: Option<Level>, mut levels: Vec<(String,Level)>, world: 
     for (i,(name,level)) in levels.drain(..).enumerate() {
         let y = -((i*2) as isize);
 
-        entities::add_text(world, hall_length as f32+corridor_length as f32+3.0, y as f32, config.graphics.font_scale, name);
+        entities::add_text(world, hall_length as f32+corridor_length as f32+2.5, y as f32 + 0.25, config.graphics.font_scale, name);
 
         if i != 0 && i != 1 {
             entities::add_wall(world,[-1,y]);
