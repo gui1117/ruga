@@ -1,6 +1,5 @@
 extern crate vecmath;
 extern crate toml;
-// extern crate libc;
 extern crate rusttype;
 extern crate unicode_normalization;
 extern crate itertools;
@@ -627,13 +626,25 @@ impl<'a> Frame<'a> {
         let glyphs = {
             use unicode_normalization::UnicodeNormalization;
 
-            let (w,_) = self.graphics.context.get_framebuffer_dimensions();
-            let scale = if layer == Layer::BillBoard {
-                Scale::uniform(scale * w as f32)
-            } else {
-                Scale::uniform(scale * self.camera.zoom * w as f32)
+            let (screen_width,_) = {
+                let (w,h) = self.graphics.context.get_framebuffer_dimensions();
+                (w as f32, h as f32)
             };
-            let mut caret = point(0.0, 0.0);
+
+            let scale = if layer == Layer::BillBoard {
+                Scale::uniform(scale * screen_width)
+            } else {
+                Scale::uniform(scale * self.camera.zoom * screen_width)
+            };
+
+            let mut caret = if layer == Layer::BillBoard {
+                unimplemented!();
+            } else {
+                let px = (1.0+(x - self.camera.x)*self.camera.zoom)*screen_width;
+                let py = (y - self.camera.y)*self.camera.zoom*screen_width;
+                point(px,py)
+            };
+
             let mut last_glyph_id = None;
             let mut res = vec!();
 
@@ -682,17 +693,7 @@ impl<'a> Frame<'a> {
         };
 
         let vertex_buffer = {
-            let (dx,dy) = if layer == Layer::BillBoard {
-                (x,y)
-            } else {
-                let (width,height) = self.graphics.context.get_framebuffer_dimensions();
-                let ratio = width as f32/ height as f32;
-                (
-                    (x - self.camera.x)*self.camera.zoom,
-                    (y - self.camera.y)*self.camera.zoom*ratio,
-                )
-            };
-            let origin = point(1.0 + dx, -1.0 + dy);
+            let origin = point(0.0, 0.0);
             let (screen_width, screen_height) = {
                 let (w,h) = self.graphics.context.get_framebuffer_dimensions();
                 (w as f32, h as f32)

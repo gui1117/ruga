@@ -5,13 +5,15 @@ fn main() {
     use glium::DisplayBuild;
 
     let window = glium::glutin::WindowBuilder::new()
+            .with_vsync()
+            .with_multisampling(2)
             .with_dimensions(640,480)
             .build_glium()
             .unwrap();
 
     let mut graphics = graphics::Graphics::new(&window, graphics::GraphicsSetting {
         colors: graphics::ColorsValue {
-            base03: [1.0, 1.0, 1.0, 1.0],
+            base03: [0.0, 0.0, 0.0, 1.0],
             base02: [1.0, 1.0, 1.0, 1.0],
             base01: [1.0, 1.0, 1.0, 1.0],
             base00: [1.0, 1.0, 1.0, 1.0],
@@ -31,25 +33,18 @@ fn main() {
         mode: graphics::Mode::Dark,
         circle_precision: 32,
         luminosity: 1.0,
-        billboard_font_scale: 0.1,
+        billboard_font_scale: 0.04,
         font: "assets/DejaVuSansMono-Bold.ttf".into(),
     }).unwrap();
 
-    let mut camera = graphics::Camera::new(0.0,0.0, 0.001);
-
-    let mut _t = 1f32;
+    let camera = graphics::Camera::new(0.0,0.0,0.08);
 
     loop {
-        _t += 0.05;
-        camera.x = 100.0;
-        camera.y = 10.0;
-        camera.zoom = 0.01;
-
         let mut frame = graphics::Frame::new(&mut graphics, window.draw(), &camera);
-        frame.draw_billboard_centered_text("Aôttttt\np",graphics::Color::Blue);
+        // frame.draw_billboard_centered_text("Aôttttt\np",graphics::Color::Blue);
         // frame.draw_billboard_centered_text("p",graphics::Color::Green);
-        // frame.draw_rectangle(110.0, 20.0, 1.0, 1.0, graphics::Layer::Floor, graphics::Color::Red);
-        // frame.draw_text(110.0, 20.0, 1.0, "O", graphics::Layer::Floor, graphics::Color::Blue);
+        frame.draw_rectangle(-11.0, 2.0, 0.4, 0.4, graphics::Layer::Floor, graphics::Color::Red);
+        frame.draw_text(-11.0, 2.0, 0.4, "Un pur esprit s'accroît sous l'écorce des pierres !", graphics::Layer::Floor, graphics::Color::Base5);
         frame.finish().unwrap();
 
         for ev in window.poll_events() {
