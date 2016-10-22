@@ -129,7 +129,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
-* publish -> zip and targz things
 * wine debug
 * sounds effect volume
 * maps
