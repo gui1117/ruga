@@ -129,8 +129,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
-
-* launch.sh doesn't really work if executed from another dir
 * sounds effect volume
 * maps
 * trailer

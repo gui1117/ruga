@@ -1,0 +1,6 @@
+music = "main.ogg"
+
+[[dungeons]]
+name = "Come here"
+music = "main.ogg"
+rooms = ["welcome.txt"]
