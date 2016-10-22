@@ -3,4 +3,4 @@ music = "main.ogg"
 [[dungeons]]
 name = "Come here"
 music = "main.ogg"
-rooms = ["welcome.txt"]
+rooms = ["welcome.txt","1.png","2.png","end.txt"]
