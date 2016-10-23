@@ -6,6 +6,10 @@ it is in early development.
 
 ![animation](animation.gif)
 
+## Install
+
+*links to downloads*
+
 ## Play
 
 move:
@@ -16,10 +20,6 @@ move:
 goto menu:
  * `Escape` key
  * `Select` button
-
-## Install
-
-*links to downloads*
 
 ## Build from sources
 
