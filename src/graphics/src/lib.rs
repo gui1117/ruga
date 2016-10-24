@@ -124,7 +124,7 @@ pub struct Graphics {
     program: Program,
     luminosity: f32,
 
-    billboard_font_scale: Scale,
+    billboard_font_scale: f32,
     font: Font<'static>,
     font_cache: Cache,
     //TODO allow redimension
@@ -316,7 +316,7 @@ impl Graphics {
             program: program,
             luminosity: setting.luminosity,
 
-            billboard_font_scale: Scale::uniform(setting.billboard_font_scale * screen_height as f32),
+            billboard_font_scale: setting.billboard_font_scale,
             font_cache: font_cache,
             font: font,
             font_cache_tex: font_cache_tex,
@@ -486,8 +486,14 @@ impl<'a> Frame<'a> {
     }
 
     pub fn draw_billboard_centered_text(&mut self, text: &str, color: Color) {
+        let (screen_width, screen_height) = {
+            let (w,h) = self.graphics.context.get_framebuffer_dimensions();
+            (w as f32, h as f32)
+        };
+
         let glyphs = {
             use unicode_normalization::UnicodeNormalization;
+            let scale = Scale::uniform(self.graphics.billboard_font_scale * screen_height);
 
             let mut lines = vec!();
             let mut current_line = vec!();
@@ -495,12 +501,12 @@ impl<'a> Frame<'a> {
                 if let '\n' = chr {
                     lines.push(current_line.drain(..).collect());
                 } else if let Some(glyph) = self.graphics.font.glyph(chr) {
-                    current_line.push(glyph.scaled(self.graphics.billboard_font_scale));
+                    current_line.push(glyph.scaled(scale));
                 }
             };
             lines.push(current_line);
 
-            let v_metrics = self.graphics.font.v_metrics(self.graphics.billboard_font_scale);
+            let v_metrics = self.graphics.font.v_metrics(scale);
             let advance_height = v_metrics.ascent - v_metrics.descent + v_metrics.line_gap;
 
             let nbr_of_lines = lines.len();
@@ -515,18 +521,23 @@ impl<'a> Frame<'a> {
 
                 let first_width = line.first().unwrap().h_metrics().advance_width;
                 let total_width = line.iter().tuple_windows().fold(first_width, |mut sum, (a, b)| {
-                    sum += self.graphics.font.pair_kerning(self.graphics.billboard_font_scale, a.id(), b.id());
+                    sum += self.graphics.font.pair_kerning(scale, a.id(), b.id());
                     sum += b.h_metrics().advance_width;
 
                     sum
                 });
 
-                let mut caret = point(-total_width / 2., height);
+                let mut caret = {
+                    let px = -total_width / 2.;
+                    let py = height;
+                    let (ppx,ppy) = pixel_perfect((px,py), screen_width, screen_height);
+                    point(ppx,ppy)
+                };
                 let mut last_glyph_id = None;
 
                 line.drain(..).map(|glyph| {
                     if let Some(id) = last_glyph_id.take() {
-                        caret.x += self.graphics.font.pair_kerning(self.graphics.billboard_font_scale, id, glyph.id());
+                        caret.x += self.graphics.font.pair_kerning(scale, id, glyph.id());
                     }
                     last_glyph_id = Some(glyph.id());
                     let glyph = glyph.positioned(caret);
@@ -568,10 +579,6 @@ impl<'a> Frame<'a> {
 
         let vertex_buffer = {
             let origin = point(1.0, -1.0);
-            let (screen_width, screen_height) = {
-                let (w,h) = self.graphics.context.get_framebuffer_dimensions();
-                (w as f32, h as f32)
-            };
             let vertices: Vec<FontVertex> = glyphs.iter().flat_map(|g| {
                 if let Ok(Some((uv_rect, screen_rect))) = self.graphics.font_cache.rect_for(0, g) {
                     let gl_rect = Rect {
@@ -697,9 +704,8 @@ impl<'a> Frame<'a> {
                 let px = 1.0 + (x - self.camera.x)*self.camera.zoom;
                 let py = -1.0 + (y - self.camera.y)*self.camera.zoom*screen_width/screen_height;
 
-                let px = (px*screen_width/2.0).round()/screen_width*2.0;
-                let py = (py*screen_height/2.0).round()/screen_height*2.0;
-                point(px,py)
+                let (ppx,ppy) = pixel_perfect((px,py), screen_width, screen_height);
+                point(ppx,ppy)
             };
 
             let vertices: Vec<FontVertex> = glyphs.iter().flat_map(|g| {
@@ -985,4 +991,11 @@ impl ColorsValue {
         callback(&mut self.cyan);
         callback(&mut self.green);
     }
+}
+
+fn pixel_perfect(p: (f32,f32), screen_width: f32, screen_height: f32) -> (f32,f32) {
+    (
+        (p.0*screen_width/2.0).round()/screen_width*2.0,
+        (p.1*screen_height/2.0).round()/screen_height*2.0
+    )
 }

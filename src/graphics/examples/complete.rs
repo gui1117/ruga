@@ -41,7 +41,7 @@ fn main() {
 
     loop {
         let mut frame = graphics::Frame::new(&mut graphics, window.draw(), &camera);
-        // frame.draw_billboard_centered_text("Aôttttt\np",graphics::Color::Blue);
+        frame.draw_billboard_centered_text("Aôttttt\np",graphics::Color::Blue);
         // frame.draw_billboard_centered_text("p",graphics::Color::Green);
         frame.draw_rectangle(-11.0, 2.0, 0.4, 0.4, graphics::Layer::Floor, graphics::Color::Red);
         frame.draw_text(-11.0, 2.0, 0.4, "Un pur esprit s'accroît sous l'écorce des pierres !", graphics::Layer::Floor, graphics::Color::Base5);

@@ -188,7 +188,7 @@ fn main() {
             Event::GilrsEvent(gilrs::Event::ButtonReleased(button)) => app.button_released(button),
             Event::GilrsEvent(gilrs::Event::AxisChanged(axis,pos)) => app.axis_changed(axis,pos),
             Event::GilrsEvent(_) => (),
-            Event::Idle(args) => thread::sleep(Duration::from_millis(args.dt as u64)),
+            Event::Idle(args) => thread::sleep(args.dt),
         }
 
         if app.quit {

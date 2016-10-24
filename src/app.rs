@@ -601,15 +601,15 @@ impl App {
         self.focus = focus;
 
         if focus {
-            baal::music::resume()
+            baal::effect::resume();
+            baal::music::resume();
         } else {
-            baal::music::pause()
+            baal::effect::pause();
+            baal::music::pause();
         }
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
-        if !self.focus {
-            return
-        }
+        if !self.focus { return }
 
         match self.state {
             State::Game => {

@@ -14,7 +14,7 @@ pub struct RenderArgs {
 }
 
 pub struct IdleArgs {
-    pub dt: f64,
+    pub dt: Duration,
 }
 
 pub struct UpdateArgs {
@@ -216,8 +216,8 @@ impl WindowEvents {
                                 return Some(x);
                             } else if *idle == Idle::No {
                                 *idle = Idle::Yes;
-                                let seconds = ((next_event - current_time) as f64) / (BILLION as f64);
-                                return Some(Event::Idle(IdleArgs { dt: seconds }))
+                                let duration = ns_to_duration(next_event - current_time);
+                                return Some(Event::Idle(IdleArgs { dt: duration}))
                             }
                             sleep(ns_to_duration(next_event - current_time));
                             State::UpdateLoop(Idle::No)
