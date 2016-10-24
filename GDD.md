@@ -125,7 +125,6 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 
 ## TODO
 
-* publish windows seem not OK
 * sounds effect volume
 * maps
 
