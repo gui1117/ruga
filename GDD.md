@@ -123,19 +123,11 @@ entree sortie:
 
 there is no gun anymore for the player, he can only move and maybe some other action like teleport or sth like this.
 
-## support
-
-* linux x86\_64 OK
-
 ## TODO
 
-* wine debug
+* publish windows seem not OK
 * sounds effect volume
 * maps
-* trailer
-  * RUGA
-    a game you can do nothing but move
-  * also you can create map quite easily
 
 * touch
   * UI is boolean in config with close button on left and return on right
@@ -147,11 +139,9 @@ there is no gun anymore for the player, he can only move and maybe some other ac
 * web support
 
 * two laser persitent snd one for lasers and one for the laser in collision with de character?
-* title for castles and Ruga at corridor
 
 * event loop: ups=fps ? no it seems OK
 * maybe if run top-left and wall on left doesn't slow down
-* maybe print at top left the castle / dungeon / room
 
 * download dungeon
 * note castle

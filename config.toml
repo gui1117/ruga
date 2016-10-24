@@ -1,7 +1,7 @@
 [general]
 number_of_thread = 2
 persistent_snd_cooldown = 10
-difficulty = 1.0
+difficulty = 1.0 # override by save.toml
 
 [effect]
 color = "base5"
