@@ -1,5 +1,6 @@
 use graphics;
 use specs;
+use reset_static_persistent_snd;
 use utils::{self, Direction, HorizontalVerticalAxis};
 use event_loop;
 use config;
@@ -291,6 +292,7 @@ impl App {
         world.register::<FixedCamera>();
 
         world.register::<DynPersistentSnd>();
+        world.register::<StaticPersistentSnd>();
 
         // check levels
         let check_level = match &*config.levels.check_level {
@@ -327,6 +329,7 @@ impl App {
         let level = levels::Level::Entry;
         try!(levels::load_level(&level, &castles, &mut world)
              .map_err(|e| AppError::LevelCreation(format!("load entry level failed: {}",e))));
+        reset_static_persistent_snd(&world);
 
         // init planner
         let mut planner = specs::Planner::new(world,config.general.number_of_thread);
@@ -555,7 +558,9 @@ impl App {
         }
     }
     pub fn goto_state_menu(&mut self) {
-        baal::effect::pause();
+        baal::effect::short::stop_all();
+        baal::effect::persistent::clear_positions_for_all();
+        baal::effect::persistent::update_volume_for_all();
 
         match self.state {
             State::Game => self.state = State::Menu(0),
@@ -565,7 +570,7 @@ impl App {
     }
     pub fn goto_state_game(&mut self) {
         self.joystick_menu_state = JoystickMenuState::Released;
-        baal::effect::resume();
+        reset_static_persistent_snd(self.planner.mut_world());
 
         self.state = State::Game;
     }

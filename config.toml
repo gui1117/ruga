@@ -68,7 +68,7 @@ monster_velocity = 10.0
 #times to reach almost vmax
 char_time = 0.1
 monster_time = 1.0
-ball_time = 1.0
+ball_time = 2.0
 
 #weights
 ball_weight = 1.0
@@ -180,7 +180,7 @@ transition_time = 2000
 [window]
 vsync = true
 multisampling = 2
-fullscreen = false
+fullscreen = true
 fullscreen_on_primary_monitor = true
 fullscreen_monitor = 0 # if not fullscreen_on_primary_monitor
 dimension = [640,480] # if not fullscreen

@@ -3,9 +3,6 @@ use specs;
 use config;
 use levels;
 use std::sync::Arc;
-use baal;
-use utils::Into3D;
-use physic::IntoGrid;
 
 pub fn add_character(world: &mut specs::World, pos: [isize;2]) {
     world.create_now()
@@ -120,10 +117,6 @@ pub fn add_monster(world: &mut specs::World, pos: [isize;2]) {
 }
 
 pub fn add_laser(world: &mut specs::World, pos: [isize;2]) {
-    baal::effect::persistent::add_position(
-        config.entities.laser_persistent_snd,
-        pos.into_grid().into_3d());
-
     world.create_now()
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
@@ -139,6 +132,8 @@ pub fn add_laser(world: &mut specs::World, pos: [isize;2]) {
             mask: config.entities.laser_killer_mask.val,
             kill_snd: config.entities.laser_kill_snd,
         })
+        .with::<StaticPersistentSnd>(StaticPersistentSnd::new(
+                config.entities.laser_persistent_snd))
         .build();
 }
 

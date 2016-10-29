@@ -6,6 +6,20 @@ use components::*;
 use specs::Join;
 use utils::Into3D;
 
+pub struct StaticPersistentSnd {
+    id: usize,
+}
+impl specs::Component for StaticPersistentSnd {
+    type Storage = specs::VecStorage<Self>;
+}
+impl StaticPersistentSnd {
+    pub fn new(id: usize) -> Self {
+        StaticPersistentSnd {
+            id: id,
+        }
+    }
+}
+
 pub struct DynPersistentSnd {
     id: usize,
 }
@@ -63,5 +77,18 @@ impl specs::System<app::UpdateContext> for PersistentSndSystem {
         } else {
             self.cooldown -= 1;
         }
+    }
+}
+
+pub fn reset_static_persistent_snd(world: &specs::World) {
+    let states =  world.read::<PhysicState>();
+    let static_persistent_snds = world.read::<StaticPersistentSnd>();
+    let entities = world.entities();
+
+    for (static_persistent_snd, entity) in (&static_persistent_snds, &entities).iter() {
+        let state = states.get(entity).expect("static persistent snd expect state component");
+        baal::effect::persistent::add_position(
+            static_persistent_snd.id,
+            state.position.into_3d());
     }
 }

@@ -55,7 +55,10 @@ mod components {
         FixedCamera,
         Text,
     };
-    pub use persistent_snd::DynPersistentSnd;
+    pub use persistent_snd::{
+        DynPersistentSnd,
+        StaticPersistentSnd,
+    };
 }
 mod resource {
     pub use physic::PhysicWorld;
@@ -78,6 +81,7 @@ mod systems {
 }
 
 pub use conf::CONFIG as config;
+pub use persistent_snd::reset_static_persistent_snd;
 
 use glium::glutin;
 use std::time::Duration;
