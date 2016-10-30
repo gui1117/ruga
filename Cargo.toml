@@ -1,21 +1,15 @@
 [package]
 name = "ruga"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 
 [[bin]]
 name = "ruga"
 
 [dependencies]
-graphics = { path = "src/graphics" }
-configuration = { path = "src/configuration" }
-baal = { git = "https://github.com/thiolliere/baal" }
-specs = { git = "https://github.com/slide-rs/specs" }
+clap = "*"
 glium = "*"
+hlua = "*"
+rustyline = "*"
+collider = "*"
 time = "*"
-lazy_static = "*"
-toml = "*"
-rand = "*"
-png = "*"
-fnv = "*"
-gilrs = "*"

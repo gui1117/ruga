@@ -1,6 +1,0 @@
-Welcome to Ruga, you can do nothing but move
-The main point is to use balls to kill green monsters
-
-you can change difficulty in the menu (press escape)
-
-Good luck, enjoy :-)

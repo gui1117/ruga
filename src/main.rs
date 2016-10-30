@@ -1,211 +1,145 @@
-#[macro_use] extern crate configuration;
-#[macro_use] extern crate lazy_static;
-extern crate baal;
-extern crate graphics;
+extern crate clap;
 extern crate glium;
-extern crate specs;
+extern crate hlua;
 extern crate time;
-extern crate toml;
-extern crate rand;
-extern crate fnv;
-extern crate png;
-extern crate gilrs;
 
-mod persistent_snd;
-mod levels;
-mod app;
-mod conf;
-mod event_loop;
-mod control;
-mod physic;
-mod entities;
-mod utils;
-mod life;
-mod portal;
-mod text;
-
-mod components {
-    pub use control::{
-        PlayerControl,
-        TowardPlayerControl,
-        MonsterControl,
-    };
-    pub use physic::{
-        GridSquare,
-        PhysicState,
-        PhysicType,
-        PhysicForce,
-        PhysicDynamic,
-        PhysicStatic,
-        PhysicTrigger,
-        Shape,
-        Ray,
-        CollisionBehavior,
-    };
-    pub use life::{
-        Column,
-        Life,
-        Killer,
-        Ball,
-    };
-    pub use portal::Portal;
-    pub use app::Graphic;
-    pub use text::{
-        FixedCameraText,
-        FixedCamera,
-        Text,
-    };
-    pub use persistent_snd::{
-        DynPersistentSnd,
-        StaticPersistentSnd,
-    };
-}
-mod resource {
-    pub use physic::PhysicWorld;
-}
-mod systems {
-    pub use physic::PhysicSystem;
-    pub use life::{
-        LifeSystem,
-        KillerSystem,
-        BallSystem,
-        ColumnSystem,
-    };
-    pub use control::{
-        PlayerSystem,
-        MonsterSystem,
-        TowardPlayerSystem,
-    };
-    pub use portal::PortalSystem;
-    pub use persistent_snd::PersistentSndSystem;
-}
-
-pub use conf::CONFIG as config;
-pub use persistent_snd::reset_static_persistent_snd;
-
+// use hlua::Lua;
 use glium::glutin;
+
+use std::str::FromStr;
+use std::path::Path;
 use std::time::Duration;
 use std::thread;
-use event_loop::{
-    Events,
-    Event,
-};
 
-fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event_loop::WindowEvents,gilrs::Gilrs),String> {
-    use glium::DisplayBuild;
+mod app;
 
-    let mut musics = vec!();
-    musics.push(config.levels.entry_music.val.clone());
+static BILLION: u64 = 1_000_000_000;
 
-    // load casltes
-    let (castles,mut musics) = try!(levels::load_castles(musics).map_err(|e| format!("ERROR: levels castles load failed: {}",e)));
-
-    // init baal
-    try!(baal::init(&baal::Setting {
-        effect_dir: config.audio.effect_dir.val.clone().into(),
-        music_dir: config.audio.music_dir.val.clone().into(),
-        global_volume: config.audio.global_volume,
-        music_volume: config.audio.music_volume,
-        effect_volume: config.audio.effect_volume,
-        distance_model: match &*config.audio.distance_model {
-            "linear" => baal::effect::DistanceModel::Linear(config.audio.distance_model_min,config.audio.distance_model_max),
-            "pow2" => baal::effect::DistanceModel::Pow2(config.audio.distance_model_min,config.audio.distance_model_max),
-            _ => unreachable!(),
-        },
-        short_effects: config.audio.short_effects.iter().cloned().map(|n| n.val.into()).collect(),
-        persistent_effects: config.audio.persistent_effects.iter().cloned().map(|n| n.val.into()).collect(),
-        musics: musics.drain(..).map(|music| music.into()).collect(),
-        music_transition: match &*config.audio.transition_type {
-            "instant" => baal::music::MusicTransition::Instant,
-            "smooth" => baal::music::MusicTransition::Smooth(Duration::from_millis(config.audio.transition_time)),
-            "overlap" => baal::music::MusicTransition::Overlap(Duration::from_millis(config.audio.transition_time)),
-            _ => unreachable!(),
-        },
-    }).map_err(|e| format!("ERROR: audio init failed: {}",e)));
-
-    // init window
-    // TODO if fail then disable vsync and then multisampling and then vsync and multisamping
-    let window = {
-        let mut builder = glium::glutin::WindowBuilder::new();
-
-        if config.window.vsync {
-            builder = builder.with_vsync();
-        }
-        if config.window.multisampling != 0 {
-            builder = builder.with_multisampling(config.window.multisampling);
-        }
-        if config.window.fullscreen {
-            if config.window.fullscreen_on_primary_monitor {
-                builder = builder.with_fullscreen(glutin::get_primary_monitor());
-            } else {
-                builder = builder.with_fullscreen(try!(glutin::get_available_monitors().nth(config.window.fullscreen_monitor)
-                                                  .ok_or("ERROR: window init failed: fullsceen monitor specified unavailable")));
-            }
-        } else {
-            builder = builder.with_dimensions(config.window.dimension[0], config.window.dimension[1])
-                .with_title(format!("ruga"));
-        }
-        try!(builder.build_glium().map_err(|e| format!("ERROR: window init failed: {}",e)))
-    };
-    window.get_window().unwrap().set_cursor_state(glium::glutin::CursorState::Hide).unwrap();
-
-    // init app
-    let app = try!(app::App::new(&window,castles).map_err(|e| format!("ERROR: app creation failed: {}",e)));
-
-    // init event loop
-    let window_events = window.events(&event_loop::Setting {
-        ups: config.event_loop.ups,
-        max_fps: config.event_loop.max_fps,
-    });
-
-
-    Ok((app,window,window_events,gilrs::Gilrs::new()))
+fn ns_to_duration(ns: u64) -> Duration {
+    let secs = ns / BILLION;
+    let nanos = (ns % BILLION) as u32;
+    Duration::new(secs, nanos)
 }
 
 fn main() {
-    // init
-    let (mut app,mut window,mut window_events, mut gamepad) = match init() {
-        Ok(t) => t,
-        Err(err) => {
-            println!("{}",err);
-            std::process::exit(1);
-        },
+    let matches = clap::App::new("ruga")
+        .version("0.3")
+        .author("thiolliere <guillaume.thiolliere@opmbx.org>")
+        .about("a game in rust")
+        .arg(clap::Arg::with_name("vsync")
+             .short("s")
+             .long("vsync")
+             .help("set vsync"))
+        .arg(clap::Arg::with_name("config")
+             .short("c")
+             .long("config")
+             .value_name("FILE")
+             .help("set configuration file (lua)")
+             .validator(|s| {
+                 if Path::new(&*s).exists() {
+                     Ok(())
+                 } else {
+                     Err(format!("configuration file '{}' doesn't exist",s))
+                 }
+             })
+             .takes_value(true))
+        .arg(clap::Arg::with_name("dimension")
+             .short("d")
+             .long("dimensions")
+             .value_name("DIMENSION")
+             .help("set dimensions (and unset fullscreen)")
+             .validator(|s| {
+                 u32::from_str(&*s)
+                     .map(|_| ())
+                     .map_err(|e| format!("'{}' dimension is invalid : {}", s, e))
+             })
+             .number_of_values(2)
+             .takes_value(true))
+        .arg(clap::Arg::with_name("fps")
+             .short("f")
+             .long("fps")
+             .value_name("INT")
+             .default_value("60")
+             .validator(|s| {
+                 u64::from_str(&*s)
+                     .map(|_| ())
+                     .map_err(|e| format!("'{}' fps is invalid : {}", s, e))
+             })
+             .help("set multisampling")
+             .takes_value(true))
+        .arg(clap::Arg::with_name("multisampling")
+             .short("m")
+             .long("multisampling")
+             .value_name("FACTOR")
+             .possible_values(&["2", "4", "8", "16"])
+             .help("set multisampling")
+             .takes_value(true))
+        .get_matches();
+
+    let window = {
+        use glium::DisplayBuild;
+
+        let mut builder = glutin::WindowBuilder::new();
+
+        if matches.is_present("vsync") {
+            builder = builder.with_vsync();
+        }
+
+        builder = match matches.value_of("factor") {
+            Some("2") => builder.with_multisampling(2),
+            Some("4") => builder.with_multisampling(4),
+            Some("8") => builder.with_multisampling(8),
+            Some("16") => builder.with_multisampling(16),
+            Some(_) => unreachable!(),
+            None => builder,
+        };
+
+        builder = if let Some(mut dimensions) = matches.values_of("dimension") {
+            let width = u32::from_str(dimensions.next().unwrap()).unwrap();
+            let height = u32::from_str(dimensions.next().unwrap()).unwrap();
+            builder.with_dimensions(width, height)
+        } else {
+            builder.with_fullscreen(glutin::get_primary_monitor())
+        };
+
+        builder.build_glium().unwrap()
     };
+    window.get_window().unwrap().set_cursor_state(glutin::CursorState::Hide).unwrap();
 
-    // game loop
-    while let Some(event) = window_events.next(&mut window, &mut gamepad) {
-        match event {
-            Event::Update(args) => app.update(args),
-            Event::Render(args) => app.render(args),
-            Event::GlutinEvent(glutin::Event::Closed) => break,
-            Event::GlutinEvent(glutin::Event::KeyboardInput(state,keycode,_)) => {
-                if state == glutin::ElementState::Pressed {
-                    app.key_pressed(keycode);
-                } else {
-                    app.key_released(keycode);
-                }
-            },
-            Event::GlutinEvent(glutin::Event::Focused(f)) => app.focused(f),
-            Event::GlutinEvent(glutin::Event::Touch(t)) => app.touch(t),
-            Event::GlutinEvent(_) => (),
-            Event::GilrsEvent(gilrs::Event::ButtonPressed(button)) => app.button_pressed(button),
-            Event::GilrsEvent(gilrs::Event::ButtonReleased(button)) => app.button_released(button),
-            Event::GilrsEvent(gilrs::Event::AxisChanged(axis,pos)) => app.axis_changed(axis,pos),
-            Event::GilrsEvent(_) => (),
-            Event::Idle(args) => thread::sleep(args.dt),
+    let mut app = app::App::new();
+    let fps = u64::from_str(matches.value_of("fps").unwrap()).unwrap();
+    let dt_ns = BILLION / fps;
+    let dt = 1.0 / fps as f32;
+
+    // game loop inspired by http://gameprogrammingpatterns.com/game-loop.html
+    // and piston event loop
+    //
+    // if running out of time then slow down the game
+
+    let mut last_time = time::precise_time_ns();
+
+    'main_loop: loop {
+        // poll events
+        for event in window.poll_events() {
+            use glium::glutin::Event::*;
+            match event {
+                Closed => break 'main_loop,
+                _ => (),
+            }
         }
 
-        if app.quit {
-            baal::close();
-            return;
-        }
-    }
-}
+        // update
+        app.update(dt);
 
-#[test]
-fn main_test() {
-    if let Err(err) = init() {
-        println!("{}",err);
-        std::process::exit(1);
+        // draw
+        app.draw();
+
+        let elapsed = time::precise_time_ns() - last_time;
+        if elapsed < dt_ns {
+            last_time = last_time + dt_ns;
+            thread::sleep(ns_to_duration(dt_ns - elapsed));
+        } else {
+            last_time = time::precise_time_ns();
+        }
     }
 }

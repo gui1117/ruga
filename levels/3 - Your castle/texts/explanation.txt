@@ -1,5 +1,0 @@
-this castle is an example
-you can add map, text and music
-you can copy the directory to create a new castle
-
-see the readme for a complete definition of a castle

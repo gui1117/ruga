@@ -1,7 +1,0 @@
-[general]
-view = 45.0
-fullscreen = 1
-safety = "robust"
-[control]
-up = [4,5,6]
-down = 5

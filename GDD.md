@@ -1,23 +1,24 @@
 # Game Design Document
 
-# first attempt: top-down shooter
+# gameplay
 
-doit ce concentrer sur les mouvements:
-- déplacement haut/bas/gauche/droite
-- ¿esquive en direction du déplacement?
-- saut/téléportation avec espace sur la souris
+move <- direction keys
+aim <- mouse
 
-<!-- mécanique de jeu qui se fait à plusieur en collaboration ? -->
-<!-- - lien avec des ressorts -->
-<!-- - trois armes qui tirs entre les joueurs: -->
-<!--   - shotgun: nettoie la zone d'un coup. -->
-<!--   - mitraillette: idem mais sur la longueur. -->
-<!--   - sniper: tir extremement précis pour faire des "headshot" -->
+weapons: shotgun, sub-machine gun, sniper, sword, grenade launcher
 
-mécanique de jeu
-- shotgun, mitraillette, sniper, sword, lance grenade
+AI director: for spawning weapon, ennemy ... and even maze ?
 
-<!-- collaboration crée par les actions du joueur ou les ennemis -->
+Navigation Mesh: for ennemy AI
+
+## networking
+
+something like [Netplay](wiki.libretro.com/index.php?title=Netplay)
+
+## vrac
+
+¿dodge?
+¿teleport with mouse?
 
 à la manière de left4dead, des ennemis.
 copie quasi-directe:
@@ -34,32 +35,6 @@ special:
 - hunter/charger/jokey
 - smoker
 - tank
-
-more special may be added by the community latter
-
-AI director: for spawning weapon, ennemy ... and even maze ?
-
-Navigation Mesh: for ennemy AI
-
-Physic: with acceleration but collision are not necessarily realisic
-
-<!-- Networking: shoots are instantate other are interpolate from snapshot -->
-
-## networking
-
-the server update all entity but not the autonomous proxy
-and have remoteEffect such as sound and particleeffect etc...
-
-the world client system update physic entities depends on their controle:
-simulated: interpolation
-autonomous: real update
-
-on snapshot receive:
-play remote effect
-update simulated locations and current counter
-check if autonomous are OK if false then replay from the snapshot
-
-## vrac
 
 monsters:
 
@@ -83,15 +58,6 @@ tour: lance des bombes sur lesquels sont appliqués des forces style gravitation
     si un heros tir dessus alors explose et fait des dommages a tout le monde
     est utilisé parfois pour casser des portes. le heros doit les guider jusqu'a la porte
 
-door:
-    verrous : message receiver: close, open, switch
-
-lock\_mulitplexer
-        il peut avoir plusieurs verrous receiver pour un verrous sender
-
-sensor\_zone:
-    can send to lock message if heros on it
-
 situation:
     vision differente pour les deux joureurs:
         hallucination:
@@ -113,46 +79,3 @@ communication:
     à l'écrit visible directement à l'ecran
     morse ? bof
     possibilité de faire des cercles (comme l'eau) pour dire à l'autre se position
-
-entree sortie:
-    carre avec porte ouverte lorsque ferme avec
-    heros dedans alors vide autour puis apparaition
-    de nouvelle porte et du nouveau niveau
-
-# second attempt: top-down mover
-
-there is no gun anymore for the player, he can only move and maybe some other action like teleport or sth like this.
-
-## TODO
-
-* sounds effect volume
-* maps
-
-* touch
-  * UI is boolean in config with close button on left and return on right
-  * tester touch
-  * write value
-
-* mac support
-* android support
-* web support
-
-* two laser persitent snd one for lasers and one for the laser in collision with de character?
-
-* event loop: ups=fps ? no it seems OK
-* maybe if run top-left and wall on left doesn't slow down
-
-* download dungeon
-* note castle
-* better circle rectangle collision: use math
-* color with transparency for portal
-* window creation catch error and try whitout vsync and then without multisampling
-
-## possibilité de mécanique - trop complexe
-
-* si les monstres ne voit pas travers les autres monstres utiliser des monstres lents pour se protéger de monstres rapides
-* inverse de monstre qui s'écarte de toi doucement il faut arriver a rester près longtemps
-
-## Ruga3D
-
-* your in a plane in VR, escape from intelligent rocket and things like that
