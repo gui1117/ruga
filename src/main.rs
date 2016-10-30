@@ -2,18 +2,33 @@ extern crate clap;
 extern crate glium;
 extern crate hlua;
 extern crate time;
+extern crate rustyline;
 
-// use hlua::Lua;
 use glium::glutin;
+use rustyline::Editor;
+use rustyline::error::ReadlineError;
 
 use std::str::FromStr;
 use std::path::Path;
 use std::time::Duration;
 use std::thread;
+use std::sync::mpsc::{channel, TryRecvError};
+use std::sync::Mutex;
+use std::sync::Arc;
+use std::fs::File;
 
 mod app;
 
 static BILLION: u64 = 1_000_000_000;
+
+static DEFAULT_CONFIG: &'static str = "
+function poll_event()
+end
+";
+
+enum API {
+    Quit,
+}
 
 fn ns_to_duration(ns: u64) -> Duration {
     let secs = ns / BILLION;
@@ -29,12 +44,12 @@ fn main() {
         .arg(clap::Arg::with_name("vsync")
              .short("s")
              .long("vsync")
-             .help("set vsync"))
+             .help("Set vsync"))
         .arg(clap::Arg::with_name("config")
              .short("c")
              .long("config")
              .value_name("FILE")
-             .help("set configuration file (lua)")
+             .help("Set configuration file (lua)")
              .validator(|s| {
                  if Path::new(&*s).exists() {
                      Ok(())
@@ -43,11 +58,15 @@ fn main() {
                  }
              })
              .takes_value(true))
+        .arg(clap::Arg::with_name("terminal")
+             .short("t")
+             .long("terminal")
+             .help("Set lua terminal"))
         .arg(clap::Arg::with_name("dimension")
              .short("d")
              .long("dimensions")
              .value_name("DIMENSION")
-             .help("set dimensions (and unset fullscreen)")
+             .help("Set dimensions (and unset fullscreen)")
              .validator(|s| {
                  u32::from_str(&*s)
                      .map(|_| ())
@@ -65,14 +84,14 @@ fn main() {
                      .map(|_| ())
                      .map_err(|e| format!("'{}' fps is invalid : {}", s, e))
              })
-             .help("set multisampling")
+             .help("Set multisampling")
              .takes_value(true))
         .arg(clap::Arg::with_name("multisampling")
              .short("m")
              .long("multisampling")
              .value_name("FACTOR")
              .possible_values(&["2", "4", "8", "16"])
-             .help("set multisampling")
+             .help("Set multisampling")
              .takes_value(true))
         .get_matches();
 
@@ -106,6 +125,52 @@ fn main() {
     };
     window.get_window().unwrap().set_cursor_state(glutin::CursorState::Hide).unwrap();
 
+    let (api_tx, api_rx) = channel();
+
+    let mut lua = hlua::Lua::new();
+    lua.set("quit", hlua::function0(|| {
+        api_tx.send(API::Quit).unwrap();
+    }));
+
+    lua.execute::<()>(DEFAULT_CONFIG).unwrap();
+    if let Some(file) = matches.value_of("config") {
+        lua.execute_from_reader::<(),_>(File::open(file).unwrap()).unwrap();
+    }
+
+    let lua = Arc::new(Mutex::new(lua));
+    let lua_clone = lua.clone();
+    let mut rl = Editor::<()>::new();
+    thread::spawn(move || {
+        loop {
+            let readline = rl.readline("> ");
+            match readline {
+                Ok(line) => {
+                    use hlua::LuaError::*;
+
+                    rl.add_history_entry(&line);
+                    match lua_clone.lock().unwrap().execute::<()>(&*line) {
+                        Ok(()) => (),
+                        Err(SyntaxError(s)) => println!("Syntax error: {}", s),
+                        Err(ExecutionError(s)) => println!("Execution error: {}", s),
+                        Err(ReadError(e)) => println!("Read error: {}", e),
+                        Err(WrongType) => println!("Wrong type error: lua command must return nil"),
+                    }
+                },
+                Err(ReadlineError::Interrupted) => {
+                    api_tx.send(API::Quit).unwrap();
+                    println!("^C");
+                    break
+                },
+                Err(ReadlineError::Eof) => {
+                    break
+                },
+                Err(err) => {
+                    println!("Readline error: {:?}", err);
+                }
+            }
+        }
+    });
+
     let mut app = app::App::new();
     let fps = u64::from_str(matches.value_of("fps").unwrap()).unwrap();
     let dt_ns = BILLION / fps;
@@ -127,12 +192,21 @@ fn main() {
                 _ => (),
             }
         }
+        { lua.lock().unwrap().execute::<()>("poll_event()").unwrap(); }
+        loop {
+            match api_rx.try_recv() {
+                Ok(API::Quit) => break 'main_loop,
+                Err(TryRecvError::Disconnected) => break,
+                Err(TryRecvError::Empty) => break,
+            }
+        }
 
         // update
         app.update(dt);
 
         // draw
         app.draw();
+        { window.draw().finish().unwrap(); }
 
         let elapsed = time::precise_time_ns() - last_time;
         if elapsed < dt_ns {
