@@ -19,17 +19,12 @@ use std::fs::File;
 use std::io::{self, Write};
 
 mod app;
+mod api;
+
+pub use api::Caller;
+pub use api::Callee;
 
 static BILLION: u64 = 1_000_000_000;
-
-static DEFAULT_CONFIG: &'static str = "
-function poll_event()
-end
-";
-
-enum API {
-    Quit,
-}
 
 fn ns_to_duration(ns: u64) -> Duration {
     let secs = ns / BILLION;
@@ -129,11 +124,9 @@ fn main() {
     let (api_tx, api_rx) = channel();
 
     let mut lua = hlua::Lua::new();
-    lua.set("quit", hlua::function0(|| {
-        api_tx.send(API::Quit).unwrap();
-    }));
+    api::set_lua_caller(&mut lua, api_tx.clone());
+    api::set_lua_callee(&mut lua);
 
-    lua.execute::<()>(DEFAULT_CONFIG).unwrap();
     if let Some(file) = matches.value_of("config") {
         lua.execute_from_reader::<(),_>(File::open(file).unwrap()).unwrap();
     }
@@ -159,7 +152,7 @@ fn main() {
                         }
                     },
                     Err(ReadlineError::Interrupted) => {
-                        api_tx.send(API::Quit).unwrap();
+                        api_tx.send(api::API::Quit).unwrap();
                         println!("^C");
                         break
                     },
@@ -197,14 +190,20 @@ fn main() {
                 _ => (),
             }
         }
-        { lua.lock().unwrap().execute::<()>("poll_event()").unwrap(); }
+        {
+            lua.lock()
+                .unwrap()
+                .execute::<()>(&*format!("update({})",dt))
+                .unwrap();
+        }
         loop {
             match api_rx.try_recv() {
-                Ok(API::Quit) => break 'main_loop,
+                Ok(msg) => app.call(msg),
                 Err(TryRecvError::Disconnected) => break,
                 Err(TryRecvError::Empty) => break,
             }
         }
+        if app.must_quit() { break 'main_loop }
 
         // update
         app.update(dt);
