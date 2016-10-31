@@ -16,6 +16,7 @@ use std::sync::mpsc::{channel, TryRecvError};
 use std::sync::Mutex;
 use std::sync::Arc;
 use std::fs::File;
+use std::io::{self, Write};
 
 mod app;
 
@@ -138,38 +139,42 @@ fn main() {
     }
 
     let lua = Arc::new(Mutex::new(lua));
-    let lua_clone = lua.clone();
-    let mut rl = Editor::<()>::new();
-    thread::spawn(move || {
-        loop {
-            let readline = rl.readline("> ");
-            match readline {
-                Ok(line) => {
-                    use hlua::LuaError::*;
+    let terminal = if matches.is_present("terminal") {
+        let lua_clone = lua.clone();
+        let mut rl = Editor::<()>::new();
+        Some(thread::spawn(move || {
+            loop {
+                let readline = rl.readline("> ");
+                match readline {
+                    Ok(line) => {
+                        use hlua::LuaError::*;
 
-                    rl.add_history_entry(&line);
-                    match lua_clone.lock().unwrap().execute::<()>(&*line) {
-                        Ok(()) => (),
-                        Err(SyntaxError(s)) => println!("Syntax error: {}", s),
-                        Err(ExecutionError(s)) => println!("Execution error: {}", s),
-                        Err(ReadError(e)) => println!("Read error: {}", e),
-                        Err(WrongType) => println!("Wrong type error: lua command must return nil"),
+                        rl.add_history_entry(&line);
+                        match lua_clone.lock().unwrap().execute::<()>(&*line) {
+                            Ok(()) => (),
+                            Err(SyntaxError(s)) => println!("Syntax error: {}", s),
+                            Err(ExecutionError(s)) => println!("Execution error: {}", s),
+                            Err(ReadError(e)) => println!("Read error: {}", e),
+                            Err(WrongType) => println!("Wrong type error: lua command must return nil"),
+                        }
+                    },
+                    Err(ReadlineError::Interrupted) => {
+                        api_tx.send(API::Quit).unwrap();
+                        println!("^C");
+                        break
+                    },
+                    Err(ReadlineError::Eof) => {
+                        break
+                    },
+                    Err(err) => {
+                        println!("Readline error: {:?}", err);
                     }
-                },
-                Err(ReadlineError::Interrupted) => {
-                    api_tx.send(API::Quit).unwrap();
-                    println!("^C");
-                    break
-                },
-                Err(ReadlineError::Eof) => {
-                    break
-                },
-                Err(err) => {
-                    println!("Readline error: {:?}", err);
                 }
             }
-        }
-    });
+        }))
+    } else {
+        None
+    };
 
     let mut app = app::App::new();
     let fps = u64::from_str(matches.value_of("fps").unwrap()).unwrap();
@@ -206,7 +211,7 @@ fn main() {
 
         // draw
         app.draw();
-        { window.draw().finish().unwrap(); }
+        window.draw().finish().unwrap();
 
         let elapsed = time::precise_time_ns() - last_time;
         if elapsed < dt_ns {
@@ -215,5 +220,14 @@ fn main() {
         } else {
             last_time = time::precise_time_ns();
         }
+    }
+
+    if let Some(terminal) = terminal {
+        // TODO draw explicit message
+        // window.draw().finish().unwrap();
+        // TODO coloring print
+        print!("window has closed");
+        io::stdout().flush().unwrap();
+        terminal.join().unwrap();
     }
 }
