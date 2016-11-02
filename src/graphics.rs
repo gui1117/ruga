@@ -431,12 +431,13 @@ impl<'a> Frame<'a> {
 
             // TODO Real scale so that total height is 1.0
             let scale = if layer == Layer::Billboard {
-                Scale::uniform(scale * screen_width)
+                Scale::uniform(scale * screen_width * 0.5)
             } else {
-                Scale::uniform(scale * self.camera.zoom * screen_width)
+                Scale::uniform(scale * self.camera.zoom * screen_width * 0.5)
             };
 
-            let mut caret = point(0.0, 0.0);
+            let metrics = self.graphics.font.v_metrics(scale);
+            let mut caret = point(0.0, metrics.descent);
             let mut last_glyph_id = None;
             let mut res = vec!();
 
@@ -491,7 +492,11 @@ impl<'a> Frame<'a> {
             };
 
             let origin = if layer == Layer::Billboard {
-                unimplemented!();
+                let px = 1.0 + x;
+                let py = -1.0 + y*screen_width/screen_height;
+
+                let (ppx,ppy) = pixel_perfect((px,py), screen_width, screen_height);
+                point(ppx,ppy)
             } else {
                 let px = 1.0 + (x - self.camera.x)*self.camera.zoom;
                 let py = -1.0 + (y - self.camera.y)*self.camera.zoom*screen_width/screen_height;

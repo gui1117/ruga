@@ -21,10 +21,10 @@ impl App {
         let camera = Camera::new(20.0,100.0,0.1);
         let mut frame = Frame::new(&mut self.graphics, frame, &camera);
         frame.draw_circle(20.5, 100.5, 0.5, Layer::Middle, [0.0,0.0,0.5,0.5]);
-        frame.draw_square(25.5, 105.5, 0.5, Layer::Middle, [0.5,0.0,0.0,0.5]);
-        frame.draw_text(25.0, 105.0, 1.0, "Toto", Layer::Middle, [0.0,0.5,0.0,0.5]);
-        // frame.draw_square(0.4, 0.4, 0.1, Layer::Billboard, [0.5,0.0,0.0,0.5]);
-        // frame.draw_text(0.3, 0.3, 0.2, "Toto", Layer::Billboard, [0.0,0.5,0.0,0.5]);
+        frame.draw_square(22.5, 102.5, 0.5, Layer::Middle, [0.5,0.0,0.0,0.5]);
+        frame.draw_text(22.0, 102.0, 1.0, "Tgto", Layer::Middle, [0.0,0.5,0.0,0.5]);
+        frame.draw_square(0.4, 0.4, 0.1, Layer::Billboard, [0.5,0.0,0.0,0.5]);
+        frame.draw_text(0.3, 0.3, 0.2, "Toto", Layer::Billboard, [0.0,0.5,0.0,0.5]);
         frame.finish().unwrap();
     }
     pub fn must_quit(&self) -> bool {
