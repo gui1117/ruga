@@ -18,6 +18,7 @@ use glium::vertex::BufferCreationError;
 use glium::draw_parameters::Smooth;
 use glium::texture::{Texture2d, TextureCreationError};
 use rusttype::{
+    SharedBytes,
     FontCollection,
     Font,
     Scale,
@@ -35,6 +36,8 @@ use std::borrow::Cow;
 use std::f32::consts::PI;
 
 pub type Transformation = vecmath::Matrix2x3<f32>;
+
+const CIRCLE_PRECISION: usize = 64;
 
 pub trait Transformed {
     fn translate(self, x: f32, y: f32) -> Self;
@@ -175,7 +178,7 @@ impl From<TextureCreationError> for GraphicsError {
 }
 
 impl Graphics {
-    pub fn new<F: Facade, R: Read>(facade: &F, circle_precision: usize, font: &mut R) -> Result<Graphics,GraphicsError> {
+    pub fn new<F: Facade>(facade: &F) -> Result<Graphics,GraphicsError> {
         let quad_vertex = vec![
             Vertex { position: [-1., -1.] },
             Vertex { position: [ 1., -1.] },
@@ -188,10 +191,10 @@ impl Graphics {
 
         let mut circle_vertex = vec!(Vertex { position: [0., 0.] });
         {
-            let delta_angle = PI * 2. / circle_precision as f32;
+            let delta_angle = PI * 2. / CIRCLE_PRECISION as f32;
             let mut angle = 0f32;
             circle_vertex.push(Vertex { position: [angle.cos(),angle.sin()]});
-            for _ in 0..circle_precision {
+            for _ in 0..CIRCLE_PRECISION {
                 angle += delta_angle;
                 circle_vertex.push(Vertex { position: [angle.cos(),angle.sin()]});
             }
@@ -232,9 +235,8 @@ impl Graphics {
             .. Default::default()
         };
 
-        let mut font_data = vec!();
-        try!(font.read_to_end(&mut font_data));
-        let font = try!(FontCollection::from_bytes(font_data).into_font()
+        let font_data = include_bytes!("DejaVuSansMono-Bold.ttf");
+        let font = try!(FontCollection::from_bytes(SharedBytes::ByRef(font_data)).into_font()
                         .ok_or(GraphicsError::InvalidFont));
 
         let dpi_factor = 1; // FIXME: different from one in retina display
@@ -381,7 +383,7 @@ impl<'a> Frame<'a> {
 
         let uniform = uniform!{
             trans: trans,
-            camera: if layer == Layer::BillBoard { self.billboard_camera_matrix } else { self.camera_matrix },
+            camera: if layer == Layer::Billboard { self.billboard_camera_matrix } else { self.camera_matrix },
             color: color,
         };
 
@@ -405,7 +407,7 @@ impl<'a> Frame<'a> {
 
         let uniform = uniform!{
             trans: trans,
-            camera: if layer == Layer::BillBoard { self.billboard_camera_matrix } else { self.camera_matrix },
+            camera: if layer == Layer::Billboard { self.billboard_camera_matrix } else { self.camera_matrix },
             color: color,
         };
 
@@ -427,7 +429,8 @@ impl<'a> Frame<'a> {
                 (w as f32, h as f32)
             };
 
-            let scale = if layer == Layer::BillBoard {
+            // TODO Real scale so that total height is 1.0
+            let scale = if layer == Layer::Billboard {
                 Scale::uniform(scale * screen_width)
             } else {
                 Scale::uniform(scale * self.camera.zoom * screen_width)
@@ -474,7 +477,7 @@ impl<'a> Frame<'a> {
             }).unwrap();
         }
 
-        let z: f32 = Layer::BillBoard.into();
+        let z: f32 = Layer::Billboard.into();
         let uniforms = uniform! {
             tex: self.graphics.font_cache_tex.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
             color: color,
@@ -487,7 +490,7 @@ impl<'a> Frame<'a> {
                 (w as f32, h as f32)
             };
 
-            let origin = if layer == Layer::BillBoard {
+            let origin = if layer == Layer::Billboard {
                 unimplemented!();
             } else {
                 let px = 1.0 + (x - self.camera.x)*self.camera.zoom;
@@ -555,7 +558,7 @@ impl<'a> Frame<'a> {
         ];
         let uniform = uniform!{
             trans: trans,
-            camera: if layer == Layer::BillBoard { self.billboard_camera_matrix } else { self.camera_matrix },
+            camera: if layer == Layer::Billboard { self.billboard_camera_matrix } else { self.camera_matrix },
             color: color,
         };
 
@@ -595,9 +598,9 @@ pub enum Layer {
     #[allow(dead_code)] UnderCeil,
     #[allow(dead_code)] Ceil,
     #[allow(dead_code)] AboveCeil,
-    #[allow(dead_code)] UnderBillBoard,
-    #[allow(dead_code)] BillBoard,
-    #[allow(dead_code)] AboveBillBoard,
+    #[allow(dead_code)] UnderBillboard,
+    #[allow(dead_code)] Billboard,
+    #[allow(dead_code)] AboveBillboard,
 }
 
 impl Into<f32> for Layer {
@@ -612,9 +615,9 @@ impl Into<f32> for Layer {
             Layer::UnderCeil => 0.07,
             Layer::Ceil => 0.08,
             Layer::AboveCeil => 0.09,
-            Layer::UnderBillBoard => 0.10,
-            Layer::BillBoard => 0.11,
-            Layer::AboveBillBoard => 0.12,
+            Layer::UnderBillboard => 0.10,
+            Layer::Billboard => 0.11,
+            Layer::AboveBillboard => 0.12,
         }
     }
 }

@@ -175,7 +175,7 @@ fn main() {
         None
     };
 
-    let mut app = app::App::new();
+    let mut app = app::App::new(&window);
     let fps = u64::from_str(matches.value_of("fps").unwrap()).unwrap();
     let dt_ns = BILLION / fps;
     let dt = 1.0 / fps as f32;
@@ -217,7 +217,7 @@ fn main() {
                     let y = (2*y - height as i32) as f32 / width as f32;
                     let command = format!("mouse_moved({},{})", x, y);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
-                }
+                },
                 KeyboardInput(state, code, virtualcode) => {
                     let state = format!("{:?}", state).to_lowercase();
                     let virtualcode = match virtualcode {
@@ -226,7 +226,7 @@ fn main() {
                     };
                     let command = format!("input({},{},{})", state, code, virtualcode);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
-                }
+                },
                 MouseWheel(delta, _) => {
                     use glium::glutin::MouseScrollDelta::*;
 
@@ -236,9 +236,9 @@ fn main() {
                     };
                     let command = format!("mouse_wheel({},{})", h, v);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
-                }
-                // TODO Refresh => app.draw(),
-                // TODO Resized(w, h) => app.resized(w, h),
+                },
+                Refresh => app.draw(window.draw()),
+                // Resized(w, h) => app.resized(w, h),
                 _ => (),
             }
         }
@@ -261,8 +261,7 @@ fn main() {
         app.update(dt);
 
         // Draw
-        app.draw();
-        window.draw().finish().unwrap();
+        app.draw(window.draw());
 
         let elapsed = time::precise_time_ns() - last_time;
         if elapsed < dt_ns {
