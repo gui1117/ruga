@@ -52,28 +52,35 @@ pub trait Callee {
     /// the coordinate system is orthonormal
     fn mouse_moved(x: f32, y: f32);
 
-    /// * **Pressed**: released otherwise
+    /// * **State**: pressed or released
     ///
     /// * **Virtualcode**:
     ///
     ///   TODO gamepad
     ///
-    ///   MouseLeft, MouseRight, MouseMiddle, MouseXX (XX corresponding to byte code in hexadecimal)
+    ///   none
     ///
-    ///   Key1, Key2, Key3, Key4, Key5, Key6, Key7, Key8, Key9, Key0,
+    ///   mouseleft, mouseright, mousemiddle, mousexx (xx corresponding to byte code in hexadecimal)
     ///
-    ///   A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+    ///   key1, key2, key3, key4, key5, key6, key7, key8, key9, key0,
     ///
-    ///   F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15,
+    ///   a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z,
     ///
-    ///   Numlock, Numpad0, Numpad1, Numpad2, Numpad3, Numpad4, Numpad5, Numpad6, Numpad7, Numpad8, Numpad9,
+    ///   f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
     ///
-    ///   Left, Up, Right, Down,
+    ///   numlock, numpad0, numpad1, numpad2, numpad3, numpad4, numpad5, numpad6, numpad7, numpad8, numpad9,
     ///
-    ///   Escape, Back, Return, Space,
+    ///   left, up, right, down,
     ///
-    ///   Snapshot, Scroll, Pause, Insert, Home, Delete, End, PageDown, PageUp, Compose, AbntC1, AbntC2, Add, Apostrophe, Apps, At, Ax, Backslash, Calculator, Capital, Colon, Comma, Convert, Decimal, Divide, Equals, Grave, Kana, Kanji, LAlt, LBracket, LControl, LMenu, LShift, LWin, Mail, MediaSelect, MediaStop, Minus, Multiply, Mute, MyComputer, NavigateForward, NavigateBackward, NextTrack, NoConvert, NumpadComma, NumpadEnter, NumpadEquals, OEM102, Period, PlayPause, Power, PrevTrack, RAlt, RBracket, RControl, RMenu, RShift, RWin, Semicolon, Slash, Sleep, Stop, Subtract, Sysrq, Tab, Underline, Unlabeled, VolumeDown, VolumeUp, Wake, WebBack, WebFavorites, WebForward, WebHome, WebRefresh, WebSearch, WebStop, Yen,
-    fn input(pressed: bool, scancode: u32, virtualcode: String);
+    ///   escape, back, return, space,
+    ///
+    ///   snapshot, scroll, pause, insert, home, delete, end, pagedown, pageup, compose, abntc1, abntc2, add, apostrophe, apps, at, ax, backslash, calculator, capital, colon, comma, convert, decimal, divide, equals, grave, kana, kanji, lalt, lbracket, lcontrol, lmenu, lshift, lwin, mail, mediaselect, mediastop, minus, multiply, mute, mycomputer, navigateforward, navigatebackward, nexttrack, noconvert, numpadcomma, numpadenter, numpadequals, oem102, period, playpause, power, prevtrack, ralt, rbracket, rcontrol, rmenu, rshift, rwin, semicolon, slash, sleep, stop, subtract, sysrq, tab, underline, unlabeled, volumedown, volumeup, wake, webback, webfavorites, webforward, webhome, webrefresh, websearch, webstop, yen,
+    // Scancode[8-9] is:
+    // * 0 -> keyboard
+    // * 1 -> mouse
+    // * 2 -> mouse
+    // * 3 -> gamepad ?
+    fn input(state: String, scancode: u32, virtualcode: String);
 
     /// Amount in lines or rows or pixels to scroll in the horizontal and vertical directions.
     ///

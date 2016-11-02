@@ -1,8 +1,13 @@
 extern crate clap;
-extern crate glium;
+extern crate vecmath;
+extern crate unicode_normalization;
+extern crate itertools;
+extern crate arrayvec;
+#[macro_use] extern crate glium;
 extern crate hlua;
 extern crate time;
 extern crate rustyline;
+extern crate rusttype;
 
 use glium::glutin;
 use rustyline::Editor;
@@ -20,6 +25,7 @@ use std::io::{self, Write};
 
 mod app;
 mod api;
+mod graphics;
 
 pub use api::Caller;
 pub use api::Callee;
@@ -174,19 +180,65 @@ fn main() {
     let dt_ns = BILLION / fps;
     let dt = 1.0 / fps as f32;
 
-    // game loop inspired by http://gameprogrammingpatterns.com/game-loop.html
+    // Game loop inspired by http://gameprogrammingpatterns.com/game-loop.html
     // and piston event loop
     //
-    // if running out of time then slow down the game
+    // If running out of time then slow down the game
 
     let mut last_time = time::precise_time_ns();
 
     'main_loop: loop {
-        // poll events
+        // Poll events
         for event in window.poll_events() {
             use glium::glutin::Event::*;
             match event {
                 Closed => break 'main_loop,
+                MouseInput(state, button) => {
+                    use glium::glutin::MouseButton::*;
+
+                    let state = format!("{:?}", state).to_lowercase();
+                    let code: u32 = match button {
+                        Left => 0 + 1<<8,
+                        Right => 1 + 1<<8,
+                        Middle => 2 + 1<<8,
+                        Other(c) => c as u32 + 1<<9,
+                    };
+                    let virtualcode = match button {
+                        Left | Right | Middle => format!("mouse{:?}", button).to_lowercase(),
+                        Other(c) => format!("mouse{:x}",c), // TODO Test
+                    };
+                    let command = format!("input({},{},{})", state, code, virtualcode);
+                    lua.lock().unwrap().execute::<()>(&*command).unwrap();
+                },
+                MouseMoved(x, y) => {
+                    let (width, height) = window.get_window().unwrap().get_inner_size_pixels().unwrap();
+
+                    let x = (2*x - width as i32) as f32 / width as f32;
+                    let y = (2*y - height as i32) as f32 / width as f32;
+                    let command = format!("mouse_moved({},{})", x, y);
+                    lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
+                }
+                KeyboardInput(state, code, virtualcode) => {
+                    let state = format!("{:?}", state).to_lowercase();
+                    let virtualcode = match virtualcode {
+                        Some(c) => format!("{:?}", c).to_lowercase(),
+                        None => "none".into(),
+                    };
+                    let command = format!("input({},{},{})", state, code, virtualcode);
+                    lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
+                }
+                MouseWheel(delta, _) => {
+                    use glium::glutin::MouseScrollDelta::*;
+
+                    let (h, v) = match delta {
+                        LineDelta(h, v) => (h, v),
+                        PixelDelta(h, v) => (h, v),
+                    };
+                    let command = format!("mouse_wheel({},{})", h, v);
+                    lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
+                }
+                // TODO Refresh => app.draw(),
+                // TODO Resized(w, h) => app.resized(w, h),
                 _ => (),
             }
         }
@@ -205,10 +257,10 @@ fn main() {
         }
         if app.must_quit() { break 'main_loop }
 
-        // update
+        // Update
         app.update(dt);
 
-        // draw
+        // Draw
         app.draw();
         window.draw().finish().unwrap();
 
@@ -222,9 +274,9 @@ fn main() {
     }
 
     if let Some(terminal) = terminal {
-        // TODO draw explicit message
+        // TODO Draw explicit message
         // window.draw().finish().unwrap();
-        // TODO coloring print
+        // TODO Coloring print
         print!("window has closed");
         io::stdout().flush().unwrap();
         terminal.join().unwrap();
