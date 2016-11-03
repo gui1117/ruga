@@ -24,6 +24,7 @@ use rusttype::{
     Scale,
     point,
     vector,
+    Vector,
     Rect,
 };
 use rusttype::gpu_cache::Cache;
@@ -38,6 +39,7 @@ use std::f32::consts::PI;
 pub type Transformation = vecmath::Matrix2x3<f32>;
 
 const CIRCLE_PRECISION: usize = 64;
+const BEZIER_PRECISION: usize = 20;
 
 pub trait Transformed {
     fn translate(self, x: f32, y: f32) -> Self;
@@ -104,6 +106,9 @@ pub struct Graphics {
     circle_vertex_buffer: VertexBuffer<Vertex>,
     circle_indices: index::NoIndices,
     program: Program,
+
+    line_indices: index::NoIndices,
+    line_program: Program,
 
     font: Font<'static>,
     font_cache: Cache,
@@ -224,6 +229,26 @@ impl Graphics {
         "#;
         let program = try!(Program::from_source(facade, vertex_shader_src, fragment_shader_src, None));
 
+        let line_indices = index::NoIndices(index::PrimitiveType::TriangleStrip);
+        let line_vertex_shader_src = r#"
+            #version 130
+            in vec2 position;
+            uniform float z;
+            uniform mat4 camera;
+            void main() {
+                gl_Position = camera * vec4(position, z, 1.0);
+            }
+        "#;
+        let line_fragment_shader_src = r#"
+            #version 130
+            out vec4 out_color;
+            uniform vec4 color;
+            void main() {
+                out_color = color;
+            }
+        "#;
+        let line_program = try!(Program::from_source(facade, line_vertex_shader_src, line_fragment_shader_src, None));
+
         let draw_parameters = DrawParameters {
             smooth: Some(Smooth::DontCare),
             blend: Blend::alpha_blending(),
@@ -289,6 +314,9 @@ impl Graphics {
             circle_vertex_buffer: circle_vertex_buffer,
             circle_indices: circle_indices,
             program: program,
+
+            line_indices: line_indices,
+            line_program: line_program,
 
             font_cache: font_cache,
             font: font,
@@ -575,8 +603,45 @@ impl<'a> Frame<'a> {
             &self.graphics.draw_parameters).unwrap();
     }
 
-    pub fn draw_line(&mut self, p1: (f32,f32), n1: (f32,f32), p2: (f32,f32), n2: (f32,f32), layer: Layer, color: [f32;4]) {
-        unimplemented!();
+    pub fn draw_line(&mut self, p0: (f32,f32), p1: (f32,f32), p2: (f32,f32), p3: (f32,f32), width: f32, layer: Layer, color: [f32;4]) {
+        let p0 = Vector { x: p0.0, y: p0.1 };
+        let p1 = Vector { x: p1.0, y: p1.1 };
+        let p2 = Vector { x: p2.0, y: p2.1 };
+        let p3 = Vector { x: p3.0, y: p3.1 };
+
+        let mut vertices: Vec<Vertex> = vec!();
+
+        let dt = 1.0/BEZIER_PRECISION as f32;
+        let mut t = 0f32;
+
+        for _ in 0..BEZIER_PRECISION+1 {
+            let p = (1.0-t).powi(3)*p0 + 3.0*t*(1.0-t).powi(2)*p1 + 3.0*t.powi(2)*(1.0-t)*p2 + t.powi(3)*p3;
+            let n = 3.0*(1.0-t).powi(2)*(p1-p0) + 6.0*t*(1.0-t)*(p2-p1) + 3.0*t.powi(2)*(p3-p2);
+            let o = Vector { x: -n.y, y: n.x };
+            let o = o/(o.x.powi(2)+o.y.powi(2)).sqrt();
+
+            let a = p + o*width/2.0;
+            let b = p - o*width/2.0;
+
+            vertices.push(Vertex { position: [a.x, a.y] });
+            vertices.push(Vertex { position: [b.x, b.y] });
+            t += dt;
+        }
+
+        let z: f32 = Layer::Billboard.into();
+        let uniform = uniform!{
+            z: z,
+            camera: if layer == Layer::Billboard { self.billboard_camera_matrix } else { self.camera_matrix },
+            color: color,
+        };
+        let vertex_buffer = glium::VertexBuffer::new(&self.graphics.context, &vertices).unwrap();
+
+        self.frame.draw(
+            &vertex_buffer,
+            &self.graphics.line_indices,
+            &self.graphics.line_program,
+            &uniform,
+            &self.graphics.draw_parameters).unwrap();
     }
 
     #[inline]
