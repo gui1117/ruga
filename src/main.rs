@@ -8,6 +8,8 @@ extern crate hlua;
 extern crate time;
 extern crate rustyline;
 extern crate rusttype;
+extern crate specs;
+extern crate collider;
 
 use glium::glutin;
 use rustyline::Editor;
@@ -26,6 +28,9 @@ use std::io::{self, Write};
 mod app;
 mod api;
 mod graphics;
+mod systems;
+mod entities;
+mod components;
 
 pub use api::Caller;
 pub use api::Callee;
