@@ -31,11 +31,13 @@ mod graphics;
 mod systems;
 mod entities;
 mod components;
+mod utils;
+mod colors;
 
 pub use api::Caller;
 pub use api::Callee;
 
-static BILLION: u64 = 1_000_000_000;
+const BILLION: u64 = 1_000_000_000;
 
 fn ns_to_duration(ns: u64) -> Duration {
     let secs = ns / BILLION;
@@ -111,7 +113,7 @@ fn main() {
             builder = builder.with_vsync();
         }
 
-        builder = match matches.value_of("factor") {
+        builder = match matches.value_of("multisampling") {
             Some("2") => builder.with_multisampling(2),
             Some("4") => builder.with_multisampling(4),
             Some("8") => builder.with_multisampling(8),
@@ -243,7 +245,7 @@ fn main() {
                     lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
                 },
                 Refresh => app.draw(window.draw()),
-                // Resized(w, h) => app.resized(w, h),
+                Resized(w, h) => app.resized(w, h),
                 _ => (),
             }
         }
@@ -281,8 +283,9 @@ fn main() {
         // TODO Draw explicit message
         // window.draw().finish().unwrap();
         // TODO Coloring print
-        print!("window has closed");
+        print!("[window has closed]");
         io::stdout().flush().unwrap();
         terminal.join().unwrap();
+        print!("\n");
     }
 }

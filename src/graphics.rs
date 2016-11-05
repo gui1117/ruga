@@ -326,11 +326,30 @@ impl Graphics {
             draw_parameters: draw_parameters,
         })
     }
-    pub fn set_font<R: Read>(&mut self, font: &mut R) -> Result<(),GraphicsError> {
+    pub fn set_font<R: Read>(&mut self, font: &mut R) -> Result<(), GraphicsError> {
         let mut font_data = vec!();
         try!(font.read_to_end(&mut font_data));
         self.font = try!(FontCollection::from_bytes(font_data).into_font()
                         .ok_or(GraphicsError::InvalidFont));
+        Ok(())
+    }
+    pub fn resize(&mut self) -> Result<(), GraphicsError> {
+        let dpi_factor = 1; // FIXME: different from one in retina display
+        let (screen_width, screen_height) = self.context.get_framebuffer_dimensions();
+        let (cache_width, cache_height) = (screen_width * dpi_factor, screen_height * dpi_factor);
+
+        self.font_cache = Cache::new(cache_width, cache_height, 0.1, 0.1);
+        self.font_cache_tex = try!(glium::texture::Texture2d::with_format(
+            &self.context,
+            glium::texture::RawImage2d {
+                data: Cow::Owned(vec![128u8; cache_width as usize * cache_height as usize]),
+                width: cache_width,
+                height: cache_height,
+                format: glium::texture::ClientFormat::U8
+            },
+            glium::texture::UncompressedFloatFormat::U8,
+            glium::texture::MipmapsOption::NoMipmap));
+
         Ok(())
     }
 }
@@ -411,7 +430,7 @@ impl<'a> Frame<'a> {
 
         let uniform = uniform!{
             trans: trans,
-            camera: if layer == Layer::Billboard { self.billboard_camera_matrix } else { self.camera_matrix },
+            camera: if layer.billboard() { self.billboard_camera_matrix } else { self.camera_matrix },
             color: color,
         };
 
@@ -435,7 +454,7 @@ impl<'a> Frame<'a> {
 
         let uniform = uniform!{
             trans: trans,
-            camera: if layer == Layer::Billboard { self.billboard_camera_matrix } else { self.camera_matrix },
+            camera: if layer.billboard() { self.billboard_camera_matrix } else { self.camera_matrix },
             color: color,
         };
 
@@ -457,15 +476,14 @@ impl<'a> Frame<'a> {
                 (w as f32, h as f32)
             };
 
-            // TODO Real scale so that total height is 1.0
-            let scale = if layer == Layer::Billboard {
+            let scale = if layer.billboard() {
                 Scale::uniform(scale * screen_width * 0.5)
             } else {
                 Scale::uniform(scale * self.camera.zoom * screen_width * 0.5)
             };
 
             let metrics = self.graphics.font.v_metrics(scale);
-            let mut caret = point(0.0, metrics.descent);
+            let mut caret = point(0.0, metrics.descent - metrics.line_gap/2.0);
             let mut last_glyph_id = None;
             let mut res = vec!();
 
@@ -519,7 +537,7 @@ impl<'a> Frame<'a> {
                 (w as f32, h as f32)
             };
 
-            let origin = if layer == Layer::Billboard {
+            let origin = if layer.billboard() {
                 let px = 1.0 + x;
                 let py = -1.0 + y*screen_width/screen_height;
 
@@ -591,7 +609,7 @@ impl<'a> Frame<'a> {
         ];
         let uniform = uniform!{
             trans: trans,
-            camera: if layer == Layer::Billboard { self.billboard_camera_matrix } else { self.camera_matrix },
+            camera: if layer.billboard() { self.billboard_camera_matrix } else { self.camera_matrix },
             color: color,
         };
 
@@ -631,7 +649,7 @@ impl<'a> Frame<'a> {
         let z: f32 = Layer::Billboard.into();
         let uniform = uniform!{
             z: z,
-            camera: if layer == Layer::Billboard { self.billboard_camera_matrix } else { self.camera_matrix },
+            camera: if layer.billboard() { self.billboard_camera_matrix } else { self.camera_matrix },
             color: color,
         };
         let vertex_buffer = glium::VertexBuffer::new(&self.graphics.context, &vertices).unwrap();
@@ -642,6 +660,37 @@ impl<'a> Frame<'a> {
             &self.graphics.line_program,
             &uniform,
             &self.graphics.draw_parameters).unwrap();
+    }
+
+    pub fn get_down_left_billboard_anchor(&self) -> (f32,f32) {
+        let (width,height) = self.graphics.context.get_framebuffer_dimensions();
+        (-1.0, -(height as f32/ width as f32))
+    }
+
+    pub fn get_size(&self, scale: f32, text: &str) -> (f32, f32) {
+        use unicode_normalization::UnicodeNormalization;
+
+        let (screen_width, screen_height) = {
+            let (w,h) = self.graphics.context.get_framebuffer_dimensions();
+            (w as f32, h as f32)
+        };
+
+        let scale = Scale::uniform(scale * screen_width * 0.5);
+
+        let mut width = 0.0;
+
+        for chr in text.nfc() {
+            if let Some(glyph) = self.graphics.font.glyph(chr) {
+                width += glyph.scaled(scale).h_metrics().advance_width;
+            }
+        };
+
+        let metrics = self.graphics.font.v_metrics(scale);
+        let height = metrics.descent + metrics.line_gap + metrics.ascent;
+
+        width *= 2.0;
+
+        (width / screen_width, height / screen_height)
     }
 
     #[inline]
@@ -688,6 +737,16 @@ impl Into<f32> for Layer {
             Layer::UnderBillboard => 0.10,
             Layer::Billboard => 0.11,
             Layer::AboveBillboard => 0.12,
+        }
+    }
+}
+
+impl Layer {
+    fn billboard(self) -> bool {
+        use self::Layer::*;
+        match self {
+            Billboard | AboveBillboard | UnderBillboard => true,
+            _ => false,
         }
     }
 }

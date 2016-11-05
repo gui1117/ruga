@@ -3,18 +3,26 @@ use collider::geom::DirVec2;
 use graphics;
 use specs;
 use specs::Join;
-use app;
+use app::{self, Notifications};
+use utils::AsColliderId;
 use components::*;
+use colors;
 
-fn draw_hitbox(world: &mut specs::World, frame: &mut graphics::Frame) {
+const NOTIFICATION_DL: f32 = 0.03;
+const NOTIFICATION_SCALE: f32 = 0.02;
+const NOTIFICATION_SMALL_MARGIN: f32 = 0.005;
+const NOTIFICATION_BIG_MARGIN: f32 = 0.01;
+
+pub fn draw_hitbox(world: &mut specs::World, frame: &mut graphics::Frame) {
     use collider::geom::ShapeKind::*;
 
-    let hitbox_ids = world.read::<HitboxIdT>();
+    let hitbox_id_flags = world.read::<HitboxIdFlag>();
     let hitbox_draws= world.read::<HitboxDraw>();
     let collider = world.read_resource::<Collider>();
+    let entities = world.entities();
 
-    for (draw, id) in (&hitbox_draws, &hitbox_ids).iter() {
-        let shape = collider.get_hitbox(id.0).shape;
+    for (draw, _, entity) in (&hitbox_draws, &hitbox_id_flags, &entities).iter() {
+        let shape = collider.get_hitbox(entity.aci()).shape;
         match shape.shape.kind() {
             Circle => {
                 let (x, y) = (shape.pos.x as f32, shape.pos.y as f32);
@@ -31,6 +39,37 @@ fn draw_hitbox(world: &mut specs::World, frame: &mut graphics::Frame) {
     }
 }
 
+pub fn draw_notifications(world: &mut specs::World, frame: &mut graphics::Frame) {
+    let mut notifications = world.write_resource::<Notifications>();
+
+    let (mut x, mut y) = frame.get_down_left_billboard_anchor();
+    x += NOTIFICATION_DL;
+    y += NOTIFICATION_DL;
+
+    for &mut (ref notification, ref mut count) in notifications.0.iter_mut().rev() {
+        *count -= 1;
+        let (width, height) = frame.get_size(NOTIFICATION_SCALE, &*notification);
+        {
+            let width = width + NOTIFICATION_BIG_MARGIN*2.0;
+            let height = height + NOTIFICATION_BIG_MARGIN*2.0;
+            let x = x + width/2.0;
+            let y = y + height/2.0;
+            frame.draw_rectangle(x, y, width, height, graphics::Layer::UnderBillboard, colors::BASE01);
+        }
+        {
+            let width = width + NOTIFICATION_SMALL_MARGIN*2.0;
+            let height = height + NOTIFICATION_SMALL_MARGIN*2.0;
+            let x = x + width/2.0 + NOTIFICATION_BIG_MARGIN/2.0;
+            let y = y + height/2.0 + NOTIFICATION_BIG_MARGIN/2.0;
+            frame.draw_rectangle(x, y, width, height, graphics::Layer::Billboard, colors::BASE2);
+        }
+        frame.draw_text(x+NOTIFICATION_BIG_MARGIN, y+NOTIFICATION_BIG_MARGIN, NOTIFICATION_SCALE, notification, graphics::Layer::AboveBillboard, colors::BASE03);
+        y += height+NOTIFICATION_BIG_MARGIN*2.0;
+    }
+
+    notifications.0.retain(|&(_, count)| count > 0)
+}
+
 pub struct ResolveCollision;
 impl specs::System<app::CollideContext> for ResolveCollision {
     fn run(&mut self, arg: specs::RunArg, context: app::CollideContext) {
@@ -41,35 +80,42 @@ impl specs::System<app::CollideContext> for ResolveCollision {
             )
         });
 
-        if behaviors.get(context.id0.0).is_none() && behaviors.get(context.id1.0).is_none() {
+        if behaviors.get(context.id0).is_none() && behaviors.get(context.id1).is_none() {
             return;
         }
 
-        let mut hitbox_0 = collider.get_hitbox(context.id0.1);
-        let mut hitbox_1 = collider.get_hitbox(context.id0.1);
-        let mut normal_from_1_to_0 = hitbox_0.shape.normal_from(&hitbox_1.shape);
+        let hitbox_0 = collider.get_hitbox(context.id0.aci());
+        let hitbox_1 = collider.get_hitbox(context.id0.aci());
+        let normal_from_1_to_0 = hitbox_0.shape.normal_from(&hitbox_1.shape);
 
-        if let Some(&behavior) = behaviors.get(context.id0.0) {
-            resolve_collision(behavior, &mut hitbox_0, normal_from_1_to_0);
-            collider.update_hitbox(context.id0.1, hitbox_0);
+        if let Some(&behavior) = behaviors.get(context.id0) {
+            let res = resolve_collision(behavior, &hitbox_0, &hitbox_1, &normal_from_1_to_0);
+            collider.update_hitbox(context.id0.aci(), res);
         }
-        if let Some(&behavior) = behaviors.get(context.id1.0) {
-            resolve_collision(behavior, &mut hitbox_1, normal_from_1_to_0.flip());
-            collider.update_hitbox(context.id1.1, hitbox_1);
+        if let Some(&behavior) = behaviors.get(context.id1) {
+            let res = resolve_collision(behavior, &hitbox_1, &hitbox_0, &normal_from_1_to_0.flip());
+            collider.update_hitbox(context.id1.aci(), res);
         }
     }
 }
-fn resolve_collision(behavior: CollisionBehavior, hitbox: &mut Hitbox, normal: DirVec2) {
+fn resolve_collision(behavior: CollisionBehavior, hitbox0: &Hitbox, _hitbox1: &Hitbox, normal: &DirVec2) -> Hitbox {
     use components::CollisionBehavior::*;
+
+    let mut res = hitbox0.clone();
+    if normal.len() > 0.0 {
+        res.shape.pos += normal.dir()*normal.len();
+    }
+
     match behavior {
         Dodge => {
-            // TODO
-            unimplemented!();
+            let scalar_product = hitbox0.vel.pos.x*normal.dir().x + hitbox0.vel.pos.y*normal.dir().y;
+            if scalar_product < 0.0 {
+                res.vel.pos += normal.dir()*(-scalar_product);
+                res.vel.pos *= hitbox0.vel.pos.len()/res.vel.pos.len()
+            }
         },
-        Bounce => {
-            // TODO
-            unimplemented!();
-        },
-        Back => hitbox.vel.pos = hitbox.vel.pos.rotate_deg(180.0),
+        Back => res.vel.pos = res.vel.pos.rotate_deg(180.0),
     }
+
+    res
 }

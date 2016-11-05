@@ -5,6 +5,8 @@ use std::sync::mpsc::Sender;
 pub enum API {
     Quit,
     Notify(String),
+    AddCharacter(f32,f32),
+    AddWall(f32,f32,f32,f32),
 }
 
 pub trait Caller {
@@ -17,10 +19,11 @@ pub trait Caller {
     // fn pause(&mut self);
     // fn resume(&mut self);
     // fn set_zoom(&mut self, zoom: f32);
-
     fn notify(&mut self, notification: String);
     // /// Print to terminal, use notify instead to notify to screen
     // fn print(&mut self, msg: String);
+    fn add_character(&mut self, x: f32, y: f32);
+    fn add_wall(&mut self, x: f32, y: f32, w: f32, h: f32);
 
     /// internally used function
     fn call(&mut self, msg: API) {
@@ -28,6 +31,8 @@ pub trait Caller {
         match msg {
             Quit => self.quit(),
             Notify(string) => self.notify(string),
+            AddCharacter(a, b) => self.add_character(a, b),
+            AddWall(a, b, c, d) => self.add_wall(a, b, c, d),
         }
     }
 }
