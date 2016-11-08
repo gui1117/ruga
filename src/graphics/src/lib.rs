@@ -218,7 +218,7 @@ impl Graphics {
         let circle_indices = index::NoIndices(index::PrimitiveType::TriangleFan);
 
         let vertex_shader_src = r#"
-            #version 130
+            #version 150
             in vec2 position;
             uniform mat4 trans;
             uniform mat4 camera;
@@ -228,7 +228,7 @@ impl Graphics {
             }
         "#;
         let fragment_shader_src = r#"
-            #version 130
+            #version 150
             out vec4 out_color;
             uniform vec4 color;
             void main() {
@@ -268,7 +268,7 @@ impl Graphics {
         let font_cache = Cache::new(cache_width, cache_height, 0.1, 0.1);
 
         let font_vertex_shader_src = r#"
-                #version 130
+                #version 150
                 uniform float z;
                 in vec2 position;
                 in vec2 tex_coords;
@@ -280,7 +280,7 @@ impl Graphics {
                 }
         "#;
         let font_fragment_shader_src = r#"
-                #version 130
+                #version 150
                 uniform sampler2D tex;
                 uniform vec4 color;
                 in vec2 v_tex_coords;
