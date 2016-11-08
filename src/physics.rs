@@ -1,10 +1,60 @@
 pub const PHYSIC_RATE: f32 = 0.9;
 
 #[derive(Debug,Clone)]
+pub struct RayCast {
+    pub origin: [f32;2],
+    pub angle: f32,
+    pub length: f32,
+    pub mask: Option<u32>,
+    pub group: Option<u32>,
+}
+
+#[derive(Debug,Clone,Copy)]
+pub enum ContinueOrStop {
+    Continue,
+    Stop,
+}
+
+#[derive(Debug,Clone)]
+pub struct ShapeCast {
+    pub pos: [f32;2],
+    pub shape: Shape,
+    pub mask: Option<u32>,
+    pub group: Option<u32>,
+}
+
+
+pub struct Collision;
+
+#[derive(Debug,Clone)]
 pub enum Shape {
     Circle(f32),
     Square(f32),
     Rectangle(f32, f32),
+}
+impl Shape {
+    pub fn cells(&self, pos: [f32;2]) -> Vec<[i32;2]> {
+        use ::std::f32::EPSILON;
+
+        let (w2, h2) = match *self{
+            Shape::Circle(r) => (r,r),
+            Shape::Square(r) => (r,r),
+            Shape::Rectangle(w,h) => (w/2., h/2.),
+        };
+
+        let min_x = (pos[0] - w2 + EPSILON).floor() as i32;
+        let max_x = (pos[0] + w2 - EPSILON).ceil() as i32;
+        let min_y = (pos[1] - h2 + EPSILON).floor() as i32;
+        let max_y = (pos[1] + h2 - EPSILON).ceil() as i32;
+
+        let mut cells = Vec::new();
+        for x in min_x..max_x {
+            for y in min_y..max_y {
+                cells.push([x,y]);
+            }
+        }
+        cells
+    }
 }
 
 #[derive(Debug,Clone)]
@@ -15,9 +65,11 @@ pub enum CollisionBehavior {
     #[allow(dead_code)] Stop,
 }
 
+#[derive(Debug,Clone)]
 pub struct EntityInformation {
     pub entity: ::specs::Entity,
     pub pos: [f32;2],
+    pub group: u32,
     pub mask: u32,
     pub shape: Shape,
 }
