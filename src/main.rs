@@ -9,7 +9,7 @@ extern crate time;
 extern crate rustyline;
 extern crate rusttype;
 extern crate specs;
-extern crate collider;
+extern crate fnv;
 
 use glium::glutin;
 use rustyline::Editor;
@@ -27,12 +27,13 @@ use std::io::{self, Write};
 
 mod app;
 mod api;
+mod resources;
 mod graphics;
 mod systems;
 mod entities;
 mod components;
-mod utils;
 mod colors;
+mod physics;
 
 pub use api::Caller;
 pub use api::Callee;
@@ -107,7 +108,8 @@ fn main() {
     let window = {
         use glium::DisplayBuild;
 
-        let mut builder = glutin::WindowBuilder::new();
+        let mut builder = glutin::WindowBuilder::new()
+            .with_title("Ruga");
 
         if matches.is_present("vsync") {
             builder = builder.with_vsync();
@@ -165,7 +167,7 @@ fn main() {
                         }
                     },
                     Err(ReadlineError::Interrupted) => {
-                        api_tx.send(api::API::Quit).unwrap();
+                        lua_clone.lock().unwrap().execute::<()>("quit()").unwrap();
                         println!("^C");
                         break
                     },
@@ -211,8 +213,8 @@ fn main() {
                         Other(c) => c as u32 + 1<<9,
                     };
                     let virtualcode = match button {
-                        Left | Right | Middle => format!("mouse{:?}", button).to_lowercase(),
-                        Other(c) => format!("mouse{:x}",c), // TODO Test
+                        Left | Right | Middle => format!("\"mouse{:?}\"", button).to_lowercase(),
+                        Other(c) => format!("\"mouse{:x}\"",c), // TODO Test
                     };
                     let command = format!("input({},{},{})", state, code, virtualcode);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap();
@@ -226,10 +228,10 @@ fn main() {
                     lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
                 },
                 KeyboardInput(state, code, virtualcode) => {
-                    let state = format!("{:?}", state).to_lowercase();
+                    let state = format!("\"{:?}\"", state).to_lowercase();
                     let virtualcode = match virtualcode {
-                        Some(c) => format!("{:?}", c).to_lowercase(),
-                        None => "none".into(),
+                        Some(c) => format!("\"{:?}\"", c).to_lowercase(),
+                        None => "\"none\"".into(),
                     };
                     let command = format!("input({},{},{})", state, code, virtualcode);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test

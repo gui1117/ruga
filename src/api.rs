@@ -1,53 +1,95 @@
-use hlua;
-
-use std::sync::mpsc::Sender;
-
-pub enum API {
-    Quit,
-    Notify(String),
-    AddCharacter(f32,f32),
-    AddWall(f32,f32,f32,f32),
+macro_rules! infer_type {
+    () => {::hlua::function0};
+    ($t1:tt) => {::hlua::function1};
+    ($t1:tt $t2:tt) => {::hlua::function2};
+    ($t1:tt $t2:tt $t3:tt) => {::hlua::function3};
+    ($t1:tt $t2:tt $t3:tt $t4:tt) => {::hlua::function4};
+    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt) => {::hlua::function5};
+    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt) => {::hlua::function6};
+    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt) => {::hlua::function7};
+    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt) => {::hlua::function8};
+    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt $t9:tt) => {::hlua::function9};
+    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt $t9:tt $t10:tt) => {::hlua::function10};
 }
 
-pub trait Caller {
-    // fn set_player_gun_direction(&mut self, angle: f32);
-    // fn set_player_run_direction(&mut self, angle: f32);
-    // fn set_player_run_force(&mut self, force: f32);
-    // fn set_player_gun_shoot(&mut self, shoot: bool);
-    // fn restart(&mut self);
-    fn quit(&mut self);
-    // fn pause(&mut self);
-    // fn resume(&mut self);
-    // fn set_zoom(&mut self, zoom: f32);
-    fn notify(&mut self, notification: String);
-    // /// Print to terminal, use notify instead to notify to screen
-    // fn print(&mut self, msg: String);
-    fn add_character(&mut self, x: f32, y: f32);
-    fn add_wall(&mut self, x: f32, y: f32, w: f32, h: f32);
+macro_rules! api_callee {
+    ($( $(#[doc = $doc:expr])* fn $func:ident ($($arg:ident: $typ:ty),*);)*) => {
+        pub trait Callee {
+            $( $(#[doc = $doc])* fn $func($( $arg: $typ),*);)*
+        }
 
-    /// internally used function
-    fn call(&mut self, msg: API) {
-        use self::API::*;
-        match msg {
-            Quit => self.quit(),
-            Notify(string) => self.notify(string),
-            AddCharacter(a, b) => self.add_character(a, b),
-            AddWall(a, b, c, d) => self.add_wall(a, b, c, d),
+        pub fn set_lua_callee(lua: &mut ::hlua::Lua) {
+            $(
+                let args = stringify!($($arg),*);
+                let func = stringify!($func);
+                let function = format!("function {}({}) end", func, args);
+                // let help = format!("{}({}): {}", func, args, $doc);
+                // let function_help = format!("function help_{}() print(\"{}\") end", func, help);
+                lua.execute::<()>(&*function).unwrap();
+            )*
+        }
+
+        pub fn callee_function_names() -> Vec<String> {
+            vec!($(
+                String::from(stringify!($func))
+            ),*)
         }
     }
 }
 
-pub fn set_lua_caller(lua: &mut hlua::Lua, sender: Sender<API>) {
-    let sender_clone = sender.clone();
-    lua.set("notify", hlua::function1(move |string| {
-        sender_clone.send(API::Notify(string)).unwrap();
-    }));
-    lua.set("quit", hlua::function0(move || {
-        sender.send(API::Quit).unwrap();
-    }));
+macro_rules! api_caller {
+    ($( $(#[doc = $doc:expr])* fn $func:ident ($($arg:ident: $typ:ty),*);)*) => {
+        #[allow(non_camel_case_types)]
+        #[doc(hidden)]
+        pub enum CallerMsg {
+            $($func((), $($typ),*)),*
+        }
+
+        pub trait Caller {
+            $( $(#[doc = $doc])* fn $func(&mut self, $( $arg: $typ),*);)*
+            /// Internally used function
+            fn call(&mut self, msg: CallerMsg) {
+                match msg {$(
+                    CallerMsg::$func(_, $($arg),*) => self.$func($($arg),*),
+                )*}
+            }
+        }
+
+        pub fn set_lua_caller(lua: &mut ::hlua::Lua, sender: ::std::sync::mpsc::Sender<CallerMsg>) {
+            $(
+                let sender_clone = sender.clone();
+                let func = stringify!($func);
+                lua.set(func, infer_type!($($arg)*)(move |$($arg),*| {
+                    sender_clone.send(CallerMsg::$func((), $($arg),*)).unwrap();
+                }));
+            )*
+        }
+
+        pub fn caller_function_names() -> Vec<String> {
+            vec!($(
+                String::from(stringify!($func))
+            ),*)
+        }
+    }
 }
 
-pub trait Callee {
+// fn set_player_gun_direction(&mut self, angle: f32);
+// fn set_player_gun_shoot(&mut self, shoot: bool);
+// fn restart(&mut self);
+// fn pause(&mut self);
+// fn resume(&mut self);
+// fn set_zoom(&mut self, zoom: f32);
+// fn set_player_run_vector(x: f32, y: f32);
+api_caller! {
+    /// Quit the game
+    fn quit();
+    /// Show notification on the screen
+    fn notify(notification: String);
+    /// Print to terminal, use notify instead to notify to screen
+    fn print(msg: String);
+}
+
+api_callee! {
     /// The cursor has moved on the window.
     /// The parameter are the (x,y) coords relative to the center of the window.
     ///
@@ -94,17 +136,4 @@ pub trait Callee {
 
     /// Function called at each update
     fn update(dt: f32);
-}
-
-pub fn set_lua_callee(lua: &mut hlua::Lua) {
-    lua.execute::<()>("
-    function mouse_moved(x, y)
-    end
-    function input(pressed, scancode, virtualcode)
-    end
-    function mouse_wheel(horizontal, vertical)
-    end
-    function update(dt)
-    end
-    ").unwrap();
 }

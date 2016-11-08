@@ -36,6 +36,9 @@ use std::rc::Rc;
 use std::borrow::Cow;
 use std::f32::consts::PI;
 
+// GLSL version is 150 even if 130 would be OK
+// but macos seem to have issue with 130 so ...
+
 pub type Transformation = vecmath::Matrix2x3<f32>;
 
 const CIRCLE_PRECISION: usize = 64;
@@ -210,7 +213,7 @@ impl Graphics {
         let circle_indices = index::NoIndices(index::PrimitiveType::TriangleFan);
 
         let vertex_shader_src = r#"
-            #version 130
+            #version 150
             in vec2 position;
             uniform mat4 trans;
             uniform mat4 camera;
@@ -220,7 +223,7 @@ impl Graphics {
             }
         "#;
         let fragment_shader_src = r#"
-            #version 130
+            #version 150
             out vec4 out_color;
             uniform vec4 color;
             void main() {
@@ -231,7 +234,7 @@ impl Graphics {
 
         let line_indices = index::NoIndices(index::PrimitiveType::TriangleStrip);
         let line_vertex_shader_src = r#"
-            #version 130
+            #version 150
             in vec2 position;
             uniform float z;
             uniform mat4 camera;
@@ -240,7 +243,7 @@ impl Graphics {
             }
         "#;
         let line_fragment_shader_src = r#"
-            #version 130
+            #version 150
             out vec4 out_color;
             uniform vec4 color;
             void main() {
@@ -271,7 +274,7 @@ impl Graphics {
         let font_cache = Cache::new(cache_width, cache_height, 0.1, 0.1);
 
         let font_vertex_shader_src = r#"
-                #version 130
+                #version 150
                 uniform float z;
                 in vec2 position;
                 in vec2 tex_coords;
@@ -283,7 +286,7 @@ impl Graphics {
                 }
         "#;
         let font_fragment_shader_src = r#"
-                #version 130
+                #version 150
                 uniform sampler2D tex;
                 uniform vec4 color;
                 in vec2 v_tex_coords;

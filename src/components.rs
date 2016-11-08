@@ -1,41 +1,85 @@
 use graphics;
+use physics::{CollisionBehavior, Shape, PHYSIC_RATE};
 use specs;
 
-#[derive(Clone,Default)]
-pub struct HitboxIdFlag;
-impl specs::Component for HitboxIdFlag {
-    type Storage = specs::NullStorage<Self>;
+macro_rules! impl_component {
+    ($($typ:ident: $storage:ident,)*) => {
+        pub fn register_components(world: &mut ::specs::World) {
+            $(world.register::<::components::$typ>();)*
+        }
+
+        $(impl ::specs::Component for $typ {
+            type Storage = ::specs::$storage<Self>;
+        })*
+    };
 }
 
-#[derive(Clone)]
-pub struct HitboxDraw {
-    pub color: [f32;4],
-    pub layer: graphics::Layer,
+impl_component!{
+    PhysicState: VecStorage,
+    PhysicType: VecStorage,
+    PhysicForce: VecStorage,
+    PhysicDynamic: NullStorage,
+    PhysicStatic: NullStorage,
 }
-impl HitboxDraw {
-    pub fn new(color: [f32;4], layer: graphics::Layer) -> HitboxDraw {
-        HitboxDraw {
-            color: color,
-            layer: layer,
+
+#[derive(Debug,Clone)]
+pub struct PhysicState {
+    pub pos: [f32;2],
+    pub vel: [f32;2],
+    pub acc: [f32;2],
+}
+impl PhysicState {
+    pub fn new(pos: [f32; 2]) -> Self {
+        PhysicState{
+            pos: pos,
+            vel: [0.,0.],
+            acc: [0.,0.],
         }
     }
 }
-impl specs::Component for HitboxDraw {
-    type Storage = specs::VecStorage<Self>;
+
+#[derive(Debug,Clone)]
+pub struct PhysicType {
+    pub shape: Shape,
+    pub collision: CollisionBehavior,
+    pub damping: f32,
+    pub force: f32,
+    pub weight: f32,
+    pub group: u32,
+    pub mask: u32,
+}
+impl PhysicType {
+    pub fn new_movable(group: u32, mask: u32, shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
+        let damping = -weight * (1.-PHYSIC_RATE).ln() / time_to_reach_v_max;
+        let force = velocity * damping;
+        PhysicType {
+            shape: shape,
+            collision: collision,
+            weight: weight,
+            damping: damping,
+            force: force,
+            group: group,
+            mask: mask,
+        }
+    }
+    pub fn new_static(group: u32, mask: u32, shape: Shape) -> Self {
+        PhysicType {
+            shape: shape,
+            collision: CollisionBehavior::Persist,
+            weight: ::std::f32::MAX,
+            force: 0.,
+            damping: 0.,
+            group: group,
+            mask: mask,
+        }
+    }
 }
 
-#[derive(Clone,Default)]
-pub struct PlayerControl;
-impl specs::Component for PlayerControl {
-    type Storage = specs::NullStorage<Self>;
+#[derive(Debug,Clone)]
+pub struct PhysicForce {
+    pub angle: f32,
+    pub strength: f32,
 }
 
-#[derive(Clone,Copy)]
-pub enum CollisionBehavior {
-    Dodge,
-    // TODO Bounce,
-    Back,
-}
-impl specs::Component for CollisionBehavior {
-    type Storage = specs::VecStorage<Self>;
-}
+#[derive(Debug,Clone,Copy,Default)] pub struct PhysicDynamic;
+#[derive(Debug,Clone,Copy,Default)] pub struct PhysicStatic;
