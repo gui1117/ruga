@@ -5,11 +5,10 @@ pub struct RayCast {
     pub origin: [f32;2],
     pub angle: f32,
     pub length: f32,
-    pub mask: Option<u32>,
-    pub group: Option<u32>,
+    pub mask: u32,
+    pub group: u32,
 }
 
-#[derive(Debug,Clone,Copy)]
 pub enum ContinueOrStop {
     Continue,
     Stop,
@@ -19,10 +18,9 @@ pub enum ContinueOrStop {
 pub struct ShapeCast {
     pub pos: [f32;2],
     pub shape: Shape,
-    pub mask: Option<u32>,
-    pub group: Option<u32>,
+    pub mask: u32,
+    pub group: u32,
 }
-
 
 pub struct Collision;
 
@@ -55,6 +53,9 @@ impl Shape {
         }
         cells
     }
+    pub fn raycast(&self, pos: [f32;2], eq: (f32,f32,f32)) -> Option<(f32,f32,f32,f32)> {
+        unimplemented!();
+    }
 }
 
 #[derive(Debug,Clone)]
@@ -74,7 +75,7 @@ pub struct EntityInformation {
     pub shape: Shape,
 }
 
-fn grid_raycast(x0: f32, y0: f32, x1: f32, y1: f32) -> Vec<[i32;2]> {
+pub fn grid_raycast(x0: f32, y0: f32, x1: f32, y1: f32) -> Vec<[i32;2]> {
     if (x1-x0).abs() < (y1-y0).abs() {
         grid_raycast(y0,x0,y1,x1).iter().map(|s| [s[1],s[0]]).collect::<Vec<[i32;2]>>()
     } else if x0 == x1 {

@@ -26,6 +26,7 @@ use std::fs::File;
 use std::io::{self, Write};
 
 mod app;
+mod utils;
 mod api;
 mod resources;
 mod graphics;

@@ -1,6 +1,7 @@
-use physics::{EntityInformation, ContinueOrStop, Collision, RayCast, ShapeCast};
+use physics::{self, EntityInformation, ContinueOrStop, Collision, RayCast, ShapeCast};
 use components::*;
 use specs::Join;
+use std::collections::HashSet;
 
 macro_rules! impl_resource {
     ($($typ:ident,)*) => { impl_resource!{ $($typ),* } };
@@ -79,6 +80,68 @@ impl PhysicWorld {
         unimplemented!();
     }
     pub fn raycast<F: FnMut((&EntityInformation,f32,f32)) -> ContinueOrStop>(&self, ray: &RayCast, callback: &mut F) {
-        unimplemented!();
+        use ::std::f32::consts::PI;
+        use ::std::cmp::Ordering;
+
+        let angle = ::utils::minus_pi_pi(ray.angle);
+        let x0 = ray.origin[0];
+        let y0 = ray.origin[1];
+        let x1 = x0 + ray.length*angle.cos();
+        let y1 = y0 + ray.length*angle.sin();
+        let cells = physics::grid_raycast(x0, y0, x1, y1);
+        let ray_min_x = x0.min(x1);
+        let ray_max_x = x0.max(x1);
+
+        // equation ax + by + c = 0
+        let equation = if angle.abs() == PI || angle == 0. {
+            (0.,1.,-y0)
+        } else {
+            let b = -1./angle.tan();
+            (1.,b,-x0-b*y0)
+        };
+
+        let mut visited = HashSet::new();
+
+        for cell in cells {
+            // abscisse of start and end the segment of
+            // the line that is in the current square
+
+            let segment_min_x = (cell[0] as f32).max(ray_min_x);
+            let segment_max_x = ((cell[0]+1) as f32).min(ray_max_x);
+
+            let null_vec = Vec::new();
+            let mut bodies = Vec::new();
+
+            let entities = self.movable.get(&cell).unwrap_or(&null_vec).iter()
+                .chain(self.inert.get(&cell).unwrap_or(&null_vec).iter());
+
+            for entity in entities {
+                if entity.group & ray.mask == 0 { continue }
+                if entity.mask & ray.group == 0 { continue }
+                if visited.contains(&entity.entity) { continue }
+
+                if let Some((x_min,y_min,x_max,y_max)) = entity.shape.raycast(entity.pos, equation) {
+                    if segment_start > x_max || x_min > segment_end { continue }
+
+                    // TODO set min max
+                    let min = 0f32;
+                    let max = 0f32;
+                    visited.insert(entity.entity);
+                    bodies.push((entity,min,max));
+                }
+            }
+
+            bodies.sort_by(|&(_,min_a,_),&(_,min_b,_)| {
+                if min_a > min_b { Ordering::Greater }
+                else if min_a == min_b { Ordering::Equal }
+                else { Ordering::Less }
+            });
+
+            for b in bodies {
+                if let ContinueOrStop::Stop = callback(b) {
+                    return;
+                }
+            }
+        }
     }
 }
