@@ -26,8 +26,11 @@ pub struct Collision;
 
 #[derive(Debug,Clone)]
 pub enum Shape {
+    /// radius
     Circle(f32),
+    /// radius
     Square(f32),
+    /// width and height
     Rectangle(f32, f32),
 }
 impl Shape {
@@ -54,7 +57,13 @@ impl Shape {
         cells
     }
     pub fn raycast(&self, pos: [f32;2], eq: (f32,f32,f32)) -> Option<(f32,f32,f32,f32)> {
-        unimplemented!();
+        use self::Shape::*;
+        let (a, b, c) = eq;
+        match *self {
+            Circle(r) => circle_raycast(pos[0], pos[1], r, a, b, c),
+            Square(r) => bounding_box_raycast(pos[0], pos[1], r*2., r*2., a, b, c),
+            Rectangle(w, h) => bounding_box_raycast(pos[0], pos[1], w, h, a, b, c),
+        }
     }
 }
 
@@ -123,6 +132,7 @@ pub fn grid_raycast(x0: f32, y0: f32, x1: f32, y1: f32) -> Vec<[i32;2]> {
             y0.ceil()-(a*x0.floor()+b)
         };
 
+        unimplemented!();
         //TODO cut some cells at the end
         //let mut error_end = if a > 0. {
         //    y1.ceil() - (a*x1.ceil()+b)

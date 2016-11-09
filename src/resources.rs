@@ -110,34 +110,47 @@ impl PhysicWorld {
             let segment_max_x = ((cell[0]+1) as f32).min(ray_max_x);
 
             let null_vec = Vec::new();
-            let mut bodies = Vec::new();
+            let mut entities = Vec::new();
 
-            let entities = self.movable.get(&cell).unwrap_or(&null_vec).iter()
+            let possible_entities = self.movable.get(&cell).unwrap_or(&null_vec).iter()
                 .chain(self.inert.get(&cell).unwrap_or(&null_vec).iter());
 
-            for entity in entities {
+            for entity in possible_entities {
                 if entity.group & ray.mask == 0 { continue }
                 if entity.mask & ray.group == 0 { continue }
                 if visited.contains(&entity.entity) { continue }
 
                 if let Some((x_min,y_min,x_max,y_max)) = entity.shape.raycast(entity.pos, equation) {
-                    if segment_start > x_max || x_min > segment_end { continue }
+                    if segment_min_x > x_max || x_min > segment_max_x { continue }
+                    let l1 = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
+                    let l2 = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
 
-                    // TODO set min max
-                    let min = 0f32;
-                    let max = 0f32;
+                    let mut min = l1.min(l2);
+                    let mut max = l1.max(l2);
+
+                    // angle is between minus_pi and pi
+                    if angle.abs() > PI/2. {
+                        if x_max > segment_max_x {
+                            max = -max;
+                        }
+                    } else {
+                        if x_min < segment_min_x {
+                            min = -min;
+                        }
+                    }
+
                     visited.insert(entity.entity);
-                    bodies.push((entity,min,max));
+                    entities.push((entity,min,max));
                 }
             }
 
-            bodies.sort_by(|&(_,min_a,_),&(_,min_b,_)| {
+            entities.sort_by(|&(_,min_a,_),&(_,min_b,_)| {
                 if min_a > min_b { Ordering::Greater }
                 else if min_a == min_b { Ordering::Equal }
                 else { Ordering::Less }
             });
 
-            for b in bodies {
+            for b in entities {
                 if let ContinueOrStop::Stop = callback(b) {
                     return;
                 }
