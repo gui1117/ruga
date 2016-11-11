@@ -30,8 +30,38 @@ function table_contains(vec, element)
 	return false
 end
 
+x0 = 0.6
+y0 = 0.6
+x1 = 0.6
+y1 = 0.6
+
 function input(state, scancode, code)
 	if state == "pressed" then
+		if code == "z" then
+			y0 = y0 + 0.7
+		end
+		if code == "s" then
+			y0 = y0 - 0.7
+		end
+		if code == "d" then
+			x0 = x0 + 0.7
+		end
+		if code == "q" then
+			x0 = x0 - 0.7
+		end
+		if code == "t" then
+			y1 = y1 + 0.7
+		end
+		if code == "g" then
+			y1 = y1 - 0.7
+		end
+		if code == "h" then
+			x1 = x1 + 0.7
+		end
+		if code == "f" then
+			x1 = x1 - 0.7
+		end
+		debug_raycast(x0,y0,x1,y1)
 		if run_directions[code] then run_direction_pressed(run_directions[code]) end
 	else
 		if run_directions[code] then run_direction_released(run_directions[code]) end
@@ -85,9 +115,14 @@ function update_player_direction()
 		x = x*0.70710678118654752440
 	end
 
-	set_player_run_vector(x*velocity, y*velocity)
+	-- set_player_run_vector(x*velocity, y*velocity)
 end
 
-add_character(0.0, 0.0)
-add_wall(10.0, 10.0, 100.0, 1.0)
-add_wall(5.0, 5.0, 1.0, 1.0)
+for i = -20.4,20.4,1.7 do
+	for j = -20.4,20.4,1.7 do
+		add_debug_rectangle(i,j,1.2,1.4)
+		add_debug_circle(i,j,0.7)
+	end
+end
+
+fill_physic_world()

@@ -193,7 +193,7 @@ impl Graphics {
             Vertex { position: [-1.,  1.] },
             Vertex { position: [ 1.,  1.] }
         ];
-        let quad_vertex_buffer = try!(VertexBuffer::new(facade, &quad_vertex));
+        let quad_vertex_buffer = VertexBuffer::new(facade, &quad_vertex)?;
 
         let quad_indices = index::NoIndices(index::PrimitiveType::TriangleStrip);
 
@@ -208,7 +208,7 @@ impl Graphics {
             }
         }
 
-        let circle_vertex_buffer = try!(VertexBuffer::new(facade, &circle_vertex));
+        let circle_vertex_buffer = VertexBuffer::new(facade, &circle_vertex)?;
 
         let circle_indices = index::NoIndices(index::PrimitiveType::TriangleFan);
 
@@ -230,7 +230,7 @@ impl Graphics {
                 out_color = color;
             }
         "#;
-        let program = try!(Program::from_source(facade, vertex_shader_src, fragment_shader_src, None));
+        let program = Program::from_source(facade, vertex_shader_src, fragment_shader_src, None)?;
 
         let line_indices = index::NoIndices(index::PrimitiveType::TriangleStrip);
         let line_vertex_shader_src = r#"
@@ -250,7 +250,7 @@ impl Graphics {
                 out_color = color;
             }
         "#;
-        let line_program = try!(Program::from_source(facade, line_vertex_shader_src, line_fragment_shader_src, None));
+        let line_program = Program::from_source(facade, line_vertex_shader_src, line_fragment_shader_src, None)?;
 
         let draw_parameters = DrawParameters {
             smooth: Some(Smooth::DontCare),
@@ -264,8 +264,7 @@ impl Graphics {
         };
 
         let font_data = include_bytes!("DejaVuSansMono-Bold.ttf");
-        let font = try!(FontCollection::from_bytes(SharedBytes::ByRef(font_data)).into_font()
-                        .ok_or(GraphicsError::InvalidFont));
+        let font = FontCollection::from_bytes(SharedBytes::ByRef(font_data)).into_font().ok_or(GraphicsError::InvalidFont)?;
 
         let dpi_factor = 1; // FIXME: different from one in retina display
         let (screen_width, screen_height) = facade.get_context().get_framebuffer_dimensions();
@@ -296,9 +295,9 @@ impl Graphics {
                     f_colour = color * vec4(1.0, 1.0, 1.0, texture(tex, v_tex_coords).r);
                 }
         "#;
-        let font_program = try!(Program::from_source(facade, font_vertex_shader_src, font_fragment_shader_src, None));
+        let font_program = Program::from_source(facade, font_vertex_shader_src, font_fragment_shader_src, None)?;
 
-        let font_cache_tex = try!(glium::texture::Texture2d::with_format(
+        let font_cache_tex = glium::texture::Texture2d::with_format(
             facade,
             glium::texture::RawImage2d {
                 data: Cow::Owned(vec![128u8; cache_width as usize * cache_height as usize]),
@@ -307,7 +306,7 @@ impl Graphics {
                 format: glium::texture::ClientFormat::U8
             },
             glium::texture::UncompressedFloatFormat::U8,
-            glium::texture::MipmapsOption::NoMipmap));
+            glium::texture::MipmapsOption::NoMipmap)?;
 
         Ok(Graphics {
             context: facade.get_context().clone(),
@@ -331,9 +330,8 @@ impl Graphics {
     }
     pub fn set_font<R: Read>(&mut self, font: &mut R) -> Result<(), GraphicsError> {
         let mut font_data = vec!();
-        try!(font.read_to_end(&mut font_data));
-        self.font = try!(FontCollection::from_bytes(font_data).into_font()
-                        .ok_or(GraphicsError::InvalidFont));
+        font.read_to_end(&mut font_data)?;
+        self.font = FontCollection::from_bytes(font_data).into_font().ok_or(GraphicsError::InvalidFont)?;
         Ok(())
     }
     pub fn resize(&mut self) -> Result<(), GraphicsError> {
@@ -342,7 +340,7 @@ impl Graphics {
         let (cache_width, cache_height) = (screen_width * dpi_factor, screen_height * dpi_factor);
 
         self.font_cache = Cache::new(cache_width, cache_height, 0.1, 0.1);
-        self.font_cache_tex = try!(glium::texture::Texture2d::with_format(
+        self.font_cache_tex = glium::texture::Texture2d::with_format(
             &self.context,
             glium::texture::RawImage2d {
                 data: Cow::Owned(vec![128u8; cache_width as usize * cache_height as usize]),
@@ -351,7 +349,7 @@ impl Graphics {
                 format: glium::texture::ClientFormat::U8
             },
             glium::texture::UncompressedFloatFormat::U8,
-            glium::texture::MipmapsOption::NoMipmap));
+            glium::texture::MipmapsOption::NoMipmap)?;
 
         Ok(())
     }

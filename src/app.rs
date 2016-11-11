@@ -24,6 +24,7 @@ pub struct App {
     must_quit: bool,
     graphics: Graphics,
     planner: specs::Planner<UpdateContext>,
+    debug: Option<((f32,f32),(f32,f32),(f32,f32),(f32,f32))>,
 }
 
 impl App {
@@ -41,6 +42,7 @@ impl App {
             graphics: Graphics::new(facade).unwrap(),
             must_quit: false,
             planner: planner,
+            debug: None,
         }
     }
     pub fn update(&mut self, dt: f32) {
@@ -54,6 +56,10 @@ impl App {
         let mut frame = Frame::new(&mut self.graphics, frame, &camera);
 
         systems::draw_notifications(self.planner.mut_world(), &mut frame);
+        systems::draw_debug(self.planner.mut_world(), &mut frame);
+        if let Some((p1,p2,p3,p4)) = self.debug {
+            frame.draw_line(p1, p2, p3, p4, 0.1, ::graphics::Layer::Middle, ::colors::GREEN);
+        }
 
         frame.finish().unwrap();
     }
@@ -79,5 +85,38 @@ impl api::Caller for App {
     fn print(&mut self, msg: String) {
         print!("[{}]", msg);
         io::stdout().flush().unwrap();
+    }
+    fn debug_raycast(&mut self, x1: f32, y1: f32, x2: f32, y2: f32) {
+        self.debug = Some(((x1,y1),(x2,y2),(x1,y1),(x2,y2)));
+        let mut world = self.planner.mut_world();
+        let mut debug_actives = world.write::<components::DebugActive>();
+        for mut active in (&mut debug_actives).iter() {
+            active.active = false;
+        }
+        let physic_world = world.read_resource::<resources::PhysicWorld>();
+        let ray = ::physics::RayCast {
+            origin: [x1,y1],
+            angle: (y2-y1).atan2(x2-x1),
+            length: ((y2-y1).powi(2) + (x2-x1).powi(2)).sqrt(),
+            mask: !0,
+            group: !0,
+        };
+        physic_world.raycast(&ray, &mut |(entity,_,_)| {
+            if let Some(active) = debug_actives.get_mut(entity.entity) {
+                active.active = true;
+            }
+            ::physics::ContinueOrStop::Continue
+        });
+    }
+    fn add_debug_rectangle(&mut self, x: f32, y: f32, w: f32, h: f32) {
+        entities::add_debug_rectangle(self.planner.mut_world(), x, y, w, h);
+    }
+    fn add_debug_circle(&mut self, x: f32, y: f32, r: f32) {
+        entities::add_debug_circle(self.planner.mut_world(), x, y, r);
+    }
+    fn fill_physic_world(&mut self) {
+        let mut world = self.planner.mut_world();
+        let mut physic_world = world.write_resource::<resources::PhysicWorld>();
+        physic_world.fill(world);
     }
 }

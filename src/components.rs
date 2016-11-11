@@ -20,6 +20,7 @@ impl_component!{
     PhysicForce: VecStorage,
     PhysicDynamic: NullStorage,
     PhysicStatic: NullStorage,
+    DebugActive: VecStorage,
 }
 
 #[derive(Debug,Clone)]
@@ -79,6 +80,11 @@ impl PhysicType {
 pub struct PhysicForce {
     pub angle: f32,
     pub strength: f32,
+}
+
+#[derive(Debug,Clone)]
+pub struct DebugActive {
+    pub active: bool
 }
 
 #[derive(Debug,Clone,Copy,Default)] pub struct PhysicDynamic;

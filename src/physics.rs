@@ -28,8 +28,6 @@ pub struct Collision;
 pub enum Shape {
     /// radius
     Circle(f32),
-    /// radius
-    Square(f32),
     /// width and height
     Rectangle(f32, f32),
 }
@@ -39,18 +37,17 @@ impl Shape {
 
         let (w2, h2) = match *self{
             Shape::Circle(r) => (r,r),
-            Shape::Square(r) => (r,r),
             Shape::Rectangle(w,h) => (w/2., h/2.),
         };
 
         let min_x = (pos[0] - w2 + EPSILON).floor() as i32;
-        let max_x = (pos[0] + w2 - EPSILON).ceil() as i32;
+        let max_x = (pos[0] + w2 - EPSILON).floor() as i32;
         let min_y = (pos[1] - h2 + EPSILON).floor() as i32;
-        let max_y = (pos[1] + h2 - EPSILON).ceil() as i32;
+        let max_y = (pos[1] + h2 - EPSILON).floor() as i32;
 
         let mut cells = Vec::new();
-        for x in min_x..max_x {
-            for y in min_y..max_y {
+        for x in min_x..max_x+1 {
+            for y in min_y..max_y+1 {
                 cells.push([x,y]);
             }
         }
@@ -61,7 +58,6 @@ impl Shape {
         let (a, b, c) = eq;
         match *self {
             Circle(r) => circle_raycast(pos[0], pos[1], r, a, b, c),
-            Square(r) => bounding_box_raycast(pos[0], pos[1], r*2., r*2., a, b, c),
             Rectangle(w, h) => bounding_box_raycast(pos[0], pos[1], w, h, a, b, c),
         }
     }
@@ -86,33 +82,12 @@ pub struct EntityInformation {
 
 pub fn grid_raycast(x0: f32, y0: f32, x1: f32, y1: f32) -> Vec<[i32;2]> {
     if (x1-x0).abs() < (y1-y0).abs() {
-        grid_raycast(y0,x0,y1,x1).iter().map(|s| [s[1],s[0]]).collect::<Vec<[i32;2]>>()
-    } else if x0 == x1 {
-        let x0_i32 = x0.floor() as i32;
-        let y0_i32 = y0.floor() as i32;
-        let y1_i32 = y1.floor() as i32;
-        let mut vec = Vec::new();
-
-        if y0 > y1 {
-            for y in y1_i32..y0_i32+1 {
-                vec.push([x0_i32,y]);
-            }
-            vec.reverse();
-        } else {
-            for y in y0_i32..y1_i32+1 {
-                vec.push([x0_i32,y]);
-            }
-        }
-
-        vec
+        grid_raycast(y0,x0,y1,x1).iter().map(|s| [s[1], s[0]]).collect::<Vec<[i32;2]>>()
     } else if x0 > x1 {
         let mut vec = grid_raycast(x1,y1,x0,y0);
         vec.reverse();
         vec
     } else {
-        // x0 < x1
-        //println!("x0:{},y0:{},x1:{},y1:{}",x0,y0,x1,y1);
-
         let x0_i32 = x0.floor() as i32;
         let y0_i32 = y0.floor() as i32;
         let x1_i32 = x1.floor() as i32;
@@ -120,48 +95,29 @@ pub fn grid_raycast(x0: f32, y0: f32, x1: f32, y1: f32) -> Vec<[i32;2]> {
         // equation y = ax + b
         let a = (y1 - y0)/(x1 - x0);
         let b = y0 -a*x0;
-        //println!("a:{} b:{}",a,b);
 
         let delta_error = a.abs();
-
         let signum = a.signum() as i32;
 
         let mut error = if a > 0. {
-            (a*x0.floor()+b)-y0.floor()
+            (a*x0.floor()+b) - y0.floor()
         } else {
-            y0.ceil()-(a*x0.floor()+b)
+            y0.ceil() - (a*x0.floor()+b)
         };
 
-        unimplemented!();
-        //TODO cut some cells at the end
-        //let mut error_end = if a > 0. {
-        //    y1.ceil() - (a*x1.ceil()+b)
-        //} else {
-        //    (y1.floor() - (a*x1.ceil()+b))
-        //};
-        //println!("debut: error: {}",error);
-        //println!("error end : {}", error_end);
 
         let mut vec = Vec::new();
         let mut y = y0_i32;
 
         for x in x0_i32..x1_i32+1 {
-            vec.push([x,y]);
             error += delta_error;
-            //println!("error: {}",error);
+            vec.push([x, y]);
             while error >= 1.0 {
                 y += signum;
                 error -= 1.0;
-                //println!("error -= 1.0: {}",error);
-                vec.push([x,y]);
+                vec.push([x, y]);
             }
         }
-        //while error_end >= 0. {
-        //    vec.pop();
-        //    error_end -= 1.0;
-        //}
-
-        //println!("result: {:?}",vec);
         vec
     }
 }
@@ -169,9 +125,11 @@ pub fn grid_raycast(x0: f32, y0: f32, x1: f32, y1: f32) -> Vec<[i32;2]> {
 /// the coordinate of the intersections (if some) of a circle of center (x,y) and radius,
 /// and the line of equation ax+by+c=0
 fn circle_raycast(x: f32, y: f32, radius: f32, a: f32, b: f32, c: f32) -> Option<(f32,f32,f32,f32)> {
+    use ::std::f32::EPSILON;
+    // println!("x:{}, y:{}, radius:{}, a:{}, b:{}, c:{}",x,y,radius,a,b,c);
     if a == 0. && b == 0. {
-        None
-    } else if a == 0. {
+        panic!("invalid line equation")
+    } else if (a/radius).abs() < EPSILON {
         let y_ray = -c/b;
         if (y_ray - y).abs() < radius {
             let dx = (radius.powi(2) - (y_ray - y).powi(2)).sqrt();
@@ -179,7 +137,7 @@ fn circle_raycast(x: f32, y: f32, radius: f32, a: f32, b: f32, c: f32) -> Option
         } else {
             None
         }
-    } else if b == 0. {
+    } else if (b/radius).abs() < EPSILON {
         let x_ray = -c/a;
         if (x_ray - x).abs() < radius {
             let dy = (radius.powi(2) - (x_ray - x).powi(2)).sqrt();
@@ -219,7 +177,7 @@ fn circle_raycast(x: f32, y: f32, radius: f32, a: f32, b: f32, c: f32) -> Option
 /// and the line of equation ax+by+c=0
 fn bounding_box_raycast(x: f32, y: f32, width: f32, height: f32, a: f32, b: f32, c: f32) -> Option<(f32,f32,f32,f32)> {
     if a == 0. && b == 0. {
-        None
+        panic!("invalid line equation")
     } else if a == 0. {
         let y_proj = -c/b;
         if y - height/2. <= y_proj && y_proj <= y + height/2. {
@@ -235,13 +193,13 @@ fn bounding_box_raycast(x: f32, y: f32, width: f32, height: f32, a: f32, b: f32,
             None
         }
     } else {
-        //println!("x:{}, y:{}, width:{}, height:{}, a:{}, b:{}, c:{}",x,y,width,height,a,b,c);
-        // the ordonate of the point that is on the line(a,b) and the horizontal line that cut (x,y)
+        // println!("x:{}, y:{}, width:{}, height:{}, a:{}, b:{}, c:{}",x,y,width,height,a,b,c);
+        // the ordonate of the point that is on the line(a,b,c) and the horizontal line that cut (x,y)
         let y_proj = -(a*x + c)/b;
-        // the abscisse of the point that is on the line(a,b) and the vertical line that cut (x,y)
+        // the abscisse of the point that is on the line(a,b,c) and the vertical line that cut (x,y)
         let x_proj = -(b*y+c)/a;
 
-        //println!("proj: {:?} | {:?}",x_proj,y_proj);
+        // println!("proj: {:?} | {:?}",x_proj,y_proj);
         // i,j,k,l are three point:
         // * i represent the point on the horizontal line on the top of the bounding box
         // and on the line(a,b)
@@ -255,72 +213,37 @@ fn bounding_box_raycast(x: f32, y: f32, width: f32, height: f32, a: f32, b: f32,
         // dy = -a/b * dx
 
         let dx = -height/2. * b/a;
-        //println!("dx: {:?}",dx);
+        // println!("dx: {:?}",dx);
         let x_i = x_proj + dx;
         let y_i = y + height/2.;
         let x_k = x_proj - dx;
         let y_k = y - height/2.;
-        //println!("i: {:?} | {:?}",x_i,y_i);
-        //println!("k: {:?} | {:?}",x_k,y_k);
+        // println!("i: {:?} | {:?}",x_i,y_i);
+        // println!("k: {:?} | {:?}",x_k,y_k);
 
         let dy = -width/2. * a/b;
-        //println!("dy: {:?}",dy);
+        // println!("dy: {:?}",dy);
         let x_j = x + width/2.;
         let y_j = y_proj + dy;
         let x_l = x - width/2.;
         let y_l = y_proj - dy;
-        //println!("j: {:?} | {:?}",x_j,y_j);
-        //println!("l: {:?} | {:?}",x_l,y_l);
+        // println!("j: {:?} | {:?}",x_j,y_j);
+        // println!("l: {:?} | {:?}",x_l,y_l);
 
 
-        let cond_i = x-width/2. < x_i && x_i < x+width/2.;
-        let cond_k = x-width/2. < x_k && x_k < x+width/2.;
-        let cond_j = y-width/2. < y_j && y_j < y+width/2.;
-        let cond_l = y-width/2. < y_l && y_l < y+width/2.;
+        let cond_i = x-width/2. <= x_i && x_i <= x+width/2.;
+        let cond_k = x-width/2. <= x_k && x_k <= x+width/2.;
+        let cond_j = y-height/2. <= y_j && y_j <= y+height/2.;
+        let cond_l = y-height/2. <= y_l && y_l <= y+height/2.;
+        // println!("cond i: {}, j: {}, k: {}, l: {}",cond_i,cond_j,cond_k,cond_l);
 
         match (cond_i, cond_k, cond_j, cond_l) {
-            (true, true, _, _) => {
-                if x_i < x_k {
-                    Some((x_i,y_i,x_k,y_k))
-                } else {
-                    Some((x_k,y_k,x_i,y_i))
-                }
-            },
-            (true, _, true, _) => {
-                if x_i < x_j {
-                    Some((x_i,y_i,x_j,y_j))
-                } else {
-                    Some((x_j,y_j,x_i,y_i))
-                }
-            },
-            (true, _, _, true) => {
-                if x_i < x_l {
-                    Some((x_i,y_i,x_l,y_l))
-                } else {
-                    Some((x_l,y_l,x_i,y_i))
-                }
-            }
-            (_, true, true, _) => {
-                if x_j < x_k {
-                    Some((x_j,y_j,x_k,y_k))
-                } else {
-                    Some((x_k,y_k,x_j,y_j))
-                }
-            },
-            (_, true, _, true) => {
-                if x_j < x_l {
-                    Some((x_j,y_j,x_l,y_l))
-                } else {
-                    Some((x_l,y_l,x_j,y_j))
-                }
-            },
-            (_, _, true, true) => {
-                if x_k < x_l {
-                    Some((x_k,y_k,x_l,y_l))
-                } else {
-                    Some((x_l,y_l,x_k,y_k))
-                }
-            },
+            (true, true, _, _) => Some((x_i,y_i,x_k,y_k)),
+            (true, _, true, _) => Some((x_i,y_i,x_j,y_j)),
+            (true, _, _, true) => Some((x_i,y_i,x_l,y_l)),
+            (_, true, true, _) => Some((x_j,y_j,x_k,y_k)),
+            (_, true, _, true) => Some((x_k,y_k,x_l,y_l)),
+            (_, _, true, true) => Some((x_j,y_j,x_l,y_l)),
             _ => None
         }
     }

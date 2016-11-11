@@ -1,4 +1,4 @@
-use graphics;
+use graphics::{self, Layer};
 use specs;
 use specs::Join;
 use app;
@@ -40,4 +40,22 @@ pub fn draw_notifications(world: &mut specs::World, frame: &mut graphics::Frame)
     }
 
     notifications.0.retain(|&(_, count)| count > 0)
+}
+
+pub fn draw_debug(world: &mut specs::World, frame: &mut graphics::Frame) {
+    use ::physics::Shape::*;
+    let states = world.read::<PhysicState>();
+    let types = world.read::<PhysicType>();
+    let debugs = world.read::<DebugActive>();
+    for (state, typ, debug) in (&states, &types, &debugs).iter() {
+        let color = if debug.active {
+            [0.0,1.0,0.0,0.5]
+        } else {
+            [1.0,0.0,0.0,0.5]
+        };
+        match typ.shape {
+            Rectangle(w,h) => frame.draw_rectangle(state.pos[0], state.pos[1], w, h, Layer::Middle, color),
+            Circle(r) => frame.draw_circle(state.pos[0], state.pos[1], r, Layer::Middle, color),
+        }
+    }
 }

@@ -66,12 +66,12 @@ impl PhysicWorld {
             self.insert_static(info);
         }
     }
-    pub fn insert_dynamic(&mut self, info: EntityInformation) {
+    fn insert_dynamic(&mut self, info: EntityInformation) {
         for cell in info.shape.cells(info.pos) {
             self.movable.entry(cell).or_insert(Vec::new()).push(info.clone());
         }
     }
-    pub fn insert_static(&mut self, info: EntityInformation) {
+    fn insert_static(&mut self, info: EntityInformation) {
         for cell in info.shape.cells(info.pos) {
             self.inert.entry(cell).or_insert(Vec::new()).push(info.clone());
         }
@@ -80,37 +80,72 @@ impl PhysicWorld {
         unimplemented!();
     }
     pub fn raycast<F: FnMut((&EntityInformation,f32,f32)) -> ContinueOrStop>(&self, ray: &RayCast, callback: &mut F) {
+        use ::std::f32::consts::FRAC_PI_2;
+        use ::std::f32::consts::FRAC_PI_4;
         use ::std::f32::consts::PI;
         use ::std::cmp::Ordering;
 
+        enum Direction {
+            Left,
+            Right,
+            Up,
+            Down,
+        }
+        impl Direction {
+            fn signum(&self, x0: f32, y0: f32, x1: f32, y1: f32) -> f32 {
+                match *self {
+                    Direction::Left => (x1-x0).signum(),
+                    Direction::Right => (x0-x1).signum(),
+                    Direction::Up => (y0-y1).signum(),
+                    Direction::Down => (y1-y0).signum(),
+                }
+            }
+        }
         let angle = ::utils::minus_pi_pi(ray.angle);
-        let x0 = ray.origin[0];
-        let y0 = ray.origin[1];
-        let x1 = x0 + ray.length*angle.cos();
-        let y1 = y0 + ray.length*angle.sin();
-        let cells = physics::grid_raycast(x0, y0, x1, y1);
-        let ray_min_x = x0.min(x1);
-        let ray_max_x = x0.max(x1);
+        let direction = if angle.abs() > 3.*FRAC_PI_4 { Direction::Left }
+        else if angle.abs() < FRAC_PI_4 { Direction::Right }
+        else if angle > 0. { Direction::Up }
+        else { Direction::Down };
+
+        let ox = ray.origin[0];
+        let oy = ray.origin[1];
+        let dx = ox + ray.length*angle.cos();
+        let dy = oy + ray.length*angle.sin();
+        // TODO Delete
+        // let cells = {
+        //     let min_x = ox.min(dx).floor() as i32;
+        //     let max_x = ox.max(dx).ceil() as i32;
+        //     let min_y = oy.min(dy).floor() as i32;
+        //     let max_y = oy.max(dy).ceil() as i32;
+
+        //     let mut cells = Vec::new();
+        //     for x in min_x..max_x {
+        //         for y in min_y..max_y {
+        //             cells.push([x,y]);
+        //         }
+        //     }
+        //     cells
+        // };
+        let cells = physics::grid_raycast(ox, oy, dx, dy);
+        let ray_min_x = ox.min(dx);
+        let ray_max_x = ox.max(dx);
+        let ray_min_y = oy.min(dy);
+        let ray_max_y = oy.max(dy);
 
         // equation ax + by + c = 0
         let equation = if angle.abs() == PI || angle == 0. {
-            (0.,1.,-y0)
+            (0.,1.,-oy)
         } else {
             let b = -1./angle.tan();
-            (1.,b,-x0-b*y0)
+            (1.,b,-ox-b*oy)
         };
 
+        let null_vec = Vec::new();
         let mut visited = HashSet::new();
+        let mut entities = Vec::new();
 
         for cell in cells {
-            // abscisse of start and end the segment of
-            // the line that is in the current square
-
-            let segment_min_x = (cell[0] as f32).max(ray_min_x);
-            let segment_max_x = ((cell[0]+1) as f32).min(ray_max_x);
-
-            let null_vec = Vec::new();
-            let mut entities = Vec::new();
+            let current_length = ray.length;
 
             let possible_entities = self.movable.get(&cell).unwrap_or(&null_vec).iter()
                 .chain(self.inert.get(&cell).unwrap_or(&null_vec).iter());
@@ -119,39 +154,40 @@ impl PhysicWorld {
                 if entity.group & ray.mask == 0 { continue }
                 if entity.mask & ray.group == 0 { continue }
                 if visited.contains(&entity.entity) { continue }
+                visited.insert(entity.entity);
 
-                if let Some((x_min,y_min,x_max,y_max)) = entity.shape.raycast(entity.pos, equation) {
-                    if segment_min_x > x_max || x_min > segment_max_x { continue }
-                    let l1 = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
-                    let l2 = ((x0-x_min).powi(2) + (y0-y_min).powi(2)).sqrt();
+                if let Some((x0,y0,x1,y1)) = entity.shape.raycast(entity.pos, equation) {
+                    let mut l1 = ((ox-x0).powi(2) + (oy-y0).powi(2)).sqrt() * direction.signum(x0,y0,ox,oy);
+                    let mut l2 = ((ox-x1).powi(2) + (oy-y1).powi(2)).sqrt() * direction.signum(x1,y1,ox,oy);
 
                     let mut min = l1.min(l2);
                     let mut max = l1.max(l2);
 
-                    // angle is between minus_pi and pi
-                    if angle.abs() > PI/2. {
-                        if x_max > segment_max_x {
-                            max = -max;
-                        }
-                    } else {
-                        if x_min < segment_min_x {
-                            min = -min;
-                        }
-                    }
+                    if max < 0. || min > ray.length { continue }
 
-                    visited.insert(entity.entity);
                     entities.push((entity,min,max));
                 }
             }
 
-            entities.sort_by(|&(_,min_a,_),&(_,min_b,_)| {
+            let mut called = vec!();
+            let mut i = 0;
+            while i < entities.len() {
+                let (_,min,_) = entities[i];
+                if min <= current_length {
+                    called.push(entities.swap_remove(i))
+                } else {
+                    i += 1;
+                }
+            }
+
+            called.sort_by(|&(_,min_a,_),&(_,min_b,_)| {
                 if min_a > min_b { Ordering::Greater }
                 else if min_a == min_b { Ordering::Equal }
                 else { Ordering::Less }
             });
 
-            for b in entities {
-                if let ContinueOrStop::Stop = callback(b) {
+            for entity in called {
+                if let ContinueOrStop::Stop = callback(entity) {
                     return;
                 }
             }

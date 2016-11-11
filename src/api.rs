@@ -87,6 +87,12 @@ api_caller! {
     fn notify(notification: String);
     /// Print to terminal, use notify instead to notify to screen
     fn print(msg: String);
+    /// Fill physic world with static physic elements
+    fn fill_physic_world();
+    fn add_debug_rectangle(x: f32, y: f32, w: f32, h: f32);
+    fn add_debug_circle(x: f32, y: f32, r: f32);
+    /// Debug raycast
+    fn debug_raycast(x: f32, y: f32, x2: f32, y2: f32);
 }
 
 api_callee! {
