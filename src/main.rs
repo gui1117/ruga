@@ -220,13 +220,18 @@ fn main() {
                     let command = format!("input({},{},{})", state, code, virtualcode);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap();
                 },
-                MouseMoved(x, y) => {
+                MouseMoved(dx, dy) => {
                     let (width, height) = window.get_window().unwrap().get_inner_size_pixels().unwrap();
+                    let center = ((width/2) as i32, (height/2) as i32);
+                    window.get_window().unwrap().set_cursor_position(center.0, center.1).unwrap();
 
-                    let x = (2*x - width as i32) as f32 / width as f32;
-                    let y = (2*y - height as i32) as f32 / width as f32;
+                    let dx = (2*dx - width as i32) as f32 / width as f32;
+                    let dy = (2*dy - height as i32) as f32 / width as f32;
+                    app.move_cursor(dx, dy, width as f32, height as f32);
+
+                    let (x, y) = app.cursor();
                     let command = format!("mouse_moved({},{})", x, y);
-                    lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
+                    lua.lock().unwrap().execute::<()>(&*command).unwrap();
                 },
                 KeyboardInput(state, code, virtualcode) => {
                     let state = format!("\"{:?}\"", state).to_lowercase();
@@ -235,7 +240,7 @@ fn main() {
                         None => "\"none\"".into(),
                     };
                     let command = format!("input({},{},{})", state, code, virtualcode);
-                    lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
+                    lua.lock().unwrap().execute::<()>(&*command).unwrap();
                 },
                 MouseWheel(delta, _) => {
                     use glium::glutin::MouseScrollDelta::*;

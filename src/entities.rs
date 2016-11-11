@@ -27,22 +27,22 @@ use physics::Shape;
 //     collider.add_hitbox(entity.aci(), hitbox);
 // }
 
-pub fn add_debug_rectangle(world: &mut specs::World, x: f32, y: f32, width: f32, height: f32) {
-    let shape = Shape::Rectangle(width, height);
-    let entity = world.create_now()
-        .with(PhysicState::new([x,y]))
-        .with(PhysicType::new_static(!0, !0, shape))
-        .with(PhysicStatic)
-        .with(DebugActive { active: false })
-        .build();
-}
+// pub fn add_debug_rectangle(world: &mut specs::World, x: f32, y: f32, width: f32, height: f32) {
+//     let shape = Shape::Rectangle(width, height);
+//     let entity = world.create_now()
+//         .with(PhysicState::new([x,y]))
+//         .with(PhysicType::new_static(!0, !0, shape))
+//         .with(PhysicStatic)
+//         .with(DebugActive { active: false })
+//         .build();
+// }
 
-pub fn add_debug_circle(world: &mut specs::World, x: f32, y: f32, r: f32) {
-    let shape = Shape::Circle(r);
-    let entity = world.create_now()
-        .with(PhysicState::new([x,y]))
-        .with(PhysicType::new_static(!0, !0, shape))
-        .with(PhysicStatic)
-        .with(DebugActive { active: false })
-        .build();
-}
+// pub fn add_debug_circle(world: &mut specs::World, x: f32, y: f32, r: f32) {
+//     let shape = Shape::Circle(r);
+//     let entity = world.create_now()
+//         .with(PhysicState::new([x,y]))
+//         .with(PhysicType::new_static(!0, !0, shape))
+//         .with(PhysicStatic)
+//         .with(DebugActive { active: false })
+//         .build();
+// }
