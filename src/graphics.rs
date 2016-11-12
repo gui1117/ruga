@@ -1,32 +1,13 @@
 use arrayvec;
 use vecmath;
-use glium::{
-    self,
-    Blend,
-    SwapBuffersError,
-    Surface,
-    VertexBuffer,
-    index,
-    Program,
-    DrawParameters,
-    Depth,
-    DepthTest,
-};
+use glium::{self, Blend, SwapBuffersError, Surface, VertexBuffer, index, Program, DrawParameters,
+            Depth, DepthTest};
 use glium::backend::{Facade, Context};
 use glium::program::ProgramCreationError;
 use glium::vertex::BufferCreationError;
 use glium::draw_parameters::Smooth;
 use glium::texture::{Texture2d, TextureCreationError};
-use rusttype::{
-    SharedBytes,
-    FontCollection,
-    Font,
-    Scale,
-    point,
-    vector,
-    Vector,
-    Rect,
-};
+use rusttype::{SharedBytes, FontCollection, Font, Scale, point, vector, Vector, Rect};
 use rusttype::gpu_cache::Cache;
 
 use std::error::Error;
@@ -55,8 +36,7 @@ impl Transformed for Transformation {
     #[inline(always)]
     fn translate(self, x: f32, y: f32) -> Self {
         let trans = {
-            [[ 1.,  0., x],
-            [ 0.,  1., y]]
+            [[1., 0., x], [0., 1., y]]
         };
         vecmath::row_mat2x3_mul(self, trans)
     }
@@ -66,8 +46,7 @@ impl Transformed for Transformation {
         let rot = {
             let c = angle.cos();
             let s = angle.sin();
-            [[c, -s, 0.],
-            [s,  c, 0.]]
+            [[c, -s, 0.], [s, c, 0.]]
         };
         vecmath::row_mat2x3_mul(self, rot)
     }
@@ -75,22 +54,20 @@ impl Transformed for Transformation {
     #[inline(always)]
     fn scale(self, sx: f32, sy: f32) -> Self {
         let scale = {
-            [[sx, 0., 0.],
-            [0., sy, 0.]]
+            [[sx, 0., 0.], [0., sy, 0.]]
         };
         vecmath::row_mat2x3_mul(self, scale)
     }
 
     #[inline(always)]
     fn identity() -> Self {
-        [[1.,0.,0.],
-        [0.,1.,0.]]
+        [[1., 0., 0.], [0., 1., 0.]]
     }
 }
 
 #[derive(Clone,Copy)]
 struct Vertex {
-    position: [f32;2],
+    position: [f32; 2],
 }
 implement_vertex!(Vertex, position);
 
@@ -156,11 +133,11 @@ impl fmt::Display for GraphicsError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         use self::GraphicsError::*;
         match *self {
-            ProgramCreation(ref e) => write!(fmt,"Glium program creation error: {}", e),
-            BufferCreation(ref e) => write!(fmt,"Glium buffer creation error: {}", e),
-            Io(ref e) => write!(fmt,"Io error: {}", e),
-            TextureCreation(ref e) => write!(fmt,"Glium texture creation error: {}", e),
-            InvalidFont => write!(fmt,"Font not supported"),
+            ProgramCreation(ref e) => write!(fmt, "Glium program creation error: {}", e),
+            BufferCreation(ref e) => write!(fmt, "Glium buffer creation error: {}", e),
+            Io(ref e) => write!(fmt, "Io error: {}", e),
+            TextureCreation(ref e) => write!(fmt, "Glium texture creation error: {}", e),
+            InvalidFont => write!(fmt, "Font not supported"),
         }
     }
 }
@@ -186,25 +163,23 @@ impl From<TextureCreationError> for GraphicsError {
 }
 
 impl Graphics {
-    pub fn new<F: Facade>(facade: &F) -> Result<Graphics,GraphicsError> {
-        let quad_vertex = vec![
-            Vertex { position: [-1., -1.] },
-            Vertex { position: [ 1., -1.] },
-            Vertex { position: [-1.,  1.] },
-            Vertex { position: [ 1.,  1.] }
-        ];
+    pub fn new<F: Facade>(facade: &F) -> Result<Graphics, GraphicsError> {
+        let quad_vertex = vec![Vertex { position: [-1., -1.] },
+                               Vertex { position: [1., -1.] },
+                               Vertex { position: [-1., 1.] },
+                               Vertex { position: [1., 1.] }];
         let quad_vertex_buffer = VertexBuffer::new(facade, &quad_vertex)?;
 
         let quad_indices = index::NoIndices(index::PrimitiveType::TriangleStrip);
 
-        let mut circle_vertex = vec!(Vertex { position: [0., 0.] });
+        let mut circle_vertex = vec![Vertex { position: [0., 0.] }];
         {
             let delta_angle = PI * 2. / CIRCLE_PRECISION as f32;
             let mut angle = 0f32;
-            circle_vertex.push(Vertex { position: [angle.cos(),angle.sin()]});
+            circle_vertex.push(Vertex { position: [angle.cos(), angle.sin()] });
             for _ in 0..CIRCLE_PRECISION {
                 angle += delta_angle;
-                circle_vertex.push(Vertex { position: [angle.cos(),angle.sin()]});
+                circle_vertex.push(Vertex { position: [angle.cos(), angle.sin()] });
             }
         }
 
@@ -250,7 +225,10 @@ impl Graphics {
                 out_color = color;
             }
         "#;
-        let line_program = Program::from_source(facade, line_vertex_shader_src, line_fragment_shader_src, None)?;
+        let line_program = Program::from_source(facade,
+                                                line_vertex_shader_src,
+                                                line_fragment_shader_src,
+                                                None)?;
 
         let draw_parameters = DrawParameters {
             smooth: Some(Smooth::DontCare),
@@ -258,13 +236,14 @@ impl Graphics {
             depth: Depth {
                 test: DepthTest::IfMoreOrEqual,
                 write: true,
-                .. Default::default()
+                ..Default::default()
             },
-            .. Default::default()
+            ..Default::default()
         };
 
         let font_data = include_bytes!("DejaVuSansMono-Bold.ttf");
-        let font = FontCollection::from_bytes(SharedBytes::ByRef(font_data)).into_font().ok_or(GraphicsError::InvalidFont)?;
+        let font = FontCollection::from_bytes(SharedBytes::ByRef(font_data)).into_font()
+            .ok_or(GraphicsError::InvalidFont)?;
 
         let dpi_factor = 1; // FIXME: different from one in retina display
         let (screen_width, screen_height) = facade.get_context().get_framebuffer_dimensions();
@@ -295,7 +274,10 @@ impl Graphics {
                     f_colour = color * vec4(1.0, 1.0, 1.0, texture(tex, v_tex_coords).r);
                 }
         "#;
-        let font_program = Program::from_source(facade, font_vertex_shader_src, font_fragment_shader_src, None)?;
+        let font_program = Program::from_source(facade,
+                                                font_vertex_shader_src,
+                                                font_fragment_shader_src,
+                                                None)?;
 
         let font_cache_tex = glium::texture::Texture2d::with_format(
             facade,
@@ -329,9 +311,10 @@ impl Graphics {
         })
     }
     pub fn set_font<R: Read>(&mut self, font: &mut R) -> Result<(), GraphicsError> {
-        let mut font_data = vec!();
+        let mut font_data = vec![];
         font.read_to_end(&mut font_data)?;
-        self.font = FontCollection::from_bytes(font_data).into_font().ok_or(GraphicsError::InvalidFont)?;
+        self.font = FontCollection::from_bytes(font_data).into_font()
+            .ok_or(GraphicsError::InvalidFont)?;
         Ok(())
     }
     pub fn resize(&mut self) -> Result<(), GraphicsError> {
@@ -357,13 +340,13 @@ impl Graphics {
 
 pub struct Frame<'a> {
     frame: glium::Frame,
-    graphics: &'a mut  Graphics,
+    graphics: &'a mut Graphics,
     camera: &'a Camera,
-    camera_matrix: [[f32;4];4],
-    billboard_camera_matrix: [[f32;4];4],
+    camera_matrix: [[f32; 4]; 4],
+    billboard_camera_matrix: [[f32; 4]; 4],
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone)]
 pub struct Camera {
     pub x: f32,
     pub y: f32,
@@ -372,36 +355,33 @@ pub struct Camera {
 
 impl Camera {
     pub fn new(x: f32, y: f32, zoom: f32) -> Self {
-        Camera { x: x, y: y, zoom: zoom, }
+        Camera {
+            x: x,
+            y: y,
+            zoom: zoom,
+        }
     }
 }
 
 impl<'a> Frame<'a> {
-    pub fn new(graphics: &'a mut Graphics, mut frame: glium::Frame, camera: &'a Camera) -> Frame<'a> {
-        let (width,height) = graphics.context.get_framebuffer_dimensions();
-        let ratio = width as f32/ height as f32;
+    pub fn new(graphics: &'a mut Graphics,
+               mut frame: glium::Frame,
+               camera: &'a Camera)
+               -> Frame<'a> {
+        let (width, height) = graphics.context.get_framebuffer_dimensions();
+        let ratio = width as f32 / height as f32;
 
         let camera_matrix = {
             let kx = camera.zoom;
-            let ky = camera.zoom*ratio;
+            let ky = camera.zoom * ratio;
             let dx = -camera.x;
             let dy = -camera.y;
-            [
-                [   kx,    0., 0., 0.],
-                [   0.,    ky, 0., 0.],
-                [   0.,    0., 1., 0.],
-                [kx*dx, ky*dy, 0., 1.]
-            ]
+            [[kx, 0., 0., 0.], [0., ky, 0., 0.], [0., 0., 1., 0.], [kx * dx, ky * dy, 0., 1.]]
         };
         let billboard_camera_matrix = {
             let kx = 1.0;
             let ky = ratio;
-            [
-                [   kx,    0., 0., 0.],
-                [   0.,    ky, 0., 0.],
-                [   0.,    0., 1., 0.],
-                [   0.,    0., 0., 1.]
-            ]
+            [[kx, 0., 0., 0.], [0., ky, 0., 0.], [0., 0., 1., 0.], [0., 0., 0., 1.]]
         };
 
         frame.clear_color_and_depth((1.0, 1.0, 1.0, 1.0), 0f32);;
@@ -415,18 +395,22 @@ impl<'a> Frame<'a> {
         }
     }
 
-    pub fn draw_square(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: [f32;4]) {
-        self.draw_rectangle(x,y,radius*2.,radius*2.,layer,color);
+    pub fn draw_square(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: [f32; 4]) {
+        self.draw_rectangle(x, y, radius * 2., radius * 2., layer, color);
     }
 
-    pub fn draw_rectangle(&mut self, x: f32, y: f32, width: f32, height: f32, layer: Layer, color: [f32;4]) {
+    pub fn draw_rectangle(&mut self,
+                          x: f32,
+                          y: f32,
+                          width: f32,
+                          height: f32,
+                          layer: Layer,
+                          color: [f32; 4]) {
         let trans = {
-            [
-                [ width/2.,        0.,           0., 0.],
-                [       0., height/2.,           0., 0.],
-                [       0.,        0.,           1., 0.],
-                [        x,         y, layer.into(), 1.]
-            ]
+            [[width / 2., 0., 0., 0.],
+             [0., height / 2., 0., 0.],
+             [0., 0., 1., 0.],
+             [x, y, layer.into(), 1.]]
         };
 
         let uniform = uniform!{
@@ -435,22 +419,18 @@ impl<'a> Frame<'a> {
             color: color,
         };
 
-        self.frame.draw(
-            &self.graphics.quad_vertex_buffer,
-            &self.graphics.quad_indices,
-            &self.graphics.program,
-            &uniform,
-            &self.graphics.draw_parameters).unwrap();
+        self.frame
+            .draw(&self.graphics.quad_vertex_buffer,
+                  &self.graphics.quad_indices,
+                  &self.graphics.program,
+                  &uniform,
+                  &self.graphics.draw_parameters)
+            .unwrap();
     }
 
-    pub fn draw_circle(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: [f32;4]) {
+    pub fn draw_circle(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: [f32; 4]) {
         let trans = {
-            [
-                [ radius,     0.,           0., 0.],
-                [     0., radius,           0., 0.],
-                [     0.,     0.,           1., 0.],
-                [      x,      y, layer.into(), 1.]
-            ]
+            [[radius, 0., 0., 0.], [0., radius, 0., 0.], [0., 0., 1., 0.], [x, y, layer.into(), 1.]]
         };
 
         let uniform = uniform!{
@@ -459,21 +439,28 @@ impl<'a> Frame<'a> {
             color: color,
         };
 
-        self.frame.draw(
-            &self.graphics.circle_vertex_buffer,
-            &self.graphics.circle_indices,
-            &self.graphics.program,
-            &uniform,
-            &self.graphics.draw_parameters).unwrap();
+        self.frame
+            .draw(&self.graphics.circle_vertex_buffer,
+                  &self.graphics.circle_indices,
+                  &self.graphics.program,
+                  &uniform,
+                  &self.graphics.draw_parameters)
+            .unwrap();
     }
 
     /// (x,y) correspond to the down-left anchor
-    pub fn draw_text(&mut self, x: f32, y: f32, scale: f32, text: &str, layer: Layer, color: [f32;4]) {
+    pub fn draw_text(&mut self,
+                     x: f32,
+                     y: f32,
+                     scale: f32,
+                     text: &str,
+                     layer: Layer,
+                     color: [f32; 4]) {
         let glyphs = {
             use unicode_normalization::UnicodeNormalization;
 
-            let (screen_width,_) = {
-                let (w,h) = self.graphics.context.get_framebuffer_dimensions();
+            let (screen_width, _) = {
+                let (w, h) = self.graphics.context.get_framebuffer_dimensions();
                 (w as f32, h as f32)
             };
 
@@ -484,9 +471,9 @@ impl<'a> Frame<'a> {
             };
 
             let metrics = self.graphics.font.v_metrics(scale);
-            let mut caret = point(0.0, metrics.descent - metrics.line_gap/2.0);
+            let mut caret = point(0.0, metrics.descent - metrics.line_gap / 2.0);
             let mut last_glyph_id = None;
-            let mut res = vec!();
+            let mut res = vec![];
 
             for chr in text.nfc() {
                 if let Some(glyph) = self.graphics.font.glyph(chr) {
@@ -499,7 +486,7 @@ impl<'a> Frame<'a> {
                     caret.x += glyph.unpositioned().h_metrics().advance_width;
                     res.push(glyph);
                 }
-            };
+            }
 
             res
         };
@@ -510,19 +497,23 @@ impl<'a> Frame<'a> {
 
         {
             let ref mut font_cache_tex = self.graphics.font_cache_tex;
-            self.graphics.font_cache.cache_queued(|rect, data| {
-                font_cache_tex.main_level().write(glium::Rect {
-                    left: rect.min.x,
-                    bottom: rect.min.y,
-                    width: rect.width(),
-                    height: rect.height()
-                }, glium::texture::RawImage2d {
-                    data: Cow::Borrowed(data),
-                    width: rect.width(),
-                    height: rect.height(),
-                    format: glium::texture::ClientFormat::U8
-                });
-            }).unwrap();
+            self.graphics
+                .font_cache
+                .cache_queued(|rect, data| {
+                    font_cache_tex.main_level().write(glium::Rect {
+                                                          left: rect.min.x,
+                                                          bottom: rect.min.y,
+                                                          width: rect.width(),
+                                                          height: rect.height(),
+                                                      },
+                                                      glium::texture::RawImage2d {
+                                                          data: Cow::Borrowed(data),
+                                                          width: rect.width(),
+                                                          height: rect.height(),
+                                                          format: glium::texture::ClientFormat::U8,
+                                                      });
+                })
+                .unwrap();
         }
 
         let z: f32 = Layer::Billboard.into();
@@ -534,113 +525,153 @@ impl<'a> Frame<'a> {
 
         let vertex_buffer = {
             let (screen_width, screen_height) = {
-                let (w,h) = self.graphics.context.get_framebuffer_dimensions();
+                let (w, h) = self.graphics.context.get_framebuffer_dimensions();
                 (w as f32, h as f32)
             };
 
             let origin = if layer.billboard() {
                 let px = 1.0 + x;
-                let py = -1.0 + y*screen_width/screen_height;
+                let py = -1.0 + y * screen_width / screen_height;
 
-                let (ppx,ppy) = pixel_perfect((px,py), screen_width, screen_height);
-                point(ppx,ppy)
+                let (ppx, ppy) = pixel_perfect((px, py), screen_width, screen_height);
+                point(ppx, ppy)
             } else {
-                let px = 1.0 + (x - self.camera.x)*self.camera.zoom;
-                let py = -1.0 + (y - self.camera.y)*self.camera.zoom*screen_width/screen_height;
+                let px = 1.0 + (x - self.camera.x) * self.camera.zoom;
+                let py = -1.0 +
+                         (y - self.camera.y) * self.camera.zoom * screen_width / screen_height;
 
-                let (ppx,ppy) = pixel_perfect((px,py), screen_width, screen_height);
-                point(ppx,ppy)
+                let (ppx, ppy) = pixel_perfect((px, py), screen_width, screen_height);
+                point(ppx, ppy)
             };
 
-            let vertices: Vec<FontVertex> = glyphs.iter().flat_map(|g| {
-                if let Ok(Some((uv_rect, screen_rect))) = self.graphics.font_cache.rect_for(0, g) {
-                    let gl_rect = Rect {
-                        min: origin
-                            + (vector(screen_rect.min.x as f32 / screen_width - 0.5,
-                                      1.0 - screen_rect.min.y as f32 / screen_height - 0.5)) * 2.0,
-                        max: origin
-                            + (vector(screen_rect.max.x as f32 / screen_width - 0.5,
-                                      1.0 - screen_rect.max.y as f32 / screen_height - 0.5)) * 2.0
-                    };
-                    arrayvec::ArrayVec::<[FontVertex; 6]>::from([
-                        FontVertex {
-                            position: [gl_rect.min.x, gl_rect.max.y],
-                            tex_coords: [uv_rect.min.x, uv_rect.max.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.min.x,  gl_rect.min.y],
-                            tex_coords: [uv_rect.min.x, uv_rect.min.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.max.x,  gl_rect.min.y],
-                            tex_coords: [uv_rect.max.x, uv_rect.min.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.max.x,  gl_rect.min.y],
-                            tex_coords: [uv_rect.max.x, uv_rect.min.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.max.x, gl_rect.max.y],
-                            tex_coords: [uv_rect.max.x, uv_rect.max.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.min.x, gl_rect.max.y],
-                            tex_coords: [uv_rect.min.x, uv_rect.max.y],
-                        }])
-                } else {
-                    arrayvec::ArrayVec::new()
-                }
-            }).collect();
+            let vertices: Vec<FontVertex> = glyphs.iter()
+                .flat_map(|g| {
+                    if let Ok(Some((uv_rect, screen_rect))) = self.graphics
+                        .font_cache
+                        .rect_for(0, g) {
+                        let gl_rect = Rect {
+                            min: origin +
+                                 (vector(screen_rect.min.x as f32 / screen_width - 0.5,
+                                         1.0 - screen_rect.min.y as f32 / screen_height - 0.5)) *
+                                 2.0,
+                            max: origin +
+                                 (vector(screen_rect.max.x as f32 / screen_width - 0.5,
+                                         1.0 - screen_rect.max.y as f32 / screen_height - 0.5)) *
+                                 2.0,
+                        };
+                        arrayvec::ArrayVec::<[FontVertex; 6]>::from([FontVertex {
+                                                                         position: [gl_rect.min.x,
+                                                                                    gl_rect.max.y],
+                                                                         tex_coords: [uv_rect.min
+                                                                                          .x,
+                                                                                      uv_rect.max
+                                                                                          .y],
+                                                                     },
+                                                                     FontVertex {
+                                                                         position: [gl_rect.min.x,
+                                                                                    gl_rect.min.y],
+                                                                         tex_coords: [uv_rect.min
+                                                                                          .x,
+                                                                                      uv_rect.min
+                                                                                          .y],
+                                                                     },
+                                                                     FontVertex {
+                                                                         position: [gl_rect.max.x,
+                                                                                    gl_rect.min.y],
+                                                                         tex_coords: [uv_rect.max
+                                                                                          .x,
+                                                                                      uv_rect.min
+                                                                                          .y],
+                                                                     },
+                                                                     FontVertex {
+                                                                         position: [gl_rect.max.x,
+                                                                                    gl_rect.min.y],
+                                                                         tex_coords: [uv_rect.max
+                                                                                          .x,
+                                                                                      uv_rect.min
+                                                                                          .y],
+                                                                     },
+                                                                     FontVertex {
+                                                                         position: [gl_rect.max.x,
+                                                                                    gl_rect.max.y],
+                                                                         tex_coords: [uv_rect.max
+                                                                                          .x,
+                                                                                      uv_rect.max
+                                                                                          .y],
+                                                                     },
+                                                                     FontVertex {
+                                                                         position: [gl_rect.min.x,
+                                                                                    gl_rect.max.y],
+                                                                         tex_coords: [uv_rect.min
+                                                                                          .x,
+                                                                                      uv_rect.max
+                                                                                          .y],
+                                                                     }])
+                    } else {
+                        arrayvec::ArrayVec::new()
+                    }
+                })
+                .collect();
             glium::VertexBuffer::new(&self.graphics.context, &vertices).unwrap()
         };
 
-        self.frame.draw(&vertex_buffer,
-                    &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
-                    &self.graphics.font_program,
-                    &uniforms,
-                    &self.graphics.draw_parameters).unwrap();
+        self.frame
+            .draw(&vertex_buffer,
+                  &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+                  &self.graphics.font_program,
+                  &uniforms,
+                  &self.graphics.draw_parameters)
+            .unwrap();
     }
 
-    pub fn draw_quad(&mut self, trans: Transformation, layer: Layer, color: [f32;4]) {
-        let trans = [
-            [ trans[0][0], trans[1][0],           0., 0.],
-            [ trans[0][1], trans[1][1],           0., 0.],
-            [          0.,          0.,           1., 0.],
-            [ trans[0][2], trans[1][2], layer.into(), 1.]
-        ];
+    pub fn draw_quad(&mut self, trans: Transformation, layer: Layer, color: [f32; 4]) {
+        let trans = [[trans[0][0], trans[1][0], 0., 0.],
+                     [trans[0][1], trans[1][1], 0., 0.],
+                     [0., 0., 1., 0.],
+                     [trans[0][2], trans[1][2], layer.into(), 1.]];
         let uniform = uniform!{
             trans: trans,
             camera: if layer.billboard() { self.billboard_camera_matrix } else { self.camera_matrix },
             color: color,
         };
 
-        self.frame.draw(
-            &self.graphics.quad_vertex_buffer,
-            &self.graphics.quad_indices,
-            &self.graphics.program,
-            &uniform,
-            &self.graphics.draw_parameters).unwrap();
+        self.frame
+            .draw(&self.graphics.quad_vertex_buffer,
+                  &self.graphics.quad_indices,
+                  &self.graphics.program,
+                  &uniform,
+                  &self.graphics.draw_parameters)
+            .unwrap();
     }
 
-    pub fn draw_line(&mut self, p0: (f32,f32), p1: (f32,f32), p2: (f32,f32), p3: (f32,f32), width: f32, layer: Layer, color: [f32;4]) {
+    pub fn draw_line(&mut self,
+                     p0: (f32, f32),
+                     p1: (f32, f32),
+                     p2: (f32, f32),
+                     p3: (f32, f32),
+                     width: f32,
+                     layer: Layer,
+                     color: [f32; 4]) {
         let p0 = Vector { x: p0.0, y: p0.1 };
         let p1 = Vector { x: p1.0, y: p1.1 };
         let p2 = Vector { x: p2.0, y: p2.1 };
         let p3 = Vector { x: p3.0, y: p3.1 };
 
-        let mut vertices: Vec<Vertex> = vec!();
+        let mut vertices: Vec<Vertex> = vec![];
 
-        let dt = 1.0/BEZIER_PRECISION as f32;
+        let dt = 1.0 / BEZIER_PRECISION as f32;
         let mut t = 0f32;
 
-        for _ in 0..BEZIER_PRECISION+1 {
-            let p = (1.0-t).powi(3)*p0 + 3.0*t*(1.0-t).powi(2)*p1 + 3.0*t.powi(2)*(1.0-t)*p2 + t.powi(3)*p3;
-            let n = 3.0*(1.0-t).powi(2)*(p1-p0) + 6.0*t*(1.0-t)*(p2-p1) + 3.0*t.powi(2)*(p3-p2);
+        for _ in 0..BEZIER_PRECISION + 1 {
+            let p = (1.0 - t).powi(3) * p0 + 3.0 * t * (1.0 - t).powi(2) * p1 +
+                    3.0 * t.powi(2) * (1.0 - t) * p2 + t.powi(3) * p3;
+            let n = 3.0 * (1.0 - t).powi(2) * (p1 - p0) + 6.0 * t * (1.0 - t) * (p2 - p1) +
+                    3.0 * t.powi(2) * (p3 - p2);
             let o = Vector { x: -n.y, y: n.x };
-            let o = o/(o.x.powi(2)+o.y.powi(2)).sqrt();
+            let o = o / (o.x.powi(2) + o.y.powi(2)).sqrt();
 
-            let a = p + o*width/2.0;
-            let b = p - o*width/2.0;
+            let a = p + o * width / 2.0;
+            let b = p - o * width / 2.0;
 
             vertices.push(Vertex { position: [a.x, a.y] });
             vertices.push(Vertex { position: [b.x, b.y] });
@@ -655,24 +686,25 @@ impl<'a> Frame<'a> {
         };
         let vertex_buffer = glium::VertexBuffer::new(&self.graphics.context, &vertices).unwrap();
 
-        self.frame.draw(
-            &vertex_buffer,
-            &self.graphics.line_indices,
-            &self.graphics.line_program,
-            &uniform,
-            &self.graphics.draw_parameters).unwrap();
+        self.frame
+            .draw(&vertex_buffer,
+                  &self.graphics.line_indices,
+                  &self.graphics.line_program,
+                  &uniform,
+                  &self.graphics.draw_parameters)
+            .unwrap();
     }
 
-    pub fn get_down_left_billboard_anchor(&self) -> (f32,f32) {
-        let (width,height) = self.graphics.context.get_framebuffer_dimensions();
-        (-1.0, -(height as f32/ width as f32))
+    pub fn get_down_left_billboard_anchor(&self) -> (f32, f32) {
+        let (width, height) = self.graphics.context.get_framebuffer_dimensions();
+        (-1.0, -(height as f32 / width as f32))
     }
 
     pub fn get_size(&self, scale: f32, text: &str) -> (f32, f32) {
         use unicode_normalization::UnicodeNormalization;
 
         let (screen_width, screen_height) = {
-            let (w,h) = self.graphics.context.get_framebuffer_dimensions();
+            let (w, h) = self.graphics.context.get_framebuffer_dimensions();
             (w as f32, h as f32)
         };
 
@@ -684,7 +716,7 @@ impl<'a> Frame<'a> {
             if let Some(glyph) = self.graphics.font.glyph(chr) {
                 width += glyph.scaled(scale).h_metrics().advance_width;
             }
-        };
+        }
 
         let metrics = self.graphics.font.v_metrics(scale);
         let height = metrics.descent + metrics.line_gap + metrics.ascent;
@@ -700,27 +732,37 @@ impl<'a> Frame<'a> {
     }
 }
 
-fn pixel_perfect(p: (f32,f32), screen_width: f32, screen_height: f32) -> (f32,f32) {
-    (
-        (p.0*screen_width/2.0).round()/screen_width*2.0,
-        (p.1*screen_height/2.0).round()/screen_height*2.0
-    )
+fn pixel_perfect(p: (f32, f32), screen_width: f32, screen_height: f32) -> (f32, f32) {
+    ((p.0 * screen_width / 2.0).round() / screen_width * 2.0,
+     (p.1 * screen_height / 2.0).round() / screen_height * 2.0)
 }
 
-#[derive(Debug,Clone,Copy,PartialEq)]
+#[derive(Clone,Copy,PartialEq)]
 pub enum Layer {
-    #[allow(dead_code)] UnderFloor,
-    #[allow(dead_code)] Floor,
-    #[allow(dead_code)] AboveFloor,
-    #[allow(dead_code)] UnderMiddle,
-    #[allow(dead_code)] Middle,
-    #[allow(dead_code)] AboveMiddle,
-    #[allow(dead_code)] UnderCeil,
-    #[allow(dead_code)] Ceil,
-    #[allow(dead_code)] AboveCeil,
-    #[allow(dead_code)] UnderBillboard,
-    #[allow(dead_code)] Billboard,
-    #[allow(dead_code)] AboveBillboard,
+    #[allow(dead_code)]
+    UnderFloor,
+    #[allow(dead_code)]
+    Floor,
+    #[allow(dead_code)]
+    AboveFloor,
+    #[allow(dead_code)]
+    UnderMiddle,
+    #[allow(dead_code)]
+    Middle,
+    #[allow(dead_code)]
+    AboveMiddle,
+    #[allow(dead_code)]
+    UnderCeil,
+    #[allow(dead_code)]
+    Ceil,
+    #[allow(dead_code)]
+    AboveCeil,
+    #[allow(dead_code)]
+    UnderBillboard,
+    #[allow(dead_code)]
+    Billboard,
+    #[allow(dead_code)]
+    AboveBillboard,
 }
 
 impl Into<f32> for Layer {

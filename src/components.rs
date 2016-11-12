@@ -20,25 +20,27 @@ impl_component!{
     PhysicForce: VecStorage,
     PhysicDynamic: NullStorage,
     PhysicStatic: NullStorage,
+    DrawPhysic: VecStorage,
+    PlayerControl: NullStorage,
 }
 
-#[derive(Debug,Clone)]
+#[derive(Clone)]
 pub struct PhysicState {
-    pub pos: [f32;2],
-    pub vel: [f32;2],
-    pub acc: [f32;2],
+    pub pos: [f32; 2],
+    pub vel: [f32; 2],
+    pub acc: [f32; 2],
 }
 impl PhysicState {
     pub fn new(pos: [f32; 2]) -> Self {
-        PhysicState{
+        PhysicState {
             pos: pos,
-            vel: [0.,0.],
-            acc: [0.,0.],
+            vel: [0., 0.],
+            acc: [0., 0.],
         }
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Clone)]
 pub struct PhysicType {
     pub shape: Shape,
     pub collision: CollisionBehavior,
@@ -49,8 +51,15 @@ pub struct PhysicType {
     pub mask: u32,
 }
 impl PhysicType {
-    pub fn new_movable(group: u32, mask: u32, shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
-        let damping = -weight * (1.-PHYSIC_RATE).ln() / time_to_reach_v_max;
+    pub fn new_movable(group: u32,
+                       mask: u32,
+                       shape: Shape,
+                       collision: CollisionBehavior,
+                       velocity: f32,
+                       time_to_reach_v_max: f32,
+                       weight: f32)
+                       -> Self {
+        let damping = -weight * (1. - PHYSIC_RATE).ln() / time_to_reach_v_max;
         let force = velocity * damping;
         PhysicType {
             shape: shape,
@@ -75,11 +84,21 @@ impl PhysicType {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Clone)]
 pub struct PhysicForce {
     pub angle: f32,
     pub strength: f32,
 }
 
-#[derive(Debug,Clone,Copy,Default)] pub struct PhysicDynamic;
-#[derive(Debug,Clone,Copy,Default)] pub struct PhysicStatic;
+#[derive(Clone)]
+pub struct DrawPhysic {
+    pub color: [f32; 4],
+}
+
+#[derive(Clone,Copy,Default)]
+pub struct PhysicDynamic;
+#[derive(Clone,Copy,Default)]
+pub struct PhysicStatic;
+
+#[derive(Clone,Copy,Default)]
+pub struct PlayerControl;

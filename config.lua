@@ -1,6 +1,8 @@
 run_directions = {z="up", s="down", q="left", d="right"}
 velocity = 10.0
 
+set_sensibility(0.4)
+
 function ipairs(table)
 	local i = 0
 	return function()

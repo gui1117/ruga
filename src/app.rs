@@ -59,6 +59,7 @@ impl App {
 
         systems::draw_notifications(self.planner.mut_world(), &mut frame);
         systems::draw_cursor(self.planner.mut_world(), &mut frame);
+        systems::draw_physic(self.planner.mut_world(), &mut frame);
 
         frame.finish().unwrap();
     }
@@ -77,7 +78,7 @@ impl App {
         cursor.x = cursor.x.max(-1.).min(1.);
         cursor.y = cursor.y.max(-ratio).min(ratio);
     }
-    pub fn cursor(&mut self) -> (f32,f32) {
+    pub fn cursor(&mut self) -> (f32, f32) {
         let cursor = self.planner.mut_world().read_resource::<resources::Cursor>();
         (cursor.x, cursor.y)
     }
@@ -91,7 +92,8 @@ impl api::Caller for App {
         self.must_quit = true;
     }
     fn notify(&mut self, notification: String) {
-        let ref mut notifications = self.planner.mut_world().write_resource::<resources::Notifications>().0;
+        let ref mut notifications =
+            self.planner.mut_world().write_resource::<resources::Notifications>().0;
         notifications.push((notification, NOTIFICATION_DURATION));
         if notifications.len() > NOTIFICATION_MAX {
             notifications.remove(0);

@@ -94,50 +94,50 @@ api_caller! {
 }
 
 api_callee! {
-    /// The cursor has moved on the window.
-    /// The parameter are the (x,y) coords relative to the center of the window.
-    ///
-    /// * x is always between -1.0 and 1.0
-    /// * y may exceed 1.0 if screen_height is higher than screen_width and never reach 1.0 otherwise.
-    ///
-    /// the coordinate system is orthonormal
+/// The cursor has moved on the window.
+/// The parameter are the (x,y) coords relative to the center of the window.
+///
+/// * x is always between -1.0 and 1.0
+/// * y may exceed 1.0 if screen_height is higher than screen_width and never reach 1.0 otherwise.
+///
+/// the coordinate system is orthonormal
     fn mouse_moved(x: f32, y: f32);
 
-    /// * **State**: pressed or released
-    ///
-    /// * **Virtualcode**:
-    ///
-    ///   TODO gamepad
-    ///
-    ///   none
-    ///
-    ///   mouseleft, mouseright, mousemiddle, mousexx (xx corresponding to byte code in hexadecimal)
-    ///
-    ///   key1, key2, key3, key4, key5, key6, key7, key8, key9, key0,
-    ///
-    ///   a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z,
-    ///
-    ///   f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
-    ///
-    ///   numlock, numpad0, numpad1, numpad2, numpad3, numpad4, numpad5, numpad6, numpad7, numpad8, numpad9,
-    ///
-    ///   left, up, right, down,
-    ///
-    ///   escape, back, return, space,
-    ///
-    ///   snapshot, scroll, pause, insert, home, delete, end, pagedown, pageup, compose, abntc1, abntc2, add, apostrophe, apps, at, ax, backslash, calculator, capital, colon, comma, convert, decimal, divide, equals, grave, kana, kanji, lalt, lbracket, lcontrol, lmenu, lshift, lwin, mail, mediaselect, mediastop, minus, multiply, mute, mycomputer, navigateforward, navigatebackward, nexttrack, noconvert, numpadcomma, numpadenter, numpadequals, oem102, period, playpause, power, prevtrack, ralt, rbracket, rcontrol, rmenu, rshift, rwin, semicolon, slash, sleep, stop, subtract, sysrq, tab, underline, unlabeled, volumedown, volumeup, wake, webback, webfavorites, webforward, webhome, webrefresh, websearch, webstop, yen,
-    // Scancode[8-9] is:
-    // * 0 -> keyboard
-    // * 1 -> mouse
-    // * 2 -> mouse
-    // * 3 -> gamepad ?
+/// * **State**: pressed or released
+///
+/// * **Virtualcode**:
+///
+///   TODO gamepad
+///
+///   none
+///
+///   mouseleft, mouseright, mousemiddle, mousexx (xx corresponding to byte code in hexadecimal)
+///
+///   key1, key2, key3, key4, key5, key6, key7, key8, key9, key0,
+///
+///   a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z,
+///
+///   f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
+///
+///   numlock, numpad0, numpad1, numpad2, numpad3, numpad4, numpad5, numpad6, numpad7, numpad8, numpad9,
+///
+///   left, up, right, down,
+///
+///   escape, back, return, space,
+///
+///   snapshot, scroll, pause, insert, home, delete, end, pagedown, pageup, compose, abntc1, abntc2, add, apostrophe, apps, at, ax, backslash, calculator, capital, colon, comma, convert, decimal, divide, equals, grave, kana, kanji, lalt, lbracket, lcontrol, lmenu, lshift, lwin, mail, mediaselect, mediastop, minus, multiply, mute, mycomputer, navigateforward, navigatebackward, nexttrack, noconvert, numpadcomma, numpadenter, numpadequals, oem102, period, playpause, power, prevtrack, ralt, rbracket, rcontrol, rmenu, rshift, rwin, semicolon, slash, sleep, stop, subtract, sysrq, tab, underline, unlabeled, volumedown, volumeup, wake, webback, webfavorites, webforward, webhome, webrefresh, websearch, webstop, yen,
+/// Scancode[8-9] is:
+/// * 0 -> keyboard
+/// * 1 -> mouse
+/// * 2 -> mouse
+/// * 3 -> gamepad ?
     fn input(state: String, scancode: u32, virtualcode: String);
 
-    /// Amount in lines or rows or pixels to scroll in the horizontal and vertical directions.
-    ///
-    /// Positive values indicate movement forward (away from the user) or rightwards.
+/// Amount in lines or rows or pixels to scroll in the horizontal and vertical directions.
+///
+/// Positive values indicate movement forward (away from the user) or rightwards.
     fn mouse_wheel(horizontal: f32, vertical: f32);
 
-    /// Function called at each update
+/// Function called at each update
     fn update(dt: f32);
 }

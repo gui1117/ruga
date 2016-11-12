@@ -3,7 +3,8 @@ extern crate vecmath;
 extern crate unicode_normalization;
 extern crate itertools;
 extern crate arrayvec;
-#[macro_use] extern crate glium;
+#[macro_use]
+extern crate glium;
 extern crate hlua;
 extern crate time;
 extern crate rustyline;
@@ -53,64 +54,63 @@ fn main() {
         .author("thiolliere <guillaume.thiolliere@opmbx.org>")
         .about("a game in rust")
         .arg(clap::Arg::with_name("vsync")
-             .short("s")
-             .long("vsync")
-             .help("Set vsync"))
+            .short("s")
+            .long("vsync")
+            .help("Set vsync"))
         .arg(clap::Arg::with_name("config")
-             .short("c")
-             .long("config")
-             .value_name("FILE")
-             .help("Set configuration file (lua)")
-             .validator(|s| {
-                 if Path::new(&*s).exists() {
-                     Ok(())
-                 } else {
-                     Err(format!("configuration file '{}' doesn't exist",s))
-                 }
-             })
-             .takes_value(true))
+            .short("c")
+            .long("config")
+            .value_name("FILE")
+            .help("Set configuration file (lua)")
+            .validator(|s| {
+                if Path::new(&*s).exists() {
+                    Ok(())
+                } else {
+                    Err(format!("configuration file '{}' doesn't exist", s))
+                }
+            })
+            .takes_value(true))
         .arg(clap::Arg::with_name("terminal")
-             .short("t")
-             .long("terminal")
-             .help("Set lua terminal"))
+            .short("t")
+            .long("terminal")
+            .help("Set lua terminal"))
         .arg(clap::Arg::with_name("dimension")
-             .short("d")
-             .long("dimensions")
-             .value_name("DIMENSION")
-             .help("Set dimensions (and unset fullscreen)")
-             .validator(|s| {
-                 u32::from_str(&*s)
-                     .map(|_| ())
-                     .map_err(|e| format!("'{}' dimension is invalid : {}", s, e))
-             })
-             .number_of_values(2)
-             .takes_value(true))
+            .short("d")
+            .long("dimensions")
+            .value_name("DIMENSION")
+            .help("Set dimensions (and unset fullscreen)")
+            .validator(|s| {
+                u32::from_str(&*s)
+                    .map(|_| ())
+                    .map_err(|e| format!("'{}' dimension is invalid : {}", s, e))
+            })
+            .number_of_values(2)
+            .takes_value(true))
         .arg(clap::Arg::with_name("fps")
-             .short("f")
-             .long("fps")
-             .value_name("INT")
-             .default_value("60")
-             .validator(|s| {
-                 u64::from_str(&*s)
-                     .map(|_| ())
-                     .map_err(|e| format!("'{}' fps is invalid : {}", s, e))
-             })
-             .help("Set multisampling")
-             .takes_value(true))
+            .short("f")
+            .long("fps")
+            .value_name("INT")
+            .default_value("60")
+            .validator(|s| {
+                u64::from_str(&*s)
+                    .map(|_| ())
+                    .map_err(|e| format!("'{}' fps is invalid : {}", s, e))
+            })
+            .help("Set multisampling")
+            .takes_value(true))
         .arg(clap::Arg::with_name("multisampling")
-             .short("m")
-             .long("multisampling")
-             .value_name("FACTOR")
-             .possible_values(&["2", "4", "8", "16"])
-             .help("Set multisampling")
-             .takes_value(true))
+            .short("m")
+            .long("multisampling")
+            .value_name("FACTOR")
+            .possible_values(&["2", "4", "8", "16"])
+            .help("Set multisampling")
+            .takes_value(true))
         .get_matches();
 
     let window = {
         use glium::DisplayBuild;
 
-        let mut builder = glutin::WindowBuilder::new()
-            .with_title("Ruga");
+        let mut builder = glutin::WindowBuilder::new().with_title("Ruga");
 
         if matches.is_present("vsync") {
             builder = builder.with_vsync();
@@ -144,7 +144,7 @@ fn main() {
     api::set_lua_callee(&mut lua);
 
     if let Some(file) = matches.value_of("config") {
-        lua.execute_from_reader::<(),_>(File::open(file).unwrap()).unwrap();
+        lua.execute_from_reader::<(), _>(File::open(file).unwrap()).unwrap();
     }
 
     let lua = Arc::new(Mutex::new(lua));
@@ -164,17 +164,17 @@ fn main() {
                             Err(SyntaxError(s)) => println!("Syntax error: {}", s),
                             Err(ExecutionError(s)) => println!("Execution error: {}", s),
                             Err(ReadError(e)) => println!("Read error: {}", e),
-                            Err(WrongType) => println!("Wrong type error: lua command must return nil"),
+                            Err(WrongType) => {
+                                println!("Wrong type error: lua command must return nil")
+                            }
                         }
-                    },
+                    }
                     Err(ReadlineError::Interrupted) => {
                         lua_clone.lock().unwrap().execute::<()>("quit()").unwrap();
                         println!("^C");
-                        break
-                    },
-                    Err(ReadlineError::Eof) => {
-                        break
-                    },
+                        break;
+                    }
+                    Err(ReadlineError::Eof) => break,
                     Err(err) => {
                         println!("Readline error: {:?}", err);
                     }
@@ -208,31 +208,32 @@ fn main() {
 
                     let state = format!("{:?}", state).to_lowercase();
                     let code: u32 = match button {
-                        Left => 0 + 1<<8,
-                        Right => 1 + 1<<8,
-                        Middle => 2 + 1<<8,
-                        Other(c) => c as u32 + 1<<9,
+                        Left => 0 + 1 << 8,
+                        Right => 1 + 1 << 8,
+                        Middle => 2 + 1 << 8,
+                        Other(c) => c as u32 + 1 << 9,
                     };
                     let virtualcode = match button {
                         Left | Right | Middle => format!("\"mouse{:?}\"", button).to_lowercase(),
-                        Other(c) => format!("\"mouse{:x}\"",c), // TODO Test
+                        Other(c) => format!("\"mouse{:x}\"", c), // TODO Test
                     };
                     let command = format!("input({},{},{})", state, code, virtualcode);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap();
-                },
+                }
                 MouseMoved(dx, dy) => {
-                    let (width, height) = window.get_window().unwrap().get_inner_size_pixels().unwrap();
-                    let center = ((width/2) as i32, (height/2) as i32);
+                    let (width, height) =
+                        window.get_window().unwrap().get_inner_size_pixels().unwrap();
+                    let center = ((width / 2) as i32, (height / 2) as i32);
                     window.get_window().unwrap().set_cursor_position(center.0, center.1).unwrap();
 
-                    let dx = (2*dx - width as i32) as f32 / width as f32;
-                    let dy = -(2*dy - height as i32) as f32 / width as f32;
+                    let dx = (2 * dx - width as i32) as f32 / width as f32;
+                    let dy = -(2 * dy - height as i32) as f32 / width as f32;
                     app.move_cursor(dx, dy, width as f32, height as f32);
 
                     let (x, y) = app.cursor();
                     let command = format!("mouse_moved({},{})", x, y);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap();
-                },
+                }
                 KeyboardInput(state, code, virtualcode) => {
                     let state = format!("\"{:?}\"", state).to_lowercase();
                     let virtualcode = match virtualcode {
@@ -241,7 +242,7 @@ fn main() {
                     };
                     let command = format!("input({},{},{})", state, code, virtualcode);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap();
-                },
+                }
                 MouseWheel(delta, _) => {
                     use glium::glutin::MouseScrollDelta::*;
 
@@ -251,7 +252,7 @@ fn main() {
                     };
                     let command = format!("mouse_wheel({},{})", h, v);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
-                },
+                }
                 Refresh => app.draw(window.draw()),
                 Resized(w, h) => app.resized(w, h),
                 _ => (),
@@ -260,7 +261,7 @@ fn main() {
         {
             lua.lock()
                 .unwrap()
-                .execute::<()>(&*format!("update({})",dt))
+                .execute::<()>(&*format!("update({})", dt))
                 .unwrap();
         }
         loop {
@@ -270,7 +271,9 @@ fn main() {
                 Err(TryRecvError::Empty) => break,
             }
         }
-        if app.must_quit() { break 'main_loop }
+        if app.must_quit() {
+            break 'main_loop;
+        }
 
         // Update
         app.update(dt);
