@@ -11,6 +11,7 @@ use entities;
 
 use std::rc::Rc;
 use std::io::{self, Write};
+use std::ops::Deref;
 
 const NUMBER_OF_THREADS: usize = 2;
 const NOTIFICATION_DURATION: usize = 600;
@@ -22,7 +23,6 @@ pub struct UpdateContext {
 }
 
 pub struct App {
-    cursor: (f32,f32),
     sensibility: f32,
     must_quit: bool,
     graphics: Graphics,
@@ -44,7 +44,6 @@ impl App {
             graphics: Graphics::new(facade).unwrap(),
             must_quit: false,
             planner: planner,
-            cursor: (0., 0.),
             sensibility: 1.,
         }
     }
@@ -59,6 +58,7 @@ impl App {
         let mut frame = Frame::new(&mut self.graphics, frame, &camera);
 
         systems::draw_notifications(self.planner.mut_world(), &mut frame);
+        systems::draw_cursor(self.planner.mut_world(), &mut frame);
 
         frame.finish().unwrap();
     }
@@ -69,15 +69,17 @@ impl App {
         self.graphics.resize().unwrap();
     }
     pub fn move_cursor(&mut self, dx: f32, dy: f32, width: f32, height: f32) {
-        self.cursor.0 += dx * self.sensibility;
-        self.cursor.1 += dy * self.sensibility;
+        let mut cursor = self.planner.mut_world().write_resource::<resources::Cursor>();
+        cursor.x += dx * self.sensibility;
+        cursor.y += dy * self.sensibility;
 
         let ratio = height / width;
-        self.cursor.0 = self.cursor.0.max(-1.).min(1.);
-        self.cursor.1 = self.cursor.1.max(-ratio).min(ratio);
+        cursor.x = cursor.x.max(-1.).min(1.);
+        cursor.y = cursor.y.max(-ratio).min(ratio);
     }
-    pub fn cursor(&self) -> (f32,f32) {
-        self.cursor
+    pub fn cursor(&mut self) -> (f32,f32) {
+        let cursor = self.planner.mut_world().read_resource::<resources::Cursor>();
+        (cursor.x, cursor.y)
     }
 }
 

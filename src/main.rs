@@ -226,7 +226,7 @@ fn main() {
                     window.get_window().unwrap().set_cursor_position(center.0, center.1).unwrap();
 
                     let dx = (2*dx - width as i32) as f32 / width as f32;
-                    let dy = (2*dy - height as i32) as f32 / width as f32;
+                    let dy = -(2*dy - height as i32) as f32 / width as f32;
                     app.move_cursor(dx, dy, width as f32, height as f32);
 
                     let (x, y) = app.cursor();

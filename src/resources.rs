@@ -15,6 +15,7 @@ macro_rules! impl_resource {
 impl_resource!{
     Notifications,
     PhysicWorld,
+    Cursor,
 }
 
 pub struct Notifications(pub Vec<(String, usize)>);
@@ -23,6 +24,20 @@ impl Notifications {
         Notifications(Vec::new())
     }
 }
+
+pub struct Cursor {
+    pub x: f32,
+    pub y: f32,
+}
+impl Cursor {
+    pub fn new() -> Self {
+        Cursor {
+            x: 0.,
+            y: 0.,
+        }
+    }
+}
+
 
 pub struct PhysicWorld {
     inert: ::fnv::FnvHashMap<[i32;2],Vec<EntityInformation>>,
