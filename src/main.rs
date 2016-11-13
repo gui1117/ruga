@@ -138,6 +138,7 @@ fn main() {
         builder.build_glium().unwrap()
     };
     window.get_window().unwrap().set_cursor_state(glutin::CursorState::Grab).unwrap();
+    window.get_window().unwrap().set_cursor(glutin::MouseCursor::NoneCursor);
 
     let (api_tx, api_rx) = channel();
 
