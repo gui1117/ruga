@@ -84,6 +84,8 @@ impl App {
     }
 }
 
+impl_entity_builder!(App);
+
 impl api::Caller for App {
     fn set_sensibility(&mut self, s: f32) {
         self.sensibility = s;

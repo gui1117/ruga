@@ -90,4 +90,5 @@ function update_player_direction()
 	-- set_player_run_vector(x*velocity, y*velocity)
 end
 
+add_wall(0.0, 0.0, 10.0, 10.0)
 fill_physic_world()

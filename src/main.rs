@@ -26,13 +26,15 @@ use std::sync::Arc;
 use std::fs::File;
 use std::io::{self, Write};
 
-mod app;
+#[macro_use]
 mod utils;
+#[macro_use]
+mod entities;
+mod app;
 mod api;
 mod resources;
 mod graphics;
 mod systems;
-mod entities;
 mod components;
 mod colors;
 mod physics;

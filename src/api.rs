@@ -1,16 +1,3 @@
-macro_rules! infer_type {
-    () => {::hlua::function0};
-    ($t1:tt) => {::hlua::function1};
-    ($t1:tt $t2:tt) => {::hlua::function2};
-    ($t1:tt $t2:tt $t3:tt) => {::hlua::function3};
-    ($t1:tt $t2:tt $t3:tt $t4:tt) => {::hlua::function4};
-    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt) => {::hlua::function5};
-    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt) => {::hlua::function6};
-    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt) => {::hlua::function7};
-    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt) => {::hlua::function8};
-    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt $t9:tt) => {::hlua::function9};
-}
-
 macro_rules! api_callee {
     ($( $(#[doc = $doc:expr])* fn $func:ident ($($arg:ident: $typ:ty),*);)*) => {
         pub trait Callee {
@@ -37,20 +24,22 @@ macro_rules! api_callee {
 }
 
 macro_rules! api_caller {
-    ($( $(#[doc = $doc:expr])* fn $func:ident ($($arg:ident: $typ:ty),*);)*) => {
+    ($( $(#[doc = $doc:expr])* fn $func:ident ($($arg:ident: $typ:ty),*);)* + entities) => {
         #[allow(non_camel_case_types)]
         #[doc(hidden)]
         pub enum CallerMsg {
+            EntityBuilder(::entities::EntityBuilderMsg),
             $($func((), $($typ),*)),*
         }
 
-        pub trait Caller {
+        pub trait Caller: ::entities::EntityBuilder{
             $( $(#[doc = $doc])* fn $func(&mut self, $( $arg: $typ),*);)*
             /// Internally used function
             fn call(&mut self, msg: CallerMsg) {
-                match msg {$(
-                    CallerMsg::$func(_, $($arg),*) => self.$func($($arg),*),
-                )*}
+                match msg {
+                    CallerMsg::EntityBuilder(msg) => self.build_entity(msg),
+                    $( CallerMsg::$func(_, $($arg),*) => self.$func($($arg),*),)*
+                }
             }
         }
 
@@ -62,12 +51,15 @@ macro_rules! api_caller {
                     sender_clone.send(CallerMsg::$func((), $($arg),*)).unwrap();
                 }));
             )*
+            ::entities::set_lua_builder(lua, sender);
         }
 
         pub fn caller_function_names() -> Vec<String> {
-            vec!($(
+            let mut vec = vec!($(
                 String::from(stringify!($func))
-            ),*)
+            ),*);
+            vec.append(&mut ::entities::builder_function_names());
+            vec
         }
     }
 }
@@ -90,6 +82,7 @@ api_caller! {
     fn fill_physic_world();
     /// Set mouse sensibility
     fn set_sensibility(s: f32);
+    + entities
 }
 
 api_callee! {
