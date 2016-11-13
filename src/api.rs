@@ -9,7 +9,6 @@ macro_rules! infer_type {
     ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt) => {::hlua::function7};
     ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt) => {::hlua::function8};
     ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt $t9:tt) => {::hlua::function9};
-    ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt $t9:tt $t10:tt) => {::hlua::function10};
 }
 
 macro_rules! api_callee {
@@ -119,13 +118,23 @@ api_callee! {
 ///
 ///   f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
 ///
-///   numlock, numpad0, numpad1, numpad2, numpad3, numpad4, numpad5, numpad6, numpad7, numpad8, numpad9,
+///   numlock, numpad0, numpad1, numpad2, numpad3, numpad4,
+///   numpad5, numpad6, numpad7, numpad8, numpad9,
 ///
 ///   left, up, right, down,
 ///
 ///   escape, back, return, space,
 ///
-///   snapshot, scroll, pause, insert, home, delete, end, pagedown, pageup, compose, abntc1, abntc2, add, apostrophe, apps, at, ax, backslash, calculator, capital, colon, comma, convert, decimal, divide, equals, grave, kana, kanji, lalt, lbracket, lcontrol, lmenu, lshift, lwin, mail, mediaselect, mediastop, minus, multiply, mute, mycomputer, navigateforward, navigatebackward, nexttrack, noconvert, numpadcomma, numpadenter, numpadequals, oem102, period, playpause, power, prevtrack, ralt, rbracket, rcontrol, rmenu, rshift, rwin, semicolon, slash, sleep, stop, subtract, sysrq, tab, underline, unlabeled, volumedown, volumeup, wake, webback, webfavorites, webforward, webhome, webrefresh, websearch, webstop, yen,
+///   snapshot, scroll, pause, insert, home, delete, end, pagedown, pageup, compose,
+///   abntc1, abntc2, add, apostrophe, apps, at, ax, backslash, calculator, capital,
+///   colon, comma, convert, decimal, divide, equals, grave, kana, kanji, lalt, lbracket,
+///   lcontrol, lmenu, lshift, lwin, mail, mediaselect, mediastop, minus, multiply, mute,
+///   mycomputer, navigateforward, navigatebackward, nexttrack, noconvert, numpadcomma,
+///   numpadenter, numpadequals, oem102, period, playpause, power, prevtrack, ralt,
+///   rbracket, rcontrol, rmenu, rshift, rwin, semicolon, slash, sleep, stop, subtract,
+///   sysrq, tab, underline, unlabeled, volumedown, volumeup, wake, webback, webfavorites,
+///   webforward, webhome, webrefresh, websearch, webstop, yen,
+///
 /// Scancode[8-9] is:
 /// * 0 -> keyboard
 /// * 1 -> mouse

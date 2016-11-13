@@ -207,9 +207,11 @@ fn bounding_box_raycast(x: f32,
         }
     } else {
         // println!("x:{}, y:{}, width:{}, height:{}, a:{}, b:{}, c:{}",x,y,width,height,a,b,c);
-        // the ordonate of the point that is on the line(a,b,c) and the horizontal line that cut (x,y)
+        // the ordonate of the point that is on the line(a,b,c)
+        // and the horizontal line that cut (x,y)
         let y_proj = -(a * x + c) / b;
-        // the abscisse of the point that is on the line(a,b,c) and the vertical line that cut (x,y)
+        // the abscisse of the point that is on the line(a,b,c)
+        // and the vertical line that cut (x,y)
         let x_proj = -(b * y + c) / a;
 
         // println!("proj: {:?} | {:?}",x_proj,y_proj);

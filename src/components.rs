@@ -14,7 +14,7 @@ macro_rules! impl_component {
     };
 }
 
-impl_component!{
+impl_component! {
     PhysicState: VecStorage,
     PhysicType: VecStorage,
     PhysicForce: VecStorage,

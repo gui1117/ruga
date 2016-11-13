@@ -12,7 +12,7 @@ macro_rules! impl_resource {
     };
 }
 
-impl_resource!{
+impl_resource! {
     Notifications,
     PhysicWorld,
     Cursor,

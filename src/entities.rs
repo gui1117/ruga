@@ -3,46 +3,47 @@ use graphics::Layer;
 use components::*;
 use physics::Shape;
 
-// pub fn add_character(world: &mut specs::World, x: f32, y: f32) {
-//     let entity = world.create_now()
-//         .with(HitboxDraw::new([0.0, 0.0, 0.0, 1.0], Layer::Middle))
-//         .with(PlayerControl)
-//         .with(CollisionBehavior::Dodge)
-//         .with(HitboxIdFlag)
-//         .build();
+#[cfg_attr(rustfmt, rustfmt_skip)]const WALL_GROUP:       u32 = 0b00000000000000000000000000000001;
+#[cfg_attr(rustfmt, rustfmt_skip)]const CHARACTER_GROUP:  u32 = 0b00000000000000000000000000000010;
 
-//     let hitbox = circle_hitbox(x, y, 0.5);
-//     let mut collider = world.write_resource::<Collider>();
-//     collider.add_hitbox(entity.aci(), hitbox);
-// }
+#[cfg_attr(rustfmt, rustfmt_skip)]const WALL_MASK:        u32 = 0b11111111111111111111111111111111;
+#[cfg_attr(rustfmt, rustfmt_skip)]const CHARACTER_MASK:   u32 = 0b11111111111111111111111111111111;
 
-// pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f32) {
-//     let entity = world.create_now()
-//         .with(HitboxDraw::new([0.0, 0.0, 0.0, 1.0], Layer::Middle))
-//         .with(HitboxIdFlag)
-//         .build();
+macro_rules! impl_entity {
+    ($($entity:ident($($var_name:ident: $var_type:ident),*),)*) => {
+        macro_rules! entities_signatures {
+            () => {
+                fn add_wall(x: f32, y: f32, width: f32, height: f32);
+            }
+        }
+    }
+}
 
-//     let hitbox = rect_hitbox(x, y, width, height);
-//     let mut collider = world.write_resource::<Collider>();
-//     collider.add_hitbox(entity.aci(), hitbox);
-// }
+impl_entity! {
+    wall(x: f32, y: f32, width: f32, height: f32),
+}
 
-// pub fn add_debug_rectangle(world: &mut specs::World, x: f32, y: f32, width: f32, height: f32) {
-//     let shape = Shape::Rectangle(width, height);
-//     let entity = world.create_now()
-//         .with(PhysicState::new([x,y]))
-//         .with(PhysicType::new_static(!0, !0, shape))
-//         .with(PhysicStatic)
-//         .with(DebugActive { active: false })
-//         .build();
-// }
+pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f32) {
+    let shape = Shape::Rectangle(width, height);
+    let entity = world.create_now()
+        .with(PhysicState::new([x, y]))
+        .with(PhysicType::new_static(WALL_GROUP, WALL_MASK, shape))
+        .with(PhysicStatic)
+        .build();
+}
 
-// pub fn add_debug_circle(world: &mut specs::World, x: f32, y: f32, r: f32) {
+// pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32) {
 //     let shape = Shape::Circle(r);
 //     let entity = world.create_now()
-//         .with(PhysicState::new([x,y]))
-//         .with(PhysicType::new_static(!0, !0, shape))
-//         .with(PhysicStatic)
-//         .with(DebugActive { active: false })
+//         .with(PhysicState::new([x, y]))
+//         .with(PhysicType::new_movable(CHARACTER_GROUP,
+//                                       CHARACTER_MASK,
+//                                       shape,
+//                                       CollisionBehavior::Persist,
+//                                       ,
+//                                       CHARACTER_TIME_TO_REACH_VMAX,
+//                                       CHARACTER_WEIGHT))
+//         .with(PhysicDynamic)
+//         .with(PlayerControl)
 //         .build();
 // }
