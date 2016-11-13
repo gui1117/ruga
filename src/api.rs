@@ -80,8 +80,6 @@ api_caller! {
     fn print(msg: String);
     /// Fill physic world with static and dynamic physic elements
     fn fill_physic_world();
-    /// Set mouse sensibility
-    fn set_sensibility(s: f32);
     + entities
 }
 

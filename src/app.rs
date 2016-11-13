@@ -23,7 +23,6 @@ pub struct UpdateContext {
 }
 
 pub struct App {
-    sensibility: f32,
     must_quit: bool,
     graphics: Graphics,
     planner: specs::Planner<UpdateContext>,
@@ -44,7 +43,6 @@ impl App {
             graphics: Graphics::new(facade).unwrap(),
             must_quit: false,
             planner: planner,
-            sensibility: 1.,
         }
     }
     pub fn update(&mut self, dt: f32) {
@@ -69,14 +67,10 @@ impl App {
     pub fn resized(&mut self, _width: u32, _height: u32) {
         self.graphics.resize().unwrap();
     }
-    pub fn move_cursor(&mut self, dx: f32, dy: f32, width: f32, height: f32) {
+    pub fn set_cursor(&mut self, x: f32, y: f32) {
         let mut cursor = self.planner.mut_world().write_resource::<resources::Cursor>();
-        cursor.x += dx * self.sensibility;
-        cursor.y += dy * self.sensibility;
-
-        let ratio = height / width;
-        cursor.x = cursor.x.max(-1.).min(1.);
-        cursor.y = cursor.y.max(-ratio).min(ratio);
+        cursor.x = x;
+        cursor.y = y;
     }
     pub fn cursor(&mut self) -> (f32, f32) {
         let cursor = self.planner.mut_world().read_resource::<resources::Cursor>();
@@ -87,9 +81,6 @@ impl App {
 impl_entity_builder!(App);
 
 impl api::Caller for App {
-    fn set_sensibility(&mut self, s: f32) {
-        self.sensibility = s;
-    }
     fn quit(&mut self) {
         self.must_quit = true;
     }

@@ -48,9 +48,9 @@ pub fn draw_notifications(world: &mut specs::World, frame: &mut graphics::Frame)
     notifications.0.retain(|&(_, count)| count > 0)
 }
 
-const CURSOR_LENGTH: f32 = 0.045;
-const CURSOR_GAP: f32 = 0.017;
-const CURSOR_THICKNESS: f32 = 0.006;
+const CURSOR_LENGTH: f32 = 0.044;
+const CURSOR_GAP: f32 = 0.016;
+const CURSOR_THICKNESS: f32 = 0.004;
 
 pub fn draw_cursor(world: &mut specs::World, frame: &mut graphics::Frame) {
     let cursor = world.read_resource::<Cursor>();

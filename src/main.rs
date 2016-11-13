@@ -222,17 +222,14 @@ fn main() {
                     let command = format!("input({},{},{})", state, code, virtualcode);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap();
                 }
-                MouseMoved(dx, dy) => {
-                    let (width, height) =
-                        window.get_window().unwrap().get_inner_size_pixels().unwrap();
-                    let center = ((width / 2) as i32, (height / 2) as i32);
-                    window.get_window().unwrap().set_cursor_position(center.0, center.1).unwrap();
+                MouseMoved(x, y) => {
+                    let (w, h) = window.get_window().unwrap().get_inner_size_pixels().unwrap();
 
-                    let dx = (2 * dx - width as i32) as f32 / width as f32;
-                    let dy = -(2 * dy - height as i32) as f32 / width as f32;
-                    app.move_cursor(dx, dy, width as f32, height as f32);
+                    let x = (2 * x - w as i32) as f32 / w as f32;
+                    let y = -(2 * y - h as i32) as f32 / w as f32;
 
-                    let (x, y) = app.cursor();
+                    app.set_cursor(x, y);
+
                     let command = format!("mouse_moved({},{})", x, y);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap();
                 }
