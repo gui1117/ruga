@@ -70,8 +70,9 @@ macro_rules! api_caller {
 // fn pause(&mut self);
 // fn resume(&mut self);
 // fn set_zoom(&mut self, zoom: f32);
-// fn set_player_run_vector(x: f32, y: f32);
 api_caller! {
+    /// Set player force
+    fn set_player_force(angle: f32, strength: f32);
     /// Quit the game
     fn quit();
     /// Show notification on the screen

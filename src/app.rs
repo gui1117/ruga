@@ -34,10 +34,11 @@ impl App {
 
         let mut world = specs::World::new();
 
-        resources::add_resource(&mut world);
+        resources::add_resources(&mut world);
         components::register_components(&mut world);
 
-        let planner = specs::Planner::new(world, NUMBER_OF_THREADS);
+        let mut planner = specs::Planner::new(world, NUMBER_OF_THREADS);
+        systems::update::add_systems(&mut planner);
 
         App {
             graphics: Graphics::new(facade).unwrap(),
@@ -54,11 +55,7 @@ impl App {
     pub fn draw(&mut self, frame: glium::Frame) {
         let camera = Camera::new(0.0, 0.0, 0.05);
         let mut frame = Frame::new(&mut self.graphics, frame, &camera);
-
-        systems::draw_notifications(self.planner.mut_world(), &mut frame);
-        systems::draw_cursor(self.planner.mut_world(), &mut frame);
-        systems::draw_physic(self.planner.mut_world(), &mut frame);
-
+        systems::draw::run(self.planner.mut_world(), &mut frame);
         frame.finish().unwrap();
     }
     pub fn must_quit(&self) -> bool {
@@ -81,12 +78,21 @@ impl App {
 impl_entity_builder!(App);
 
 impl api::Caller for App {
+    fn set_player_force(&mut self, angle: f32, strength: f32) {
+        let mut world = self.planner.mut_world();
+        let players = world.read::<components::PlayerControl>();
+        let mut forces = world.write::<components::PhysicForce>();
+        for (_, force) in (&players, &mut forces).iter() {
+            force.angle = angle;
+            force.strength = strength;
+        }
+    }
     fn quit(&mut self) {
         self.must_quit = true;
     }
     fn notify(&mut self, notification: String) {
-        let ref mut notifications =
-            self.planner.mut_world().write_resource::<resources::Notifications>().0;
+        let mut world = self.planner.mut_world();
+        let ref mut notifications = world.write_resource::<resources::Notifications>().0;
         notifications.push((notification, NOTIFICATION_DURATION));
         if notifications.len() > NOTIFICATION_MAX {
             notifications.remove(0);

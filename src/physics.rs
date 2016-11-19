@@ -1,5 +1,23 @@
 pub const PHYSIC_RATE: f32 = 0.9;
 
+pub struct Resolution {
+    pub dx: f32,
+    pub dy: f32,
+}
+
+impl Resolution {
+    pub fn none() -> Resolution {
+        Resolution {
+            dx: 0.,
+            dy: 0.,
+        }
+    }
+    pub fn push(&mut self, res: Resolution) {
+        if res.dx.abs() > self.dx.abs() { self.dx = res.dx; }
+        if res.dy.abs() > self.dy.abs() { self.dy = res.dy; }
+    }
+}
+
 #[derive(Clone)]
 pub struct RayCast {
     pub origin: [f32; 2],
@@ -22,7 +40,20 @@ pub struct ShapeCast {
     pub group: u32,
 }
 
-pub struct Collision;
+/// if A collide with B then collision must represent
+/// the smallest vector to move A so it doesn't collide anymore
+pub struct Collision {
+    pub delta_x: f32,
+    pub delta_y: f32,
+}
+impl Collision {
+    pub fn opposite(&self) -> Collision {
+        Collision {
+            delta_x: -self.delta_x,
+            delta_y: -self.delta_y,
+        }
+    }
+}
 
 #[derive(Clone)]
 pub enum Shape {
@@ -128,13 +159,7 @@ pub fn grid_raycast(x0: f32, y0: f32, x1: f32, y1: f32) -> Vec<[i32; 2]> {
 
 /// the coordinate of the intersections (if some) of a circle of center (x,y) and radius,
 /// and the line of equation ax+by+c=0
-fn circle_raycast(x: f32,
-                  y: f32,
-                  radius: f32,
-                  a: f32,
-                  b: f32,
-                  c: f32)
-                  -> Option<(f32, f32, f32, f32)> {
+fn circle_raycast(x: f32, y: f32, radius: f32, a: f32, b: f32, c: f32) -> Option<(f32, f32, f32, f32)> {
     use ::std::f32::EPSILON;
     // println!("x:{}, y:{}, radius:{}, a:{}, b:{}, c:{}",x,y,radius,a,b,c);
     if a == 0. && b == 0. {
@@ -179,16 +204,21 @@ fn circle_raycast(x: f32,
     }
 }
 
+/// The line of equation ax + by + c = 0 that pass through the two points
+fn line_equation_from_points(p: [f32; 2], q: [f32; 2]) -> (f32, f32, f32) {
+    let (a, b) = if (p[0] - q[0]).abs() > (p[1] - q[1]).abs() {
+        (- (p[1] - q[1]) / (p[0] - q[0]), 1.)
+    } else {
+        (1., - (p[0] - q[0]) / (p[1] - q[1]))
+    };
+    let c = - a*p[0] - b*p[1];
+
+    (a, b, c)
+}
+
 /// the coordinate of the intersections (if some) of a rectangle of center (x,y) width and height,
 /// and the line of equation ax+by+c=0
-fn bounding_box_raycast(x: f32,
-                        y: f32,
-                        width: f32,
-                        height: f32,
-                        a: f32,
-                        b: f32,
-                        c: f32)
-                        -> Option<(f32, f32, f32, f32)> {
+fn bounding_box_raycast(x: f32, y: f32, width: f32, height: f32, a: f32, b: f32, c: f32) -> Option<(f32, f32, f32, f32)> {
     if a == 0. && b == 0. {
         panic!("invalid line equation")
     } else if a == 0. {
@@ -264,6 +294,110 @@ fn bounding_box_raycast(x: f32,
     }
 }
 
+pub fn shape_collision(a_pos: [f32;2], a_shape: &Shape, b_pos: [f32;2], b_shape: &Shape) -> Option<Collision> {
+    use self::Shape::*;
+    match (a_shape, b_shape) {
+        (&Circle(a_radius), &Circle(b_radius)) => circle_circle_collision(a_pos, a_radius, b_pos, b_radius),
+        (&Circle(a_radius), &Rectangle(b_w, b_h)) => circle_rectangle_collision(a_pos, a_radius, b_pos, b_w, b_h),
+        (&Rectangle(a_w, a_h), &Rectangle(b_w, b_h)) => rectangle_rectangle_collision(a_pos, a_w, a_h, b_pos, b_w, b_h),
+        (&Rectangle(a_w, a_h), &Circle(b_radius)) => circle_rectangle_collision(b_pos, b_radius, a_pos, a_w, a_h).map(|col| col.opposite()),
+    }
+}
+
+fn circle_circle_collision(a_pos: [f32;2], a_rad: f32, b_pos: [f32;2], b_rad: f32) -> Option<Collision> {
+    let dx = a_pos[0]-b_pos[0];
+    let dy = a_pos[1]-b_pos[1];
+    let dn2 = dx.powi(2) + dy.powi(2);
+    let rad = a_rad+b_rad;
+    if dn2 < rad.powi(2) {
+        let angle = dy.atan2(dx);
+        let dn = dn2.sqrt();
+        let delta = rad - dn;
+        Some(Collision {
+            delta_x: delta*angle.cos(),
+            delta_y: delta*angle.sin(),
+        })
+    } else {
+        None
+    }
+}
+fn circle_rectangle_collision(a_pos: [f32;2], a_radius: f32, b_pos: [f32;2], b_width: f32, b_height: f32) -> Option<Collision> {
+    let left = a_pos[0] < b_pos[0] - b_width/2.;
+    let right = a_pos[0] > b_pos[0] + b_width/2.;
+    let down = a_pos[1] < b_pos[1] - b_height/2.;
+    let up = a_pos[1] > b_pos[1] + b_height/2.;
+
+    let extern_horizontal = left || right;
+    let extern_vertical = up || down;
+
+    if extern_horizontal && extern_vertical {
+        let insider = [if left { b_pos[0] - b_width/2. } else { b_pos[0] + b_width/2.},
+                       if down { b_pos[1] - b_height/2. } else { b_pos[1] + b_height/2.}];
+
+        if (insider[0]-a_pos[0]).powi(2) + (insider[1]-a_pos[1]).powi(2) >= a_radius.powi(2) {
+            return None
+        }
+
+        let (a, b, c) = line_equation_from_points(insider, a_pos);
+        let outsider = if let Some((x0, y0, x1, y1)) = circle_raycast(a_pos[0], a_pos[1], a_radius, a, b, c) {
+            [if left { x0.max(x1) } else { x0.min(x1) },
+             if down { y0.max(y1) } else {  y0.min(y1) }]
+        } else {
+            return None
+        };
+
+
+        Some(Collision {
+            delta_x: insider[0] - outsider[0],
+            delta_y: insider[1] - outsider[1],
+        })
+    } else {
+        rectangle_rectangle_collision(a_pos, a_radius*2., a_radius*2., b_pos, b_width, b_height)
+    }
+}
+fn rectangle_rectangle_collision(a_pos: [f32;2], a_width: f32, a_height: f32, b_pos: [f32;2], b_width: f32, b_height: f32) -> Option<Collision> {
+    let a_min_x = a_pos[0] - a_width/2.;
+    let a_max_x = a_pos[0] + a_width/2.;
+    let a_min_y = a_pos[1] - a_height/2.;
+    let a_max_y = a_pos[1] + a_height/2.;
+    let b_min_x = b_pos[0] - b_width/2.;
+    let b_max_x = b_pos[0] + b_width/2.;
+    let b_min_y = b_pos[1] - b_height/2.;
+    let b_max_y = b_pos[1] + b_height/2.;
+
+    if (a_min_x >= b_max_x) || (b_min_x >= a_max_x) || (a_min_y >= b_max_y) || (b_min_y >= a_max_y) {
+        None
+    } else {
+        let delta_ox = b_max_x - a_min_x;
+        let delta_oxp = b_min_x - a_max_x;
+        let delta_oy = b_max_y - a_min_y;
+        let delta_oyp =  b_min_y - a_max_y;
+
+        let delta_x = if delta_ox.abs() < delta_oxp.abs() {
+            delta_ox
+        } else {
+            delta_oxp
+        };
+
+        let delta_y = if delta_oy.abs() < delta_oyp.abs() {
+            delta_oy
+        } else {
+            delta_oyp
+        };
+
+        if delta_x.abs() < delta_y.abs() {
+            Some(Collision {
+                delta_x: delta_x,
+                delta_y: 0.,
+            })
+        } else {
+            Some(Collision {
+                delta_x: 0.,
+                delta_y: delta_y,
+            })
+        }
+    }
+}
 #[test]
 fn circle_raycast_test() {
     // for a == 0

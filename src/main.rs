@@ -143,6 +143,7 @@ fn main() {
     let (api_tx, api_rx) = channel();
 
     let mut lua = hlua::Lua::new();
+    lua.openlibs();
     api::set_lua_caller(&mut lua, api_tx.clone());
     api::set_lua_callee(&mut lua);
 
@@ -199,6 +200,7 @@ fn main() {
     // If running out of time then slow down the game
 
     let mut last_time = time::precise_time_ns();
+    let mut key_pressed = vec!();
 
     'main_loop: loop {
         // Poll events
@@ -218,7 +220,7 @@ fn main() {
                     };
                     let virtualcode = match button {
                         Left | Right | Middle => format!("\"mouse{:?}\"", button).to_lowercase(),
-                        Other(c) => format!("\"mouse{:x}\"", c), // TODO Test
+                        Other(c) => format!("\"mouse{:x}\"", c),
                     };
                     let command = format!("input({},{},{})", state, code, virtualcode);
                     lua.lock().unwrap().execute::<()>(&*command).unwrap();
@@ -235,6 +237,19 @@ fn main() {
                     lua.lock().unwrap().execute::<()>(&*command).unwrap();
                 }
                 KeyboardInput(state, code, virtualcode) => {
+                    use glium::glutin::ElementState::*;
+
+                    match state {
+                        Pressed => if key_pressed.contains(&code) {
+                            continue
+                        } else {
+                            key_pressed.push(code)
+                        },
+                        Released => key_pressed.retain(move |&v| {
+                            v != code
+                        }),
+                    }
+
                     let state = format!("\"{:?}\"", state).to_lowercase();
                     let virtualcode = match virtualcode {
                         Some(c) => format!("\"{:?}\"", c).to_lowercase(),
@@ -251,7 +266,7 @@ fn main() {
                         PixelDelta(h, v) => (h, v),
                     };
                     let command = format!("mouse_wheel({},{})", h, v);
-                    lua.lock().unwrap().execute::<()>(&*command).unwrap(); // TODO Test
+                    lua.lock().unwrap().execute::<()>(&*command).unwrap();
                 }
                 Refresh => app.draw(window.draw()),
                 Resized(w, h) => app.resized(w, h),

@@ -1,7 +1,7 @@
 use specs;
 use graphics::Layer;
 use components::*;
-use physics::Shape;
+use physics::{Shape, CollisionBehavior};
 
 macro_rules! entity_builder {
     ($($entity:ident($($var_name:ident: $var_type:ident),*),)*) => {
@@ -22,10 +22,10 @@ macro_rules! entity_builder {
         macro_rules! impl_entity_builder {
             ($ty:ty) => {
                 impl ::entities::EntityBuilder for $ty {
-                    fn add_wall(&mut self, x: f32, y: f32, width: f32, height: f32) {
+                    $( fn $entity(&mut self, $($var_name: $var_type),*) {
                         let world = self.planner.mut_world();
-                        ::entities::add_wall(world, x, y, width, height);
-                    }
+                        ::entities::$entity(world, $($var_name),*);
+                    } )*
                 }
             }
         }
@@ -50,13 +50,14 @@ macro_rules! entity_builder {
 
 entity_builder! {
     add_wall(x: f32, y: f32, width: f32, height: f32),
+    add_character(x: f32, y: f32, r: f32, velocity: f32, time_to_reach_v_max: f32, weight: f32),
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]const WALL_GROUP:       u32 = 0b00000000000000000000000000000001;
-#[cfg_attr(rustfmt, rustfmt_skip)]const CHARACTER_GROUP:  u32 = 0b00000000000000000000000000000010;
+#[cfg_attr(rustfmt, rustfmt_skip)]const WALL_GROUP:  u32 = 0b00000000000000000000000000000001;
+#[cfg_attr(rustfmt, rustfmt_skip)]const CHAR_GROUP:  u32 = 0b00000000000000000000000000000010;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]const WALL_MASK:        u32 = 0b11111111111111111111111111111111;
-#[cfg_attr(rustfmt, rustfmt_skip)]const CHARACTER_MASK:   u32 = 0b11111111111111111111111111111111;
+#[cfg_attr(rustfmt, rustfmt_skip)]const WALL_MASK:   u32 = 0b11111111111111111111111111111111;
+#[cfg_attr(rustfmt, rustfmt_skip)]const CHAR_MASK:   u32 = 0b11111111111111111111111111111111;
 
 pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f32) {
     let shape = Shape::Rectangle(width, height);
@@ -64,21 +65,21 @@ pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f3
         .with(PhysicState::new([x, y]))
         .with(PhysicType::new_static(WALL_GROUP, WALL_MASK, shape))
         .with(PhysicStatic)
+        .with(DrawPhysic { color: [0., 0., 0., 1.] })
         .build();
 }
 
-// pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32) {
-//     let shape = Shape::Circle(r);
-//     let entity = world.create_now()
-//         .with(PhysicState::new([x, y]))
-//         .with(PhysicType::new_movable(CHARACTER_GROUP,
-//                                       CHARACTER_MASK,
-//                                       shape,
-//                                       CollisionBehavior::Persist,
-//                                       ,
-//                                       CHARACTER_TIME_TO_REACH_VMAX,
-//                                       CHARACTER_WEIGHT))
-//         .with(PhysicDynamic)
-//         .with(PlayerControl)
-//         .build();
-// }
+pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity: f32, time_to_reach_vmax: f32, weight: f32) {
+    let shape = Shape::Circle(r);
+    let entity = world.create_now()
+        .with(PhysicState::new([x, y]))
+        .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, shape, CollisionBehavior::Persist, velocity, time_to_reach_vmax, weight))
+        .with(PhysicForce {
+            angle: 0.,
+            strength: 0.,
+        })
+        .with(PhysicDynamic)
+        .with(PlayerControl)
+        .with(DrawPhysic { color: [0., 0., 0., 1.] })
+        .build();
+}

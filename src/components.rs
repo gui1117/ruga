@@ -51,14 +51,7 @@ pub struct PhysicType {
     pub mask: u32,
 }
 impl PhysicType {
-    pub fn new_movable(group: u32,
-                       mask: u32,
-                       shape: Shape,
-                       collision: CollisionBehavior,
-                       velocity: f32,
-                       time_to_reach_v_max: f32,
-                       weight: f32)
-                       -> Self {
+    pub fn new_movable(group: u32, mask: u32, shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
         let damping = -weight * (1. - PHYSIC_RATE).ln() / time_to_reach_v_max;
         let force = velocity * damping;
         PhysicType {

@@ -6,7 +6,7 @@ use std::collections::HashSet;
 macro_rules! impl_resource {
     ($($typ:ident,)*) => { impl_resource!{ $($typ),* } };
     ($($typ:ident),*) => {
-        pub fn add_resource(world: &mut ::specs::World) {
+        pub fn add_resources(world: &mut ::specs::World) {
             $(world.add_resource(::resources::$typ::new());)*
         }
     };
@@ -35,10 +35,9 @@ impl Cursor {
     }
 }
 
-
 pub struct PhysicWorld {
-    inert: ::fnv::FnvHashMap<[i32; 2], Vec<EntityInformation>>,
-    movable: ::fnv::FnvHashMap<[i32; 2], Vec<EntityInformation>>,
+    pub inert: ::fnv::FnvHashMap<[i32; 2], Vec<EntityInformation>>,
+    pub movable: ::fnv::FnvHashMap<[i32; 2], Vec<EntityInformation>>,
 }
 impl PhysicWorld {
     pub fn new() -> Self {
@@ -78,24 +77,33 @@ impl PhysicWorld {
             self.insert_static(info);
         }
     }
-    fn insert_dynamic(&mut self, info: EntityInformation) {
+    pub fn insert_dynamic(&mut self, info: EntityInformation) {
         for cell in info.shape.cells(info.pos) {
             self.movable.entry(cell).or_insert(Vec::new()).push(info.clone());
         }
     }
-    fn insert_static(&mut self, info: EntityInformation) {
+    pub fn insert_static(&mut self, info: EntityInformation) {
         for cell in info.shape.cells(info.pos) {
             self.inert.entry(cell).or_insert(Vec::new()).push(info.clone());
         }
     }
-    pub fn apply_on_shape<F: FnMut(&EntityInformation, &Collision)>(&self,
-                                                                    shape: &ShapeCast,
-                                                                    callback: &mut F) {
-        unimplemented!();
+    /// The collision is between shape and other entity
+    pub fn apply_on_shape<F: FnMut(&EntityInformation, &Collision)>(&self, shape: &ShapeCast, callback: &mut F) {
+        let null_vec = Vec::new();
+        for cell in shape.shape.cells(shape.pos) {
+            let inert = self.inert.get(&cell).unwrap_or(&null_vec).iter();
+            let movable = self.movable.get(&cell).unwrap_or(&null_vec).iter();
+
+            for entity in inert.chain(movable) {
+                if entity.group & shape.mask == 0 { continue; }
+                if entity.mask & shape.group == 0 { continue; }
+                if let Some(collision) = physics::shape_collision(shape.pos, &shape.shape, entity.pos, &entity.shape) {
+                    callback(entity, &collision);
+                }
+            }
+        }
     }
-    pub fn raycast<F: FnMut((&EntityInformation, f32, f32)) -> ContinueOrStop>(&self,
-                                                                               ray: &RayCast,
-                                                                               callback: &mut F) {
+    pub fn raycast<F: FnMut((&EntityInformation, f32, f32)) -> ContinueOrStop>(&self, ray: &RayCast, callback: &mut F) {
         use ::std::f32::consts::FRAC_PI_2;
         use ::std::f32::consts::FRAC_PI_4;
         use ::std::f32::consts::PI;
@@ -132,21 +140,6 @@ impl PhysicWorld {
         let oy = ray.origin[1];
         let dx = ox + ray.length * angle.cos();
         let dy = oy + ray.length * angle.sin();
-        // TODO Delete
-        // let cells = {
-        //     let min_x = ox.min(dx).floor() as i32;
-        //     let max_x = ox.max(dx).ceil() as i32;
-        //     let min_y = oy.min(dy).floor() as i32;
-        //     let max_y = oy.max(dy).ceil() as i32;
-
-        //     let mut cells = Vec::new();
-        //     for x in min_x..max_x {
-        //         for y in min_y..max_y {
-        //             cells.push([x,y]);
-        //         }
-        //     }
-        //     cells
-        // };
         let cells = physics::grid_raycast(ox, oy, dx, dy);
         let ray_min_x = ox.min(dx);
         let ray_max_x = ox.max(dx);
