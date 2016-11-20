@@ -408,13 +408,7 @@ impl<'a> Frame<'a> {
         }
     }
 
-    pub fn draw_rectangle(&mut self,
-                          x: f32,
-                          y: f32,
-                          width: f32,
-                          height: f32,
-                          layer: Layer,
-                          color: [f32; 4]) {
+    pub fn draw_rectangle(&mut self, x: f32, y: f32, width: f32, height: f32, layer: Layer, color: [f32; 4]) {
         let trans = {
             [[width / 2., 0., 0., 0.],
              [0., height / 2., 0., 0.],

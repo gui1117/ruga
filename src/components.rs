@@ -85,6 +85,7 @@ pub struct PhysicForce {
 
 #[derive(Clone)]
 pub struct DrawPhysic {
+    pub border: Option<(f32, [f32;4])>,
     pub color: [f32; 4],
 }
 

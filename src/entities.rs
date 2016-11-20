@@ -65,7 +65,10 @@ pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f3
         .with(PhysicState::new([x, y]))
         .with(PhysicType::new_static(WALL_GROUP, WALL_MASK, shape))
         .with(PhysicStatic)
-        .with(DrawPhysic { color: [0., 0., 0., 1.] })
+        .with(DrawPhysic {
+            color: [0., 0., 0., 1.],
+            border: None,
+        })
         .build();
 }
 
@@ -80,6 +83,9 @@ pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity:
         })
         .with(PhysicDynamic)
         .with(PlayerControl)
-        .with(DrawPhysic { color: [0., 0., 0., 1.] })
+        .with(DrawPhysic {
+            color: [1., 1., 1., 1.],
+            border: Some((0.3, [0., 0., 0., 1.])),
+        })
         .build();
 }
