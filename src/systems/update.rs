@@ -55,14 +55,14 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
 
             physic_world.apply_on_shape(&shape_cast, &mut |other_info,collision| {
                 let other_type = types.get(other_info.entity).expect("physic entity expect type component");
-                let rate = {
-                    if other_type.weight == f32::MAX {
-                        0.
-                    } else if typ.weight == f32::MAX {
-                        1.
-                    } else {
-                        typ.weight/(typ.weight+other_type.weight)
-                    }
+                let rate = match (typ.weight, other_type.weight) {
+                    (f32::MAX, f32::MAX) => 0.5,
+                    (f32::MAX, _) => 1.,
+                    (_, f32::MAX) => 0.,
+                    (0., 0.) => 0.5,
+                    (0., _) => 0.,
+                    (_, 0.) => 1.,
+                    _ => typ.weight/(typ.weight+other_type.weight),
                 };
 
                 if rate != 1. {
