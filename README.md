@@ -4,6 +4,8 @@ a game made in rust
 
 it is in early development.
 
+this iteration is over, next iteration (0.3) is in development in its branch
+
 ![animation](animation.gif)
 
 ## Install
