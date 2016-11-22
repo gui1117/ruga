@@ -95,6 +95,7 @@ impl PhysicWorld {
             let movable = self.movable.get(&cell).unwrap_or(&null_vec).iter();
 
             for entity in inert.chain(movable) {
+                if shape.not.contains(&entity.entity) { continue; }
                 if entity.group & shape.mask == 0 { continue; }
                 if entity.mask & shape.group == 0 { continue; }
                 if let Some(collision) = physics::shape_collision(shape.pos, &shape.shape, entity.pos, &entity.shape) {
@@ -168,6 +169,9 @@ impl PhysicWorld {
                 .chain(self.inert.get(&cell).unwrap_or(&null_vec).iter());
 
             for entity in possible_entities {
+                if ray.not.contains(&entity.entity) {
+                    continue;
+                }
                 if entity.group & ray.mask == 0 {
                     continue;
                 }

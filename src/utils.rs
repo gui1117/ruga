@@ -20,6 +20,21 @@ pub fn minus_pi_pi(a: f32) -> f32 {
     }
 }
 
+pub mod math {
+    #[inline]
+    pub fn angle(p: [f32; 2]) -> f32 {
+        p[1].atan2(p[0])
+    }
+    #[inline]
+    pub fn norm(p: [f32; 2]) -> f32 {
+        (p[0].powi(2) + p[1].powi(2)).sqrt()
+    }
+    #[inline]
+    pub fn sub(p1: [f32; 2], p2: [f32; 2]) -> [f32; 2] {
+        [p1[0]-p2[0], p1[1]-p2[1]]
+    }
+}
+
 macro_rules! infer_type {
     () => {::hlua::function0};
     ($t1:tt) => {::hlua::function1};

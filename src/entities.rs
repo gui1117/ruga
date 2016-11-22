@@ -1,7 +1,7 @@
 use specs;
 use graphics::Layer;
 use components::*;
-use physics::{Shape, CollisionBehavior};
+use physics::{self, Shape, CollisionBehavior};
 
 macro_rules! entity_builder {
     ($($entity:ident($($var_name:ident: $var_type:ident),*),)*) => {
@@ -61,7 +61,7 @@ entity_builder! {
 
 pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f32) {
     let shape = Shape::Rectangle(width, height);
-    let entity = world.create_now()
+    world.create_now()
         .with(PhysicState::new([x, y]))
         .with(PhysicType::new_static(WALL_GROUP, WALL_MASK, shape))
         .with(PhysicStatic)
@@ -74,18 +74,45 @@ pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f3
 
 pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity: f32, time_to_reach_vmax: f32, weight: f32) {
     let shape = Shape::Circle(r);
+    let (force, damping) = physics::compute_force_damping(velocity, time_to_reach_vmax, weight);
     let entity = world.create_now()
         .with(PhysicState::new([x, y]))
-        .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, shape, CollisionBehavior::Persist, velocity, time_to_reach_vmax, weight))
+        .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, shape, CollisionBehavior::Persist, weight))
         .with(PhysicForce {
             angle: 0.,
             strength: 0.,
+            coef: force,
         })
+        .with(PhysicDamping(damping))
         .with(PhysicDynamic)
         .with(PlayerControl)
         .with(DrawPhysic {
             color: [1., 1., 1., 1.],
             border: Some((0.3, [0., 0., 0., 1.])),
+        })
+        .build();
+
+    let spring_1 = world.create_now()
+        .with(PhysicState::new([x-2.0, y]))
+        .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, Shape::Circle(0.2), CollisionBehavior::Persist, weight))
+        .with(PhysicSpring::new(entity, 2.0, 5.0))
+        .with(PhysicDamping(2.))
+        .with(PhysicDynamic)
+        .with(DrawPhysic {
+            color: [0., 0., 0., 1.],
+            border: None,
+        })
+        .build();
+
+    let spring_2 = world.create_now()
+        .with(PhysicState::new([x-2.0, y]))
+        .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, Shape::Circle(0.2), CollisionBehavior::Persist, weight))
+        .with(PhysicSpring::new(spring_1, 0.5, 5.0))
+        .with(PhysicDamping(2.))
+        .with(PhysicDynamic)
+        .with(DrawPhysic {
+            color: [0., 0., 0., 1.],
+            border: None,
         })
         .build();
 }

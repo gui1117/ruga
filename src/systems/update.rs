@@ -5,9 +5,33 @@ use specs;
 use physics::{EntityInformation, Resolution, ShapeCast, Collision, CollisionBehavior};
 use components::*;
 use resources::*;
+use specs::Join;
+use utils::math::*;
 
 pub fn add_systems(planner: &mut ::specs::Planner<UpdateContext>) {
+    planner.add_system(SpringSystem, "spring", 1);
     planner.add_system(PhysicSystem, "physic", 0);
+}
+pub struct SpringSystem;
+impl specs::System<app::UpdateContext> for SpringSystem {
+    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
+        let (states, mut springs, entities) = arg.fetch(|world| {
+            (
+                world.read::<PhysicState>(),
+                world.write::<PhysicSpring>(),
+                world.entities(),
+            )
+        });
+        for (mut spring, state, entity) in (&mut springs, &states, &entities).iter() {
+            if let Some(anchor_state) = states.get(spring.anchor) {
+                let self_to_anchor = sub(anchor_state.pos, state.pos);
+                spring.angle = angle(self_to_anchor);
+                spring.delta_len = norm(self_to_anchor) - spring.free_len;
+            } else {
+                spring.delta_len = 0.;
+            }
+        }
+    }
 }
 
 pub struct PhysicSystem;
@@ -15,13 +39,14 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
     fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
         use std::f32::consts::PI;
         use std::f32;
-        use specs::Join;
 
-        let (dynamics, mut states, forces, types, mut physic_world, entities) = arg.fetch(|world| {
+        let (dynamics, mut states, dampings, forces, springs, types, mut physic_world, entities) = arg.fetch(|world| {
             (
                 world.read::<PhysicDynamic>(),
                 world.write::<PhysicState>(),
+                world.read::<PhysicDamping>(),
                 world.read::<PhysicForce>(),
+                world.read::<PhysicSpring>(),
                 world.read::<PhysicType>(),
                 world.write_resource::<PhysicWorld>(),
                 world.entities(),
@@ -32,11 +57,24 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
 
         let mut resolutions = FnvHashMap::<specs::Entity,Resolution>::default();
 
-        physic_world.movable = FnvHashMap::default();
-        for (_, state, force, typ, entity) in (&dynamics, &mut states, &forces, &types, &entities).iter() {
-            state.acc[0] = (typ.force*force.strength*force.angle.cos() - typ.damping*state.vel[0])/typ.weight;
+        for (_, state, typ, entity) in (&dynamics, &mut states, &types, &entities).iter() {
+            let mut f = [0., 0.];
 
-            state.acc[1] = (typ.force*force.strength*force.angle.sin() - typ.damping*state.vel[1])/typ.weight;
+            if let Some(&PhysicDamping(damping)) = dampings.get(entity) {
+                f[0] -= damping*state.vel[0];
+                f[1] -= damping*state.vel[1];
+            }
+            if let Some(force) = forces.get(entity) {
+                f[0] += force.coef*force.strength*force.angle.cos();
+                f[1] += force.coef*force.strength*force.angle.sin();
+            }
+            if let Some(spring) = springs.get(entity) {
+                f[0] += spring.coef*spring.delta_len*spring.angle.cos();
+                f[1] += spring.coef*spring.delta_len*spring.angle.sin();
+            }
+
+            state.acc[0] = f[0]/typ.weight;
+            state.acc[1] = f[1]/typ.weight;
 
             state.vel[0] += dt*state.acc[0];
             state.vel[1] += dt*state.acc[1];
@@ -51,6 +89,7 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
                 shape: typ.shape.clone(),
                 mask: typ.mask,
                 group: typ.group,
+                not: vec!(entity),
             };
 
             physic_world.apply_on_shape(&shape_cast, &mut |other_info,collision| {
@@ -59,9 +98,6 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
                     (f32::MAX, f32::MAX) => 0.5,
                     (f32::MAX, _) => 1.,
                     (_, f32::MAX) => 0.,
-                    (0., 0.) => 0.5,
-                    (0., _) => 0.,
-                    (_, 0.) => 1.,
                     _ => typ.weight/(typ.weight+other_type.weight),
                 };
 

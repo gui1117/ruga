@@ -101,5 +101,5 @@ function update_player_run_dir()
 end
 
 add_wall(0.0, 0.0, 5.0, 10.0)
-add_character(0.0, 0.0, 1.0, velocity, time_to_reach_vmax, weight)
+add_character(10.0, 10.0, 1.0, velocity, time_to_reach_vmax, weight)
 fill_physic_world()

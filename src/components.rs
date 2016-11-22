@@ -17,11 +17,13 @@ macro_rules! impl_component {
 impl_component! {
     PhysicState: VecStorage,
     PhysicType: VecStorage,
+    PhysicDamping: VecStorage,
     PhysicForce: VecStorage,
     PhysicDynamic: NullStorage,
     PhysicStatic: NullStorage,
     DrawPhysic: VecStorage,
     PlayerControl: NullStorage,
+    PhysicSpring: VecStorage,
 }
 
 #[derive(Clone)]
@@ -44,33 +46,25 @@ impl PhysicState {
 pub struct PhysicType {
     pub shape: Shape,
     pub collision: CollisionBehavior,
-    pub damping: f32,
-    pub force: f32,
     pub weight: f32,
     pub group: u32,
     pub mask: u32,
 }
 impl PhysicType {
-    pub fn new_movable(group: u32, mask: u32, shape: Shape, collision: CollisionBehavior, velocity: f32, time_to_reach_v_max: f32, weight: f32) -> Self {
-        let damping = -weight * (1. - PHYSIC_RATE).ln() / time_to_reach_v_max;
-        let force = velocity * damping;
+    pub fn new_movable(group: u32, mask: u32, shape: Shape, collision: CollisionBehavior, weight: f32) -> PhysicType {
         PhysicType {
             shape: shape,
             collision: collision,
             weight: weight,
-            damping: damping,
-            force: force,
             group: group,
             mask: mask,
         }
     }
-    pub fn new_static(group: u32, mask: u32, shape: Shape) -> Self {
+    pub fn new_static(group: u32, mask: u32, shape: Shape) -> PhysicType {
         PhysicType {
             shape: shape,
             collision: CollisionBehavior::Persist,
             weight: ::std::f32::MAX,
-            force: 0.,
-            damping: 0.,
             group: group,
             mask: mask,
         }
@@ -81,12 +75,36 @@ impl PhysicType {
 pub struct PhysicForce {
     pub angle: f32,
     pub strength: f32,
+    pub coef: f32,
 }
+
+#[derive(Clone)]
+pub struct PhysicDamping(pub f32);
 
 #[derive(Clone)]
 pub struct DrawPhysic {
     pub border: Option<(f32, [f32;4])>,
     pub color: [f32; 4],
+}
+
+#[derive(Clone)]
+pub struct PhysicSpring {
+    pub anchor: specs::Entity,
+    pub free_len: f32,
+    pub coef: f32,
+    pub delta_len: f32,
+    pub angle: f32,
+}
+impl PhysicSpring {
+    pub fn new(anchor: specs::Entity, free_len: f32, coef: f32) -> PhysicSpring {
+        PhysicSpring {
+            anchor: anchor,
+            free_len: free_len,
+            coef: coef,
+            delta_len: 0.,
+            angle: 0.,
+        }
+    }
 }
 
 #[derive(Clone,Copy,Default)]

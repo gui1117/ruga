@@ -1,5 +1,11 @@
 pub const PHYSIC_RATE: f32 = 0.9;
 
+pub fn compute_force_damping(velocity: f32, time_to_reach_v_max: f32, weight: f32) -> (f32, f32) {
+    let damping = -weight * (1. - PHYSIC_RATE).ln() / time_to_reach_v_max;
+    let force = velocity * damping;
+    (force, damping)
+}
+
 pub struct Resolution {
     pub dx: f32,
     pub dy: f32,
@@ -25,6 +31,7 @@ pub struct RayCast {
     pub length: f32,
     pub mask: u32,
     pub group: u32,
+    pub not: Vec<::specs::Entity>,
 }
 
 pub enum ContinueOrStop {
@@ -38,6 +45,7 @@ pub struct ShapeCast {
     pub shape: Shape,
     pub mask: u32,
     pub group: u32,
+    pub not: Vec<::specs::Entity>,
 }
 
 /// if A collide with B then collision must represent
