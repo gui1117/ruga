@@ -11,6 +11,7 @@ pub fn run(world: &mut specs::World, frame: &mut graphics::Frame) {
     draw_notifications(world, frame);
     draw_physic(world, frame);
     draw_cursor(world, frame);
+    draw_scarf(world, frame);
 }
 
 const NOTIFICATION_DL: f32 = 0.03;
@@ -94,5 +95,20 @@ fn draw_physic(world: &mut specs::World, frame: &mut graphics::Frame) {
                 Shape::Rectangle(width, height) => frame.draw_rectangle(state.pos[0], state.pos[1], width, height, Layer::Middle, draw.color),
             }
         }
+    }
+}
+
+fn draw_scarf(world: &mut specs::World, frame: &mut graphics::Frame) {
+    let scarfs = world.read::<Scarf>();
+    let orientations = world.read::<Orientation>();
+    let states = world.read::<PhysicState>();
+    let entities = world.entities();
+
+    for (scarf, entity) in (&scarfs, &entities).iter() {
+        let first_angle = orientations.get(scarf.orientation).expect("scarf orientation expect an orientation").0;
+        let points = scarf.points.iter()
+            .map(|&entity| states.get(entity).expect("scarf point expect a state").pos)
+            .collect::<Vec<[f32; 2]>>();
+        frame.draw_scarf(points, scarf.width, scarf.stiffness, first_angle, Layer::Middle, [0., 0., 0., 1.]);
     }
 }

@@ -113,7 +113,7 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
                         dx: -collision.delta_x*rate,
                         dy: -collision.delta_y*rate,
                     };
-                    resolutions.entry(entity).or_insert(Resolution::none()).push(resolution);
+                    resolutions.entry(other_info.entity).or_insert(Resolution::none()).push(resolution);
                 }
             });
 

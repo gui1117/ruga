@@ -395,10 +395,6 @@ impl<'a> Frame<'a> {
         }
     }
 
-    pub fn draw_square(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: [f32; 4]) {
-        self.draw_rectangle(x, y, radius * 2., radius * 2., layer, color);
-    }
-
     #[inline]
     fn camera(&self, layer: Layer) -> [[f32; 4]; 4] {
         if layer.billboard() {
@@ -406,6 +402,10 @@ impl<'a> Frame<'a> {
         } else {
             self.camera_matrix
         }
+    }
+
+    pub fn draw_square(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: [f32; 4]) {
+        self.draw_rectangle(x, y, radius * 2., radius * 2., layer, color);
     }
 
     pub fn draw_rectangle(&mut self, x: f32, y: f32, width: f32, height: f32, layer: Layer, color: [f32; 4]) {
@@ -452,13 +452,7 @@ impl<'a> Frame<'a> {
     }
 
     /// (x,y) correspond to the down-left anchor
-    pub fn draw_text(&mut self,
-                     x: f32,
-                     y: f32,
-                     scale: f32,
-                     text: &str,
-                     layer: Layer,
-                     color: [f32; 4]) {
+    pub fn draw_text(&mut self, x: f32, y: f32, scale: f32, text: &str, layer: Layer, color: [f32; 4]) {
         let glyphs = {
             use unicode_normalization::UnicodeNormalization;
 
@@ -636,14 +630,7 @@ impl<'a> Frame<'a> {
             .unwrap();
     }
 
-    pub fn draw_line(&mut self,
-                     p0: (f32, f32),
-                     p1: (f32, f32),
-                     p2: (f32, f32),
-                     p3: (f32, f32),
-                     width: f32,
-                     layer: Layer,
-                     color: [f32; 4]) {
+    pub fn draw_bezier_curve(&mut self, p0: (f32, f32), p1: (f32, f32), p2: (f32, f32), p3: (f32, f32), width: f32, layer: Layer, color: [f32; 4]) {
         let p0 = Vector { x: p0.0, y: p0.1 };
         let p1 = Vector { x: p1.0, y: p1.1 };
         let p2 = Vector { x: p2.0, y: p2.1 };
@@ -655,19 +642,89 @@ impl<'a> Frame<'a> {
         let mut t = 0f32;
 
         for _ in 0..BEZIER_PRECISION + 1 {
-            let p = (1.0 - t).powi(3) * p0 + 3.0 * t * (1.0 - t).powi(2) * p1 +
-                    3.0 * t.powi(2) * (1.0 - t) * p2 + t.powi(3) * p3;
-            let n = 3.0 * (1.0 - t).powi(2) * (p1 - p0) + 6.0 * t * (1.0 - t) * (p2 - p1) +
-                    3.0 * t.powi(2) * (p3 - p2);
-            let o = Vector { x: -n.y, y: n.x };
-            let o = o / (o.x.powi(2) + o.y.powi(2)).sqrt();
+            let point = (1.0 - t).powi(3) * p0 + 3.0 * t * (1.0 - t).powi(2) * p1 + 3.0 * t.powi(2) * (1.0 - t) * p2 + t.powi(3) * p3;
+            let dir = 3.0 * (1.0 - t).powi(2) * (p1 - p0) + 6.0 * t * (1.0 - t) * (p2 - p1) + 3.0 * t.powi(2) * (p3 - p2);
+            let normal = Vector { x: -dir.y, y: dir.x };
+            let normal = normal / (normal.x.powi(2) + normal.y.powi(2)).sqrt();
 
-            let a = p + o * width / 2.0;
-            let b = p - o * width / 2.0;
+            let a = point + normal * width / 2.0;
+            let b = point - normal * width / 2.0;
 
             vertices.push(Vertex { position: [a.x, a.y] });
             vertices.push(Vertex { position: [b.x, b.y] });
             t += dt;
+        }
+
+        let z: f32 = Layer::Billboard.into();
+        let uniform = uniform!{
+            z: z,
+            camera: self.camera(layer),
+            color: color,
+        };
+        let vertex_buffer = glium::VertexBuffer::new(&self.graphics.context, &vertices).unwrap();
+
+        self.frame
+            .draw(&vertex_buffer,
+                  &self.graphics.line_indices,
+                  &self.graphics.line_program,
+                  &uniform,
+                  &self.graphics.draw_parameters)
+            .unwrap();
+    }
+
+    pub fn draw_scarf(&mut self, points: Vec<[f32; 2]>, width: f32, stiffness: f32, first_angle: f32, layer: Layer, color: [f32; 4]) {
+        // TODO maybe normal length are function of length between points
+        use ::utils::math::*;
+        use itertools::Itertools;
+
+        let mut vertices: Vec<Vertex> = vec![];
+
+        if points.len() < 2 { return }
+        if points.len() == 2 { unimplemented!(); }
+
+        let mut iterator: Vec<(Vector<f32>, Vector<f32>, Vector<f32>, Vector<f32>)> = vec!();
+        {
+            let p0 = into_vector(points[0]);
+            let p1 = p0 + angle_into_vector(first_angle) * stiffness;
+
+            let p3 = into_vector(points[1]);
+            let p2 = p3 + stiffness*into_vector(normalize(sub(points[0], points[2])));
+            iterator.push((p0, p1, p2, p3));
+        }
+        for (&a, &b, &c, &d) in points.iter().tuple_windows() {
+            let p0 = into_vector(b);
+            let p1 = p0 + stiffness * into_vector(normalize(sub(c, a)));
+            let p3 = into_vector(c);
+            let p2 = p3 + stiffness * into_vector(normalize(sub(b, d)));
+            iterator.push((p0, p1, p2, p3));
+        }
+        {
+            let len = points.len();
+
+            let p0 = into_vector(points[len - 2]);
+            let p1 = p0 + stiffness*into_vector(normalize(sub(points[len - 1], points[len - 3])));
+            let p3 = into_vector(points[len - 1]);
+            let p2 = p3 + stiffness*into_vector(normalize(sub(points[len - 2], points[len - 1])));
+            iterator.push((p0, p1, p2, p3));
+        }
+
+        for (p0, p1, p2, p3) in iterator {
+            let mut t = 0f32;
+            let dt = 1.0 / BEZIER_PRECISION as f32;
+            for _ in 0..BEZIER_PRECISION + 1 {
+                let mut point = (1.0 - t).powi(3) * p0 + 3.0 * t * (1.0 - t).powi(2) * p1 + 3.0 * t.powi(2) * (1.0 - t) * p2 + t.powi(3) * p3;
+                let dir = 3.0 * (1.0 - t).powi(2) * (p1 - p0) + 6.0 * t * (1.0 - t) * (p2 - p1) + 3.0 * t.powi(2) * (p3 - p2);
+                let normal = Vector { x: -dir.y, y: dir.x };
+                let normal = normal / (normal.x.powi(2) + normal.y.powi(2)).sqrt();
+
+                let a = point + normal * width / 2.0;
+                let b = point - normal * width / 2.0;
+
+                vertices.push(Vertex { position: [a.x, a.y] });
+                vertices.push(Vertex { position: [b.x, b.y] });
+
+                t += dt;
+            }
         }
 
         let z: f32 = Layer::Billboard.into();

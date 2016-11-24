@@ -1,7 +1,9 @@
 use specs;
 use graphics::Layer;
+use specs::InsertResult;
 use components::*;
 use physics::{self, Shape, CollisionBehavior};
+use std::f32;
 
 macro_rules! entity_builder {
     ($($entity:ident($($var_name:ident: $var_type:ident),*),)*) => {
@@ -53,11 +55,11 @@ entity_builder! {
     add_character(x: f32, y: f32, r: f32, velocity: f32, time_to_reach_v_max: f32, weight: f32),
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]const WALL_GROUP:  u32 = 0b00000000000000000000000000000001;
-#[cfg_attr(rustfmt, rustfmt_skip)]const CHAR_GROUP:  u32 = 0b00000000000000000000000000000010;
+const WALL_GROUP:  u32 = 0b00000000000000000000000000000001;
+const CHAR_GROUP:  u32 = 0b00000000000000000000000000000010;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]const WALL_MASK:   u32 = 0b11111111111111111111111111111111;
-#[cfg_attr(rustfmt, rustfmt_skip)]const CHAR_MASK:   u32 = 0b11111111111111111111111111111111;
+const WALL_MASK:   u32 = 0b11111111111111111111111111111111;
+const CHAR_MASK:   u32 = 0b11111111111111111111111111111111;
 
 pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f32) {
     let shape = Shape::Rectangle(width, height);
@@ -75,7 +77,7 @@ pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f3
 pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity: f32, time_to_reach_vmax: f32, weight: f32) {
     let shape = Shape::Circle(r);
     let (force, damping) = physics::compute_force_damping(velocity, time_to_reach_vmax, weight);
-    let entity = world.create_now()
+    let char_entity = world.create_now()
         .with(PhysicState::new([x, y]))
         .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, shape, CollisionBehavior::Persist, weight))
         .with(PhysicForce {
@@ -86,33 +88,52 @@ pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity:
         .with(PhysicDamping(damping))
         .with(PhysicDynamic)
         .with(PlayerControl)
+        .with(Orientation(0.5))
         .with(DrawPhysic {
             color: [1., 1., 1., 1.],
             border: Some((0.3, [0., 0., 0., 1.])),
         })
         .build();
 
-    let spring_1 = world.create_now()
+    let weight = weight/1000.;
+    let (force, damping) = physics::compute_force_damping(velocity, time_to_reach_vmax, weight);
+    let mut last_spring = world.create_now()
         .with(PhysicState::new([x-2.0, y]))
         .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, Shape::Circle(0.2), CollisionBehavior::Persist, weight))
-        .with(PhysicSpring::new(entity, 2.0, 5.0))
-        .with(PhysicDamping(2.))
+        .with(PhysicSpring::new(char_entity, 2.0, force/2.))
+        .with(PhysicDamping(damping))
         .with(PhysicDynamic)
         .with(DrawPhysic {
-            color: [0., 0., 0., 1.],
+            color: [0., 1., 0., 0.5],
             border: None,
         })
         .build();
+    let mut scarf_points = vec!(last_spring);
 
-    let spring_2 = world.create_now()
-        .with(PhysicState::new([x-2.0, y]))
-        .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, Shape::Circle(0.2), CollisionBehavior::Persist, weight))
-        .with(PhysicSpring::new(spring_1, 0.5, 5.0))
-        .with(PhysicDamping(2.))
-        .with(PhysicDynamic)
-        .with(DrawPhysic {
-            color: [0., 0., 0., 1.],
-            border: None,
-        })
+    for _ in 0..5 {
+        last_spring = world.create_now()
+            .with(PhysicState::new([x-2.0, y]))
+            .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, Shape::Circle(0.2), CollisionBehavior::Persist, weight))
+            .with(PhysicSpring::new(last_spring, 1.5, force/2.))
+            .with(PhysicDamping(damping))
+            .with(PhysicDynamic)
+            .with(DrawPhysic {
+                color: [0., 1., 0., 0.5],
+                border: None,
+            })
         .build();
+        scarf_points.push(last_spring);
+    }
+
+    let mut scarfs = world.write::<Scarf>();
+    match scarfs.insert(char_entity, Scarf {
+        points: scarf_points,
+        orientation: char_entity,
+        stiffness: 0.5,
+        width: 0.1,
+    }) {
+        InsertResult::Inserted => (),
+        _ => unreachable!(),
+    }
+    //TODO add scarf
 }

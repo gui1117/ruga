@@ -24,6 +24,8 @@ impl_component! {
     DrawPhysic: VecStorage,
     PlayerControl: NullStorage,
     PhysicSpring: VecStorage,
+    Scarf: HashMapStorage,
+    Orientation: VecStorage,
 }
 
 #[derive(Clone)]
@@ -105,6 +107,17 @@ impl PhysicSpring {
             angle: 0.,
         }
     }
+}
+
+#[derive(Clone)]
+pub struct Orientation(pub f32);
+
+#[derive(Clone)]
+pub struct Scarf {
+    pub points: Vec<specs::Entity>,
+    pub orientation: specs::Entity,
+    pub stiffness: f32,
+    pub width: f32,
 }
 
 #[derive(Clone,Copy,Default)]

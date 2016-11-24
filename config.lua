@@ -1,4 +1,4 @@
-velocity = 10.0
+velocity = 30.0
 time_to_reach_vmax = 0.1
 weight = 1.0
 
