@@ -1,6 +1,7 @@
 velocity = 30.0
 time_to_reach_vmax = 0.1
 weight = 1.0
+zoom = 0.05
 
 run_keys = {z="up", s="down", q="left", d="right"}
 
@@ -100,6 +101,20 @@ function update_player_run_dir()
 	set_player_force(angle, strength)
 end
 
+function mouse_moved(x, y)
+	set_player_orientation(math.atan2(y,x))
+end
+
+function mouse_wheel(horizontal, vertical)
+	zoom = zoom + vertical*0.01
+	update_zoom()
+end
+
+function update_zoom()
+	set_zoom(zoom)
+end
+
+set_zoom(zoom)
 add_wall(0.0, 0.0, 5.0, 10.0)
 add_character(10.0, 10.0, 1.0, velocity, time_to_reach_vmax, weight)
 fill_physic_world()

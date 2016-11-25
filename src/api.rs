@@ -69,8 +69,11 @@ macro_rules! api_caller {
 // fn restart(&mut self);
 // fn pause(&mut self);
 // fn resume(&mut self);
-// fn set_zoom(&mut self, zoom: f32);
 api_caller! {
+    /// Set zoom
+    fn set_zoom(zoom: f32);
+    /// Set player orienation (gun ...)
+    fn set_player_orientation(angle: f32);
     /// Set player force
     fn set_player_force(angle: f32, strength: f32);
     /// Quit the game

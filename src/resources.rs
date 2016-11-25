@@ -3,6 +3,8 @@ use components::*;
 use specs::Join;
 use std::collections::HashSet;
 
+const DEFAULT_ZOOM: f32 = 0.05;
+
 macro_rules! impl_resource {
     ($($typ:ident,)*) => { impl_resource!{ $($typ),* } };
     ($($typ:ident),*) => {
@@ -16,12 +18,20 @@ impl_resource! {
     Notifications,
     PhysicWorld,
     Cursor,
+    Zoom,
 }
 
 pub struct Notifications(pub Vec<(String, usize)>);
 impl Notifications {
     pub fn new() -> Self {
         Notifications(Vec::new())
+    }
+}
+
+pub struct Zoom(pub f32);
+impl Zoom {
+    pub fn new() -> Self {
+        Zoom(DEFAULT_ZOOM)
     }
 }
 

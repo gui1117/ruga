@@ -47,13 +47,23 @@ impl App {
         }
     }
     pub fn update(&mut self, dt: f32) {
-        // TODO Physic world update
         let context = UpdateContext { dt: dt };
         self.planner.dispatch(context);
         self.planner.wait();
     }
     pub fn draw(&mut self, frame: glium::Frame) {
-        let camera = Camera::new(0.0, 0.0, 0.05);
+        let camera = {
+            let mut world = self.planner.mut_world();
+            let players = world.read::<components::PlayerControl>();
+            let states = world.read::<components::PhysicState>();
+            let zoom = world.read_resource::<resources::Zoom>().0;
+
+            let mut pos = [0.,0.];
+            for (_, state) in (&players, &states).iter() {
+                pos =  state.pos;
+            }
+            Camera::new(pos[0], pos[1], zoom)
+        };
         let mut frame = Frame::new(&mut self.graphics, frame, &camera);
         systems::draw::run(self.planner.mut_world(), &mut frame);
         frame.finish().unwrap();
@@ -78,6 +88,14 @@ impl App {
 impl_entity_builder!(App);
 
 impl api::Caller for App {
+    fn set_player_orientation(&mut self, angle: f32) {
+        let mut world = self.planner.mut_world();
+        let players = world.read::<components::PlayerControl>();
+        let mut orientations = world.write::<components::Orientation>();
+        for (_, mut orientation) in (&players, &mut orientations).iter() {
+            orientation.0 = angle;
+        }
+    }
     fn set_player_force(&mut self, angle: f32, strength: f32) {
         let mut world = self.planner.mut_world();
         let players = world.read::<components::PlayerControl>();
@@ -106,5 +124,10 @@ impl api::Caller for App {
         let mut world = self.planner.mut_world();
         let mut physic_world = world.write_resource::<resources::PhysicWorld>();
         physic_world.fill(world);
+    }
+    fn set_zoom(&mut self, new_zoom: f32) {
+        let mut world = self.planner.mut_world();
+        let ref mut zoom = world.write_resource::<resources::Zoom>().0;
+        *zoom = new_zoom;
     }
 }
