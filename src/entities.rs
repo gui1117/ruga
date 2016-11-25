@@ -100,22 +100,25 @@ pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity:
     let mut last_spring = world.create_now()
         .with(PhysicState::new([x-2.0, y]))
         .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, Shape::Circle(0.2), CollisionBehavior::Persist, weight))
-        .with(PhysicSpring::new(char_entity, 2.0, force/2.))
-        .with(PhysicDamping(damping))
         .with(PhysicDynamic)
         .with(DrawPhysic {
             color: [0., 1., 0., 0.5],
             border: None,
         })
+        .with(Anchor {
+            anchor: char_entity,
+            angle: f32::consts::PI,
+            distance: 1.0,
+        })
         .build();
     let mut scarf_points = vec!(last_spring);
 
-    for _ in 0..5 {
+    for _ in 0..4 {
         last_spring = world.create_now()
             .with(PhysicState::new([x-2.0, y]))
             .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, Shape::Circle(0.2), CollisionBehavior::Persist, weight))
-            .with(PhysicSpring::new(last_spring, 1.5, force/2.))
-            .with(PhysicDamping(damping))
+            .with(PhysicSpring::new(last_spring, 0.7, force/2.))
+            .with(PhysicDamping(damping/2.))
             .with(PhysicDynamic)
             .with(DrawPhysic {
                 color: [0., 1., 0., 0.5],
@@ -135,5 +138,4 @@ pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity:
         InsertResult::Inserted => (),
         _ => unreachable!(),
     }
-    //TODO add scarf
 }

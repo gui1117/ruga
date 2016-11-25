@@ -6,6 +6,7 @@ use app;
 use resources::*;
 use components::*;
 use colors;
+use std::f32::consts::PI;
 
 pub fn run(world: &mut specs::World, frame: &mut graphics::Frame) {
     draw_notifications(world, frame);
@@ -105,7 +106,7 @@ fn draw_scarf(world: &mut specs::World, frame: &mut graphics::Frame) {
     let entities = world.entities();
 
     for (scarf, entity) in (&scarfs, &entities).iter() {
-        let first_angle = orientations.get(scarf.orientation).expect("scarf orientation expect an orientation").0;
+        let first_angle = PI + orientations.get(scarf.orientation).expect("scarf orientation expect an orientation").0;
         let points = scarf.points.iter()
             .map(|&entity| states.get(entity).expect("scarf point expect a state").pos)
             .collect::<Vec<[f32; 2]>>();

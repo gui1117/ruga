@@ -26,6 +26,7 @@ impl_component! {
     PhysicSpring: VecStorage,
     Scarf: HashMapStorage,
     Orientation: VecStorage,
+    Anchor: HashMapStorage,
 }
 
 #[derive(Clone)]
@@ -118,6 +119,13 @@ pub struct Scarf {
     pub orientation: specs::Entity,
     pub stiffness: f32,
     pub width: f32,
+}
+
+#[derive(Clone)]
+pub struct Anchor {
+    pub anchor: specs::Entity,
+    pub angle: f32,
+    pub distance: f32,
 }
 
 #[derive(Clone,Copy,Default)]

@@ -9,9 +9,41 @@ use specs::Join;
 use utils::math::*;
 
 pub fn add_systems(planner: &mut ::specs::Planner<UpdateContext>) {
+    planner.add_system(AnchorSystem, "anchor", 2);
     planner.add_system(SpringSystem, "spring", 1);
     planner.add_system(PhysicSystem, "physic", 0);
 }
+
+pub struct AnchorSystem;
+impl specs::System<app::UpdateContext> for AnchorSystem {
+    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
+        let (anchors, mut states, orientations, entities) = arg.fetch(|world| {
+            (
+                world.read::<Anchor>(),
+                world.write::<PhysicState>(),
+                world.read::<Orientation>(),
+                world.entities(),
+            )
+        });
+        for (anchor, entity) in (&anchors, &entities).iter() {
+            let anchor_state = states.get(anchor.anchor)
+                .expect("anchor anchor expect a state").clone();
+            let mut entity_state = states.get_mut(entity)
+                .expect("anchor entity expect a state");
+            let anchor_orientation = orientations.get(anchor.anchor)
+                .expect("for now anchor anchor expect orientation").0;
+
+            let angle = anchor_orientation + anchor.angle;
+
+            entity_state.pos[0] = anchor_state.pos[0] + anchor.distance * angle.cos();
+            entity_state.pos[1] = anchor_state.pos[1] + anchor.distance * angle.sin();
+
+            entity_state.vel = [0., 0.];
+            entity_state.acc = [0., 0.];
+        }
+    }
+}
+
 pub struct SpringSystem;
 impl specs::System<app::UpdateContext> for SpringSystem {
     fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
