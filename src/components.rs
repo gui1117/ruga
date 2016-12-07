@@ -1,6 +1,7 @@
 use graphics;
 use physics::{CollisionBehavior, Shape, PHYSIC_RATE};
 use specs;
+use weapon;
 
 macro_rules! impl_component {
     ($($typ:ident: $storage:ident,)*) => {
@@ -23,10 +24,9 @@ impl_component! {
     PhysicStatic: NullStorage,
     DrawPhysic: VecStorage,
     PlayerControl: NullStorage,
-    PhysicSpring: VecStorage,
-    Scarf: HashMapStorage,
-    Orientation: VecStorage,
-    Anchor: HashMapStorage,
+    Aim: HashMapStorage,
+    Shoot: HashMapStorage,
+    Weapon: HashMapStorage,
 }
 
 #[derive(Clone)]
@@ -91,41 +91,18 @@ pub struct DrawPhysic {
 }
 
 #[derive(Clone)]
-pub struct PhysicSpring {
-    pub anchor: specs::Entity,
-    pub free_len: f32,
-    pub coef: f32,
-    pub delta_len: f32,
-    pub angle: f32,
-}
-impl PhysicSpring {
-    pub fn new(anchor: specs::Entity, free_len: f32, coef: f32) -> PhysicSpring {
-        PhysicSpring {
-            anchor: anchor,
-            free_len: free_len,
-            coef: coef,
-            delta_len: 0.,
-            angle: 0.,
-        }
-    }
-}
+pub struct Aim(pub f32);
 
 #[derive(Clone)]
-pub struct Orientation(pub f32);
+pub struct Shoot(pub bool);
 
 #[derive(Clone)]
-pub struct Scarf {
-    pub points: Vec<specs::Entity>,
-    pub orientation: specs::Entity,
-    pub stiffness: f32,
-    pub width: f32,
-}
-
-#[derive(Clone)]
-pub struct Anchor {
-    pub anchor: specs::Entity,
-    pub angle: f32,
-    pub distance: f32,
+pub struct Weapon {
+    pub reload_factor: f32,
+    pub setup_factor: f32,
+    pub setdown_factor: f32,
+    pub state: weapon::State,
+    pub kind: weapon::Kind,
 }
 
 #[derive(Clone,Copy,Default)]

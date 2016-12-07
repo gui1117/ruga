@@ -1,4 +1,5 @@
 use specs;
+use weapon;
 use graphics::Layer;
 use specs::InsertResult;
 use components::*;
@@ -86,56 +87,13 @@ pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity:
             coef: force,
         })
         .with(PhysicDamping(damping))
+        .with(weapon::sniper())
         .with(PhysicDynamic)
         .with(PlayerControl)
-        .with(Orientation(0.5))
+        .with(Aim(0.5))
         .with(DrawPhysic {
             color: [1., 1., 1., 1.],
             border: Some((0.3, [0., 0., 0., 1.])),
         })
         .build();
-
-    let weight = weight/1000.;
-    let (force, damping) = physics::compute_force_damping(velocity, time_to_reach_vmax, weight);
-    let mut last_spring = world.create_now()
-        .with(PhysicState::new([x-2.0, y]))
-        .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, Shape::Circle(0.2), CollisionBehavior::Persist, weight))
-        .with(PhysicDynamic)
-        .with(DrawPhysic {
-            color: [0., 1., 0., 0.5],
-            border: None,
-        })
-        .with(Anchor {
-            anchor: char_entity,
-            angle: f32::consts::PI,
-            distance: 1.0,
-        })
-        .build();
-    let mut scarf_points = vec!(last_spring);
-
-    for _ in 0..4 {
-        last_spring = world.create_now()
-            .with(PhysicState::new([x-2.0, y]))
-            .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, Shape::Circle(0.2), CollisionBehavior::Persist, weight))
-            .with(PhysicSpring::new(last_spring, 0.7, force/2.))
-            .with(PhysicDamping(damping/2.))
-            .with(PhysicDynamic)
-            .with(DrawPhysic {
-                color: [0., 1., 0., 0.5],
-                border: None,
-            })
-        .build();
-        scarf_points.push(last_spring);
-    }
-
-    let mut scarfs = world.write::<Scarf>();
-    match scarfs.insert(char_entity, Scarf {
-        points: scarf_points,
-        orientation: char_entity,
-        stiffness: 0.5,
-        width: 0.1,
-    }) {
-        InsertResult::Inserted => (),
-        _ => unreachable!(),
-    }
 }

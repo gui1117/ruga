@@ -88,12 +88,12 @@ impl App {
 impl_entity_builder!(App);
 
 impl api::Caller for App {
-    fn set_player_orientation(&mut self, angle: f32) {
+    fn set_player_aim(&mut self, angle: f32) {
         let mut world = self.planner.mut_world();
         let players = world.read::<components::PlayerControl>();
-        let mut orientations = world.write::<components::Orientation>();
-        for (_, mut orientation) in (&players, &mut orientations).iter() {
-            orientation.0 = angle;
+        let mut aims = world.write::<components::Aim>();
+        for (_, mut aim) in (&players, &mut aims).iter() {
+            aim.0 = angle;
         }
     }
     fn set_player_force(&mut self, angle: f32, strength: f32) {

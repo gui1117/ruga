@@ -38,6 +38,7 @@ mod systems;
 mod components;
 mod colors;
 mod physics;
+mod weapon;
 
 pub use api::Caller;
 pub use api::Callee;

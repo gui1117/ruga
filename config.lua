@@ -102,7 +102,7 @@ function update_player_run_dir()
 end
 
 function mouse_moved(x, y)
-	set_player_orientation(math.atan2(y,x))
+	set_player_aim(math.atan2(y,x))
 end
 
 function mouse_wheel(horizontal, vertical)

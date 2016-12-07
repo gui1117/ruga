@@ -73,7 +73,7 @@ api_caller! {
     /// Set zoom
     fn set_zoom(zoom: f32);
     /// Set player orienation (gun ...)
-    fn set_player_orientation(angle: f32);
+    fn set_player_aim(angle: f32);
     /// Set player force
     fn set_player_force(angle: f32, strength: f32);
     /// Quit the game

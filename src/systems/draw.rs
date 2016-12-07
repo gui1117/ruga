@@ -1,4 +1,5 @@
-use graphics::{self, Layer};
+use graphics::{self, Layer, Transformed, Transformation};
+use weapon;
 use physics::Shape;
 use specs;
 use specs::Join;
@@ -6,13 +7,14 @@ use app;
 use resources::*;
 use components::*;
 use colors;
+use utils::math::*;
 use std::f32::consts::PI;
 
 pub fn run(world: &mut specs::World, frame: &mut graphics::Frame) {
     draw_notifications(world, frame);
     draw_physic(world, frame);
     draw_cursor(world, frame);
-    draw_scarf(world, frame);
+    draw_weapon(world, frame);
 }
 
 const NOTIFICATION_DL: f32 = 0.03;
@@ -31,25 +33,25 @@ fn draw_notifications(world: &mut specs::World, frame: &mut graphics::Frame) {
         *count -= 1;
         let (width, height) = frame.get_size(NOTIFICATION_SCALE, &*notification);
         {
-            let width = width + NOTIFICATION_BIG_MARGIN * 2.0;
-            let height = height + NOTIFICATION_BIG_MARGIN * 2.0;
-            let x = x + width / 2.0;
-            let y = y + height / 2.0;
-            frame.draw_rectangle(x, y, width, height, Layer::UnderBillboard, colors::BASE01);
+            let w = width + NOTIFICATION_BIG_MARGIN * 2.0;
+            let h = height + NOTIFICATION_BIG_MARGIN * 2.0;
+            let x = x + w / 2.0;
+            let y = y + h / 2.0;
+            frame.draw_rectangle(x, y, w, h, Layer::UnderBillboard, colors::BLACK);
         }
         {
-            let width = width + NOTIFICATION_SMALL_MARGIN * 2.0;
-            let height = height + NOTIFICATION_SMALL_MARGIN * 2.0;
-            let x = x + width / 2.0 + NOTIFICATION_BIG_MARGIN / 2.0;
-            let y = y + height / 2.0 + NOTIFICATION_BIG_MARGIN / 2.0;
-            frame.draw_rectangle(x, y, width, height, Layer::UnderBillboard, colors::BASE2);
+            let w = width + NOTIFICATION_SMALL_MARGIN * 2.0;
+            let h = height + NOTIFICATION_SMALL_MARGIN * 2.0;
+            let x = x + w / 2.0 + NOTIFICATION_BIG_MARGIN / 2.0;
+            let y = y + h / 2.0 + NOTIFICATION_BIG_MARGIN / 2.0;
+            frame.draw_rectangle(x, y, w, h, Layer::UnderBillboard, colors::WHITE);
         }
         frame.draw_text(x + NOTIFICATION_BIG_MARGIN,
                         y + NOTIFICATION_BIG_MARGIN / 2.,
                         NOTIFICATION_SCALE,
                         notification,
                         Layer::UnderBillboard,
-                        colors::BASE03);
+                        colors::BLACK);
         y += height + NOTIFICATION_BIG_MARGIN * 2.0;
     }
 
@@ -67,10 +69,10 @@ fn draw_cursor(world: &mut specs::World, frame: &mut graphics::Frame) {
     let height = CURSOR_THICKNESS;
     let dx = -CURSOR_GAP / 2. - width / 2.;
 
-    frame.draw_rectangle(cursor.x - dx, cursor.y, width, height, Layer::Billboard, [0., 0., 0., 1.0]);
-    frame.draw_rectangle(cursor.x + dx, cursor.y, width, height, Layer::Billboard, [0., 0., 0., 1.0]);
-    frame.draw_rectangle(cursor.x, cursor.y + dx, height, width, Layer::Billboard, [0., 0., 0., 1.0]);
-    frame.draw_rectangle(cursor.x, cursor.y - dx, height, width, Layer::Billboard, [0., 0., 0., 1.0]);
+    frame.draw_rectangle(cursor.x - dx, cursor.y, width, height, Layer::Billboard, colors::BLACK);
+    frame.draw_rectangle(cursor.x + dx, cursor.y, width, height, Layer::Billboard, colors::BLACK);
+    frame.draw_rectangle(cursor.x, cursor.y + dx, height, width, Layer::Billboard, colors::BLACK);
+    frame.draw_rectangle(cursor.x, cursor.y - dx, height, width, Layer::Billboard, colors::BLACK);
 }
 
 fn draw_physic(world: &mut specs::World, frame: &mut graphics::Frame) {
@@ -99,17 +101,43 @@ fn draw_physic(world: &mut specs::World, frame: &mut graphics::Frame) {
     }
 }
 
-fn draw_scarf(world: &mut specs::World, frame: &mut graphics::Frame) {
-    let scarfs = world.read::<Scarf>();
-    let orientations = world.read::<Orientation>();
+fn draw_weapon(world: &mut specs::World, frame: &mut graphics::Frame) {
     let states = world.read::<PhysicState>();
-    let entities = world.entities();
+    let weapons = world.read::<Weapon>();
+    let aims = world.read::<Aim>();
 
-    for (scarf, entity) in (&scarfs, &entities).iter() {
-        let first_angle = PI + orientations.get(scarf.orientation).expect("scarf orientation expect an orientation").0;
-        let points = scarf.points.iter()
-            .map(|&entity| states.get(entity).expect("scarf point expect a state").pos)
-            .collect::<Vec<[f32; 2]>>();
-        frame.draw_scarf(points, scarf.width, scarf.stiffness, first_angle, Layer::Middle, [0., 0., 0., 1.]);
+    for (weapon, state, aim) in (&weapons, &states, &aims).iter() {
+        match weapon.kind {
+            weapon::Kind::Sniper => draw_sniper(state.pos, aim.0, weapon.state.clone(), frame),
+            _ => unimplemented!(),
+        }
     }
+}
+
+fn draw_sniper(pos: [f32; 2], aim: f32, state: weapon::State, frame: &mut graphics::Frame) {
+    use weapon::State::*;
+    let (delta_x, delta_angle) = match state {
+        Setup(t) => (0., 0.),
+        Ready => (0., 0.),
+        Reload(t) => (0., 0.),
+        Setdown(t) => (0., 0.),
+    };
+
+    let parent_trans = Transformation::identity()
+        .translate(pos[0]+4., pos[1])
+        .rotate(aim + delta_angle);
+
+    // // maybe use freecad
+    // let black = [
+    //     parent_trans.translate(-0.6, 0.).scale(1.6, 0.2),
+    //     parent_trans.translate(1.0, 0.).scale(2.0, 0.1),
+    //     parent_trans.translate(0., 0.2).scale(0.2, 0.2),
+    //     parent_trans.translate(0., 0.5).scale(0.6, 0.2),
+    //     parent_trans.translate(-1.8, -0.5).rotate(PI/4.).scale(0.6, 0.2),
+    //     // parent_trans.translate(-1.3, -0.2).scale(0.02, 0.2),
+    //     // parent_trans.translate(-1.0, -0.3).scale(0.2, 0.02),
+    // ];
+    // for &trans in black.iter() {
+    //     frame.draw_quad(trans, Layer::Middle, [0., 0., 0., 1.]);
+    // }
 }
