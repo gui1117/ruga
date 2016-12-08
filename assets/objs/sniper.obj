@@ -1,0 +1,9 @@
+# FreeCAD v0.16 build Arch module
+# http://www.freecadweb.org
+o Ruled_Surface
+v 1664.386944 -45.958458 0.0
+v 464.386944 54.041542 0.0
+v 1664.386944 54.041542 0.0
+v 464.386944 -45.958458 0.0
+f 1 2 3
+f 1 4 2

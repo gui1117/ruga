@@ -1,6 +1,6 @@
 use arrayvec;
 use vecmath;
-use glium::{self, Blend, SwapBuffersError, Surface, VertexBuffer, index, Program, DrawParameters, Depth, DepthTest};
+use glium::{self, Blend, SwapBuffersError, Surface, VertexBuffer, IndexBuffer, index, Program, DrawParameters, Depth, DepthTest};
 use glium::backend::{Facade, Context};
 use glium::program::ProgramCreationError;
 use glium::vertex::BufferCreationError;
@@ -77,9 +77,36 @@ struct FontVertex {
 }
 implement_vertex!(FontVertex, position, tex_coords);
 
+macro_rules! obj {
+    ($($obj:ident: $i:expr,)*) => {
+        pub mod obj {
+            $(pub const $obj: usize = $i;)*
+        }
+
+        fn objs() -> Vec<&'static str> {
+            vec!($(include_str!(concat!(
+                            "../assets/objs/",
+                            stringify!($obj),
+                            ".obj"
+            )))*)
+        }
+    }
+}
+
+obj! {
+    sniper: 0,
+}
+
+fn load_obj(file: &'static str) -> (VertexBuffer<Vertex>, IndexBuffer<u8>) {
+    //TODO use regexp
+    unimplemented!()
+}
+
 pub struct Graphics {
     context: Rc<Context>,
 
+    obj_vertex_buffer: Vec<VertexBuffer<Vertex>>,
+    obj_indices: Vec<IndexBuffer<u8>>,
     quad_vertex_buffer: VertexBuffer<Vertex>,
     quad_indices: index::NoIndices,
     circle_vertex_buffer: VertexBuffer<Vertex>,
@@ -240,7 +267,7 @@ impl Graphics {
             ..Default::default()
         };
 
-        let font_data = include_bytes!("../assets/DejaVuSansMono-Bold.ttf");
+        let font_data = include_bytes!("../assets/fonts/DejaVuSansMono-Bold.ttf");
         let font = FontCollection::from_bytes(SharedBytes::ByRef(font_data)).into_font()
             .ok_or(GraphicsError::InvalidFont)?;
 
@@ -289,9 +316,19 @@ impl Graphics {
             glium::texture::UncompressedFloatFormat::U8,
             glium::texture::MipmapsOption::NoMipmap)?;
 
+        let mut obj_vertex_buffer = vec!();
+        let mut obj_indices = vec!();
+        for obj in objs() {
+            let (vertices, indices) = load_obj(obj);
+            obj_vertex_buffer.push(vertices);
+            obj_indices.push(indices);
+        }
+
         Ok(Graphics {
             context: facade.get_context().clone(),
 
+            obj_vertex_buffer: obj_vertex_buffer,
+            obj_indices: obj_indices,
             quad_vertex_buffer: quad_vertex_buffer,
             quad_indices: quad_indices,
             circle_vertex_buffer: circle_vertex_buffer,
@@ -403,8 +440,29 @@ impl<'a> Frame<'a> {
         }
     }
 
-    // pub fn draw_mesh(&mut self, x: f32, y: f32, angle: f32, mesh: TODO, layer: Layer, color: [f32; 4]) {
-    // }
+    pub fn draw_obj(&mut self, x: f32, y: f32, angle: f32, obj: usize, layer: Layer, color: [f32; 4]) {
+        let trans = {
+                 //TODO TODO
+            [[1./ 2., 0., 0., 0.],
+             [0., 1./ 2., 0., 0.],
+             [0., 0., 1., 0.],
+             [x, y, layer.into(), 1.]]
+        };
+
+        let uniform = uniform!{
+            trans: trans,
+            camera: self.camera(layer),
+            color: color,
+        };
+
+        self.frame
+            .draw(&self.graphics.obj_vertex_buffer[obj],
+                  &self.graphics.obj_indices[obj],
+                  &self.graphics.program,
+                  &uniform,
+                  &self.graphics.draw_parameters)
+            .unwrap();
+    }
 
     pub fn draw_square(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: [f32; 4]) {
         self.draw_rectangle(x, y, radius * 2., radius * 2., layer, color);
