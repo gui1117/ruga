@@ -3,14 +3,14 @@ extern crate vecmath;
 extern crate unicode_normalization;
 extern crate itertools;
 extern crate arrayvec;
-#[macro_use]
-extern crate glium;
+#[macro_use] extern crate glium;
 extern crate hlua;
 extern crate time;
 extern crate rustyline;
 extern crate rusttype;
 extern crate specs;
 extern crate fnv;
+extern crate regex;
 
 use glium::glutin;
 use rustyline::Editor;

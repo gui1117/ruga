@@ -1,13 +1,13 @@
 use arrayvec;
 use vecmath;
-use glium::{self, Blend, SwapBuffersError, Surface, VertexBuffer, IndexBuffer, index, Program, DrawParameters, Depth, DepthTest};
+use glium::{self, Blend, SwapBuffersError, Surface, VertexBuffer, IndexBuffer, index, vertex, Program, DrawParameters, Depth, DepthTest};
 use glium::backend::{Facade, Context};
 use glium::program::ProgramCreationError;
-use glium::vertex::BufferCreationError;
 use glium::draw_parameters::Smooth;
 use glium::texture::{Texture2d, TextureCreationError};
 use rusttype::{SharedBytes, FontCollection, Font, Scale, point, vector, Vector, Rect};
 use rusttype::gpu_cache::Cache;
+use regex::Regex;
 
 use std::error::Error;
 use std::fmt;
@@ -97,9 +97,27 @@ obj! {
     sniper: 0,
 }
 
-fn load_obj(file: &'static str) -> (VertexBuffer<Vertex>, IndexBuffer<u8>) {
-    //TODO use regexp
-    unimplemented!()
+fn load_obj(file: &'static str) -> (Vec<Vertex>, Vec<u8>) {
+    use std::str::FromStr;
+
+    let re = Regex::new(r"v\s(\S+)\s(\S+)").unwrap();
+    let vertices = re.captures_iter(file)
+        .map(|caps| {
+            use std::str::FromStr;
+            let x = f32::from_str(&caps[1]).unwrap();
+            let y = f32::from_str(&caps[2]).unwrap();
+            Vertex { position: [x, y] }
+        }).collect();
+
+    let re = Regex::new(r"f\s(\S+)\s(\S+)\s(\S+)").unwrap();
+    let indices = re.captures_iter(file)
+        .flat_map(|caps| {
+            vec!(u8::from_str(&caps[1]).unwrap(),
+                 u8::from_str(&caps[2]).unwrap(),
+                 u8::from_str(&caps[3]).unwrap())
+        }).collect();
+
+    (vertices, indices)
 }
 
 pub struct Graphics {
@@ -127,7 +145,8 @@ pub struct Graphics {
 #[derive(Debug)]
 pub enum GraphicsError {
     ProgramCreation(ProgramCreationError),
-    BufferCreation(BufferCreationError),
+    VertexBufferCreation(vertex::BufferCreationError),
+    IndexBufferCreation(index::BufferCreationError),
     Io(io::Error),
     TextureCreation(TextureCreationError),
     InvalidFont,
@@ -138,7 +157,8 @@ impl Error for GraphicsError {
         use self::GraphicsError::*;
         match *self {
             ProgramCreation(ref err) => err.description(),
-            BufferCreation(ref err) => err.description(),
+            VertexBufferCreation(ref err) => err.description(),
+            IndexBufferCreation(ref err) => err.description(),
             Io(ref err) => err.description(),
             TextureCreation(ref err) => err.description(),
             InvalidFont => "font not supported",
@@ -148,7 +168,8 @@ impl Error for GraphicsError {
         use self::GraphicsError::*;
         match *self {
             ProgramCreation(ref e) => e.cause(),
-            BufferCreation(ref e) => e.cause(),
+            VertexBufferCreation(ref e) => e.cause(),
+            IndexBufferCreation(ref e) => e.cause(),
             Io(ref e) => e.cause(),
             TextureCreation(ref e) => e.cause(),
             InvalidFont => None,
@@ -160,7 +181,8 @@ impl fmt::Display for GraphicsError {
         use self::GraphicsError::*;
         match *self {
             ProgramCreation(ref e) => write!(fmt, "Glium program creation error: {}", e),
-            BufferCreation(ref e) => write!(fmt, "Glium buffer creation error: {}", e),
+            VertexBufferCreation(ref e) => write!(fmt, "Glium vertex buffer creation error: {}", e),
+            IndexBufferCreation(ref e) => write!(fmt, "Glium index buffer creation error: {}", e),
             Io(ref e) => write!(fmt, "Io error: {}", e),
             TextureCreation(ref e) => write!(fmt, "Glium texture creation error: {}", e),
             InvalidFont => write!(fmt, "Font not supported"),
@@ -172,9 +194,14 @@ impl From<ProgramCreationError> for GraphicsError {
         GraphicsError::ProgramCreation(err)
     }
 }
-impl From<BufferCreationError> for GraphicsError {
-    fn from(err: BufferCreationError) -> GraphicsError {
-        GraphicsError::BufferCreation(err)
+impl From<index::BufferCreationError> for GraphicsError {
+    fn from(err: index::BufferCreationError) -> GraphicsError {
+        GraphicsError::IndexBufferCreation(err)
+    }
+}
+impl From<vertex::BufferCreationError> for GraphicsError {
+    fn from(err: vertex::BufferCreationError) -> GraphicsError {
+        GraphicsError::VertexBufferCreation(err)
     }
 }
 impl From<io::Error> for GraphicsError {
@@ -320,8 +347,13 @@ impl Graphics {
         let mut obj_indices = vec!();
         for obj in objs() {
             let (vertices, indices) = load_obj(obj);
-            obj_vertex_buffer.push(vertices);
-            obj_indices.push(indices);
+            let v = VertexBuffer::new(facade, &vertices)?;
+            let i = IndexBuffer::new(facade,
+                                     index::PrimitiveType::TrianglesList,
+                                     &indices)?;
+
+            obj_vertex_buffer.push(v);
+            obj_indices.push(i);
         }
 
         Ok(Graphics {

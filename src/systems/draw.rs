@@ -127,17 +127,5 @@ fn draw_sniper(pos: [f32; 2], aim: f32, state: weapon::State, frame: &mut graphi
         .translate(pos[0]+4., pos[1])
         .rotate(aim + delta_angle);
 
-    // // maybe use freecad
-    // let black = [
-    //     parent_trans.translate(-0.6, 0.).scale(1.6, 0.2),
-    //     parent_trans.translate(1.0, 0.).scale(2.0, 0.1),
-    //     parent_trans.translate(0., 0.2).scale(0.2, 0.2),
-    //     parent_trans.translate(0., 0.5).scale(0.6, 0.2),
-    //     parent_trans.translate(-1.8, -0.5).rotate(PI/4.).scale(0.6, 0.2),
-    //     // parent_trans.translate(-1.3, -0.2).scale(0.02, 0.2),
-    //     // parent_trans.translate(-1.0, -0.3).scale(0.2, 0.02),
-    // ];
-    // for &trans in black.iter() {
     //     frame.draw_quad(trans, Layer::Middle, [0., 0., 0., 1.]);
-    // }
 }
