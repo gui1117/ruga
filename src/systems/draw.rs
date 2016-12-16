@@ -1,4 +1,4 @@
-use graphics::{self, Layer, Transformed, Transformation};
+use graphics::{self, Layer, obj, Transformed, Transformation};
 use weapon;
 use physics::Shape;
 use specs;
@@ -116,16 +116,20 @@ fn draw_weapon(world: &mut specs::World, frame: &mut graphics::Frame) {
 
 fn draw_sniper(pos: [f32; 2], aim: f32, state: weapon::State, frame: &mut graphics::Frame) {
     use weapon::State::*;
-    let (delta_x, delta_angle) = match state {
-        Setup(t) => (0., 0.),
-        Ready => (0., 0.),
-        Reload(t) => (0., 0.),
-        Setdown(t) => (0., 0.),
+
+    let len = 1.0;
+    let recoil = 0.2;
+
+    let (delta_len, delta_aim, delta_angle) = match state {
+        Setup(t) => (len*t, 0., 0.),
+        Ready => (len, 0., 0.),
+        Reload(t) => (len - recoil*(0.5 - (t-0.5).abs()), 0., 0.),
+        Setdown(t) => (len*(1. - t), 0., 0.),
     };
 
-    let parent_trans = Transformation::identity()
-        .translate(pos[0]+4., pos[1])
-        .rotate(aim + delta_angle);
+    let x = pos[0] + delta_len*(delta_aim + aim).cos();
+    let y = pos[1] + delta_len*(delta_aim + aim).sin();
+    let angle = aim + delta_angle;
 
-    //     frame.draw_quad(trans, Layer::Middle, [0., 0., 0., 1.]);
+    frame.draw_obj(x, y, angle, obj::sniper, Layer::Middle, colors::BLACK);
 }

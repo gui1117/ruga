@@ -130,4 +130,7 @@ impl api::Caller for App {
         let ref mut zoom = world.write_resource::<resources::Zoom>().0;
         *zoom = new_zoom;
     }
+    fn set_player_shoot(&mut self, shoot: bool) {
+        unimplemented!();
+    }
 }

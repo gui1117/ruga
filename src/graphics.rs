@@ -29,6 +29,7 @@ pub trait Transformed {
     fn rotate(self, angle: f32) -> Self;
     fn scale(self, sx: f32, sy: f32) -> Self;
     fn identity() -> Self;
+    fn into_3d(self, z: f32) -> [[f32; 4]; 4];
 }
 
 impl Transformed for Transformation {
@@ -61,6 +62,14 @@ impl Transformed for Transformation {
     #[inline(always)]
     fn identity() -> Self {
         [[1., 0., 0.], [0., 1., 0.]]
+    }
+
+    #[inline(always)]
+    fn into_3d(self, z: f32) -> [[f32; 4]; 4] {
+        [[self[0][0], self[1][0], 0., 0.],
+         [self[0][1], self[1][1], 0., 0.],
+         [         0.,          0., 1., 0.],
+         [self[0][2], self[1][2],  z, 1.]]
     }
 }
 
@@ -112,9 +121,9 @@ fn load_obj(file: &'static str) -> (Vec<Vertex>, Vec<u8>) {
     let re = Regex::new(r"f\s(\S+)\s(\S+)\s(\S+)").unwrap();
     let indices = re.captures_iter(file)
         .flat_map(|caps| {
-            vec!(u8::from_str(&caps[1]).unwrap(),
-                 u8::from_str(&caps[2]).unwrap(),
-                 u8::from_str(&caps[3]).unwrap())
+            vec!(u8::from_str(&caps[1]).unwrap() - 1,
+                 u8::from_str(&caps[2]).unwrap() - 1,
+                 u8::from_str(&caps[3]).unwrap() - 1)
         }).collect();
 
     (vertices, indices)
@@ -473,13 +482,10 @@ impl<'a> Frame<'a> {
     }
 
     pub fn draw_obj(&mut self, x: f32, y: f32, angle: f32, obj: usize, layer: Layer, color: [f32; 4]) {
-        let trans = {
-                 //TODO TODO
-            [[1./ 2., 0., 0., 0.],
-             [0., 1./ 2., 0., 0.],
-             [0., 0., 1., 0.],
-             [x, y, layer.into(), 1.]]
-        };
+        let trans = Transformation::identity()
+            .translate(x, y)
+            .rotate(angle)
+            .into_3d(layer.into());
 
         let uniform = uniform!{
             trans: trans,
@@ -702,13 +708,9 @@ impl<'a> Frame<'a> {
     }
 
     pub fn draw_quad(&mut self, trans: Transformation, layer: Layer, color: [f32; 4]) {
-        let trans = [[trans[0][0], trans[1][0], 0., 0.],
-                     [trans[0][1], trans[1][1], 0., 0.],
-                     [0., 0., 1., 0.],
-                     [trans[0][2], trans[1][2], layer.into(), 1.]];
 
         let uniform = uniform!{
-            trans: trans,
+            trans: trans.into_3d(layer.into()),
             camera: self.camera(layer),
             color: color,
         };

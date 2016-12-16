@@ -10,6 +10,7 @@ use utils::math::*;
 
 pub fn add_systems(planner: &mut ::specs::Planner<UpdateContext>) {
     planner.add_system(PhysicSystem, "physic", 10);
+    planner.add_system(WeaponSystem, "weapon", 9);
 }
 
 pub struct PhysicSystem;
@@ -131,6 +132,59 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
                 shape: typ.shape.clone(),
                 mask: typ.mask,
             });
+        }
+    }
+}
+
+pub struct WeaponSystem;
+impl specs::System<app::UpdateContext> for WeaponSystem {
+    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
+        use weapon::State;
+        let (mut weapons, mut next_weapons, shoots, entities) = arg.fetch(|world| {
+            (
+                world.write::<Weapon>(),
+                world.write::<NextWeapon>(),
+                world.read::<Shoot>(),
+                world.entities(),
+            )
+        });
+        for (weapon, entity) in (&mut weapons, &entities).iter() {
+            let shoot = shoots.get(entity).is_some();
+
+            // set down
+            match weapon.state {
+                State::Setdown(_) => (),
+                ref mut state @ _ => if next_weapons.get(entity).is_some() {
+                    *state = State::Setdown(0.);
+                },
+            }
+
+            // update loading
+            match weapon.state {
+                State::Reload(ref mut t) => *t += context.dt*weapon.reload_factor,
+                State::Setup(ref mut t) => *t += context.dt*weapon.setup_factor,
+                State::Setdown(ref mut t) => *t += context.dt*weapon.setdown_factor,
+                State::Ready => (),
+            }
+
+            // update state and weapon if set down
+            match weapon.state {
+                State::Reload(t) | State::Setup(t) => if t >= 1. {
+                    weapon.state = if shoot {
+                        // TODO shoot
+                        State::Reload(t-1.)
+                    } else {
+                        State::Ready
+                    };
+                },
+                State::Ready => if shoot {
+                    weapon.state = State::Reload(context.dt*weapon.reload_factor);
+                },
+                State::Setdown(t) => if t >= 1. {
+                    *weapon = next_weapons.remove(entity).unwrap().0;
+                    weapon.state = State::Setup(t-1.);
+                },
+            };
         }
     }
 }

@@ -25,8 +25,9 @@ impl_component! {
     DrawPhysic: VecStorage,
     PlayerControl: NullStorage,
     Aim: HashMapStorage,
-    Shoot: HashMapStorage,
+    Shoot: NullStorage,
     Weapon: HashMapStorage,
+    NextWeapon: HashMapStorage,
 }
 
 #[derive(Clone)]
@@ -93,8 +94,8 @@ pub struct DrawPhysic {
 #[derive(Clone)]
 pub struct Aim(pub f32);
 
-#[derive(Clone)]
-pub struct Shoot(pub bool);
+#[derive(Clone,Copy,Default)]
+pub struct Shoot;
 
 #[derive(Clone)]
 pub struct Weapon {
@@ -104,6 +105,9 @@ pub struct Weapon {
     pub state: weapon::State,
     pub kind: weapon::Kind,
 }
+
+#[derive(Clone)]
+pub struct NextWeapon(pub Weapon);
 
 #[derive(Clone,Copy,Default)]
 pub struct PhysicDynamic;
