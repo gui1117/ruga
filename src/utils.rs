@@ -1,5 +1,4 @@
 /// return the angle in ]-PI,PI]
-
 #[inline]
 pub fn minus_pi_pi(a: f32) -> f32 {
     use ::std::f32::consts::PI;
@@ -61,6 +60,10 @@ pub mod math {
     #[inline]
     pub fn sub(p1: [f32; 2], p2: [f32; 2]) -> [f32; 2] {
         [p1[0]-p2[0], p1[1]-p2[1]]
+    }
+    #[inline]
+    pub fn into_polar(p: [f32; 2]) -> [f32; 2] {
+        [norm(p), angle(p)]
     }
 }
 

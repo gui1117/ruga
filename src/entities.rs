@@ -87,7 +87,6 @@ pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity:
             coef: force,
         })
         .with(PhysicDamping(damping))
-        .with(weapon::sniper())
         .with(PhysicDynamic)
         .with(PlayerControl)
         .with(Aim(0.5))

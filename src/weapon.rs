@@ -6,23 +6,23 @@ pub enum State {
     Setdown(f32),
 }
 
-// TODO impl luaread for kind
 #[derive(Clone)]
 pub enum Kind {
     Sniper,
     Shotgun,
     // Sword,
-    Hammer, // a component that inform if right or left if present or not
+    Hammer(bool), // a component that inform if right or left if present or not
     Uzis,
 }
 
-// TODO delete this in the final edition because lua will give parameter
-pub fn sniper() -> ::components::Weapon {
-    ::components::Weapon {
-        reload_factor: 1.,
-        setup_factor: 1.,
-        setdown_factor: 1.,
-        state: State::Setup(0.),
-        kind: Kind::Sniper,
+impl Kind {
+    pub fn from_str(s: &str) -> Option<Kind> {
+        match s {
+            "sniper" => Some(Kind::Sniper),
+            "shotgun" => Some(Kind::Shotgun),
+            "hammer" => Some(Kind::Hammer(false)),
+            "uzis" => Some(Kind::Uzis),
+            _ => None,
+        }
     }
 }

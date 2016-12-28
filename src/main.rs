@@ -4,7 +4,7 @@ extern crate unicode_normalization;
 extern crate itertools;
 extern crate arrayvec;
 #[macro_use] extern crate glium;
-extern crate hlua;
+#[macro_use] extern crate hlua;
 extern crate time;
 extern crate rustyline;
 extern crate rusttype;
@@ -212,7 +212,7 @@ fn main() {
                 MouseInput(state, button) => {
                     use glium::glutin::MouseButton::*;
 
-                    let state = format!("{:?}", state).to_lowercase();
+                    let state = format!("\"{:?}\"", state).to_lowercase();
                     let code: u32 = match button {
                         Left => 0 + 1 << 8,
                         Right => 1 + 1 << 8,

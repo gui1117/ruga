@@ -70,14 +70,10 @@ macro_rules! api_caller {
 // fn pause(&mut self);
 // fn resume(&mut self);
 api_caller! {
-    // /// Change weapon of player
-    // /// weapon = [
-    // ///     reload: float,
-    // ///     setup: float,
-    // ///     setdown: float,
-    // ///     kind: ["sniper" | "shotgun" | "hammer" | "uzis"],
-    // /// ]
-    // fn set_player_weapon(weapon: ::hlua::);
+    /// Change weapon of player
+    ///
+    /// kind: ["sniper" | "shotgun" | "hammer" | "uzis"],
+    fn set_player_weapon(kind: String, reload: f32, setup: f32, setdown: f32);
     /// Set player shoot
     fn set_player_shoot(shoot: bool);
     /// Set zoom

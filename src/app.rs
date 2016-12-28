@@ -8,6 +8,7 @@ use systems;
 use components;
 use resources;
 use entities;
+use weapon;
 
 use std::rc::Rc;
 use std::io::{self, Write};
@@ -131,6 +132,35 @@ impl api::Caller for App {
         *zoom = new_zoom;
     }
     fn set_player_shoot(&mut self, shoot: bool) {
-        unimplemented!();
+        let mut world = self.planner.mut_world();
+        let mut shoots = world.write::<components::Shoot>();
+        let players = world.read::<components::PlayerControl>();
+
+        for (_, entity) in (&players, &world.entities()).iter() {
+            if shoot {
+                shoots.insert(entity, components::Shoot);
+            } else {
+                shoots.remove(entity);
+            }
+        }
+    }
+    fn set_player_weapon(&mut self, kind: String, reload: f32, setup: f32, setdown: f32) {
+        if let Some(kind) = weapon::Kind::from_str(&*kind) {
+            let next_weapon = components::NextWeapon(components::Weapon {
+                kind: kind,
+                state: weapon::State::Setup(0.),
+                reload_factor: 1./reload,
+                setup_factor: 1./setup,
+                setdown_factor: 1./setdown,
+            });
+
+            let mut world = self.planner.mut_world();
+            let mut next_weapons = world.write::<components::NextWeapon>();
+            let players = world.read::<components::PlayerControl>();
+
+            for (_, entity) in (&players, &world.entities()).iter() {
+                next_weapons.insert(entity, next_weapon.clone());
+            }
+        }
     }
 }

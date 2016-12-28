@@ -4,6 +4,7 @@ weight = 1.0
 zoom = 0.05
 
 run_keys = {z="up", s="down", q="left", d="right"}
+shoot_key = "mouseleft"
 
 function is_orthogonal(a, b)
 	if a == "up" or a == "down" then
@@ -18,9 +19,14 @@ run_dir_buf = {}
 
 function input(state, scancode, code)
 	if state == "pressed" then
-		if run_keys[code] then run_key_pressed(run_keys[code]) end
+		if run_keys[code] then run_key_pressed(run_keys[code])
+		elseif code == shoot_key then set_player_shoot(true)
+		elseif code == "r" then set_player_weapon("sniper", 0.4, 1, 1)
+		end
 	else
-		if run_keys[code] then run_key_released(run_keys[code]) end
+		if run_keys[code] then run_key_released(run_keys[code])
+		elseif code == shoot_key then set_player_shoot(false)
+		end
 	end
 	local a = run_dir_buf[1] or ""
 end
@@ -117,4 +123,5 @@ end
 set_zoom(zoom)
 add_wall(0.0, 0.0, 5.0, 10.0)
 add_character(10.0, 10.0, 1.0, velocity, time_to_reach_vmax, weight)
+set_player_weapon("sniper", 0.4, 1, 1)
 fill_physic_world()

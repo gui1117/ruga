@@ -139,7 +139,7 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
 pub struct WeaponSystem;
 impl specs::System<app::UpdateContext> for WeaponSystem {
     fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
-        use weapon::State;
+        use weapon::{State, Kind};
         let (mut weapons, mut next_weapons, shoots, entities) = arg.fetch(|world| {
             (
                 world.write::<Weapon>(),
@@ -148,6 +148,24 @@ impl specs::System<app::UpdateContext> for WeaponSystem {
                 world.entities(),
             )
         });
+
+        // create a fake weapon if next weapon and none weapon
+        for (next_weapon, entity) in (&mut next_weapons, &entities).iter() {
+            if weapons.get(entity).is_none() {
+                let fake_weapon =  Weapon {
+                    reload_factor: 0.,
+                    setup_factor: 0.,
+                    setdown_factor: 0.,
+                    state: State::Setdown(1.),
+                    kind: Kind::Sniper,
+                };
+                match weapons.insert(entity, fake_weapon) {
+                    specs::InsertResult::Inserted => (),
+                    _ => unreachable!(),
+                }
+            }
+        }
+
         for (weapon, entity) in (&mut weapons, &entities).iter() {
             let shoot = shoots.get(entity).is_some();
 
@@ -170,11 +188,14 @@ impl specs::System<app::UpdateContext> for WeaponSystem {
             // update state and weapon if set down
             match weapon.state {
                 State::Reload(t) | State::Setup(t) => if t >= 1. {
-                    weapon.state = if shoot {
+                    if shoot {
+                        weapon.state = State::Reload(t-1.);
+                        if let Kind::Hammer(ref mut b) = weapon.kind {
+                            *b = !*b;
+                        }
                         // TODO shoot
-                        State::Reload(t-1.)
                     } else {
-                        State::Ready
+                        weapon.state = State::Ready;
                     };
                 },
                 State::Ready => if shoot {
