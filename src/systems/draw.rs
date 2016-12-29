@@ -115,16 +115,17 @@ fn draw_weapon(world: &mut specs::World, frame: &mut graphics::Frame) {
     }
 }
 
-fn draw_arm(shoulder: [f32; 2], hand: [f32; 2], len: f32, width: f32, left: bool,
-            pos: [f32; 2], angle: f32, dl: f32, da1: f32, da2: f32,
-            frame: &mut graphics::Frame) {
+fn draw_arm(shoulder: [f32; 2], hand: [f32; 2], left: bool, pos: [f32; 2], angle: f32, dl: f32, da1: f32, da2: f32, frame: &mut graphics::Frame) {
+    let len = 4.0;
+    let width = 0.2;
+
     let shoulder = into_polar(shoulder);
     let p0x = pos[0] + shoulder[0]*(shoulder[1]+angle).cos();
     let p0y = pos[1] + shoulder[0]*(shoulder[1]+angle).sin();
 
     let hand = into_polar(hand);
-    let p3x = pos[0] + dl*(angle+da1).cos() + hand[0]*(hand[1]+da2).cos();
-    let p3y = pos[1] + dl*(angle+da1).sin() + hand[0]*(hand[1]+da2).sin();
+    let p3x = pos[0] + dl*(angle+da1).cos() + hand[0]*(angle+da1+da2+hand[1]).cos();
+    let p3y = pos[1] + dl*(angle+da1).sin() + hand[0]*(angle+da1+da2+hand[1]).sin();
 
     let norm_shoulder_hand = norm(sub([p3x, p3y], [p0x, p0y]));
     let angle_arm = if norm_shoulder_hand <= len {
@@ -143,16 +144,13 @@ fn draw_arm(shoulder: [f32; 2], hand: [f32; 2], len: f32, width: f32, left: bool
     frame.draw_bezier_curve((p0x, p0y), (p1x,p1y), (p2x, p2y), (p3x, p3y), width, Layer::Middle, colors::BLACK);
 }
 
-fn draw_sniper(pos: [f32; 2], aim: f32, state: weapon::State,
-               frame: &mut graphics::Frame) {
+fn draw_sniper(pos: [f32; 2], aim: f32, state: weapon::State, frame: &mut graphics::Frame) {
     use weapon::State;
 
     let left_hand = [0.3, 0.3];
-    let right_hand = [0.3, -0.3];
+    let right_hand = [-0.3, -0.3];
     let left_shoulder = [0., 1.0];
     let right_shoulder = [0., -1.0];
-    let arm_len = 4.0;
-    let arm_width = 0.2;
 
     let len = 3.0;
     let recoil = 0.4;
@@ -167,11 +165,8 @@ fn draw_sniper(pos: [f32; 2], aim: f32, state: weapon::State,
     let x = pos[0] + delta_len*(aim + delta_aim).cos();
     let y = pos[1] + delta_len*(aim + delta_aim).sin();
 
-    draw_arm(left_shoulder, left_hand, arm_len, arm_width, true,
-             pos, aim, delta_len, delta_aim, delta_angle, frame);
-    draw_arm(right_shoulder, right_hand, arm_len, arm_width, false,
-             pos, aim, delta_len, delta_aim, delta_angle, frame);
+    draw_arm(left_shoulder, left_hand, true, pos, aim, delta_len, delta_aim, delta_angle, frame);
+    draw_arm(right_shoulder, right_hand, false, pos, aim, delta_len, delta_aim, delta_angle, frame);
 
-    frame.draw_obj(x, y, aim + delta_aim + delta_angle, obj::sniper,
-                   Layer::Middle, colors::BLACK);
+    frame.draw_obj(x, y, aim + delta_aim + delta_angle, obj::sniper, Layer::Middle, colors::BLACK);
 }
