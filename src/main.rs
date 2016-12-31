@@ -80,7 +80,7 @@ fn main() {
         .arg(clap::Arg::with_name("dimension")
             .short("d")
             .long("dimensions")
-            .value_name("DIMENSION")
+            .value_name("WIDTH> <HEIGHT")
             .help("Set dimensions (and unset fullscreen)")
             .validator(|s| {
                 u32::from_str(&*s)

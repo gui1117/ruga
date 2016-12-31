@@ -10,6 +10,7 @@ use colors;
 use utils::math::*;
 use utils::math;
 use std::f32::consts::PI;
+use itertools::Itertools;
 
 pub fn run(world: &mut specs::World, frame: &mut graphics::Frame) {
     draw_notifications(world, frame);
@@ -116,8 +117,8 @@ fn draw_weapon(world: &mut specs::World, frame: &mut graphics::Frame) {
 }
 
 fn draw_arm(shoulder: [f32; 2], hand: [f32; 2], left: bool, pos: [f32; 2], angle: f32, dl: f32, da1: f32, da2: f32, frame: &mut graphics::Frame) {
-    let len = 4.0;
-    let width = 0.2;
+    let len = 2.0;
+    let width = 0.15;
 
     let shoulder = into_polar(shoulder);
     let p0x = pos[0] + shoulder[0]*(shoulder[1]+angle).cos();
@@ -144,21 +145,65 @@ fn draw_arm(shoulder: [f32; 2], hand: [f32; 2], left: bool, pos: [f32; 2], angle
     frame.draw_bezier_curve((p0x, p0y), (p1x,p1y), (p2x, p2y), (p3x, p3y), width, Layer::Middle, colors::BLACK);
 }
 
+struct Point {
+    time: f32,
+    data: (f32, f32, f32),
+}
+
+fn interpolation(time: f32, points: &[Point]) -> (f32, f32, f32) {
+    if points.is_empty() {
+        panic!("interpolation between 0 points not allowed");
+    }
+
+    let first = points.first().unwrap();
+    if time <= first.time {
+        return first.data
+    }
+
+    let last = points.last().unwrap();
+    if time >= last.time {
+        return last.data
+    }
+
+    for (a, b) in points.iter().tuple_windows() {
+        debug_assert!(a.time < b.time);
+        if a.time <= time && time <= b.time {
+            let a_coef = 1. - (time - a.time) / (b.time - a.time);
+            let b_coef = 1. - a_coef;
+
+            return (
+                a.data.0*a_coef + b.data.0*b_coef,
+                a.data.1*a_coef + b.data.1*b_coef,
+                a.data.2*a_coef + b.data.2*b_coef,
+            )
+        }
+    }
+    unreachable!();
+}
+
 fn draw_sniper(pos: [f32; 2], aim: f32, state: weapon::State, frame: &mut graphics::Frame) {
     use weapon::State;
 
-    let left_hand = [0.3, 0.3];
-    let right_hand = [-0.3, -0.3];
-    let left_shoulder = [0., 1.0];
-    let right_shoulder = [0., -1.0];
+    let left_hand = [-0.5, 0.1];
+    let right_hand = [-1., -0.2];
+    let left_shoulder = [0., 0.5];
+    let right_shoulder = [0., -0.5];
 
-    let len = 3.0;
+    let len = 2.;
     let recoil = 0.4;
+    let time_recoil = 0.4;
+    let time_reload = 0.6;
 
     let (delta_len, delta_aim, delta_angle) = match state {
         State::Setup(t) => (len*t, 0., 0.),
         State::Ready => (len, 0., 0.),
-        State::Reload(t) => (len - recoil*(0.5 - (t-0.5).abs()), 0., 0.),
+        State::Reload(t) => {
+            interpolation(t, &[
+                          Point { time:             0., data: (       len, 0., 0.) },
+                          Point { time: time_recoil/2., data: (len-recoil, 0., 0.) },
+                          Point { time:    time_recoil, data: (       len, 0., 0.) },
+            ])
+        },
         State::Setdown(t) => (len*(1. - t), 0., 0.),
     };
 

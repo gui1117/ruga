@@ -122,6 +122,6 @@ end
 
 set_zoom(zoom)
 add_wall(0.0, 0.0, 5.0, 10.0)
-add_character(10.0, 10.0, 1.0, velocity, time_to_reach_vmax, weight)
+add_character(10.0, 10.0, 0.5, velocity, time_to_reach_vmax, weight)
 set_player_weapon("sniper", 0.4, 1, 1)
 fill_physic_world()

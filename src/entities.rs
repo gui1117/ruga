@@ -51,9 +51,10 @@ macro_rules! entity_builder {
     }
 }
 
+// TODO add documentation ?
 entity_builder! {
     add_wall(x: f32, y: f32, width: f32, height: f32),
-    add_character(x: f32, y: f32, r: f32, velocity: f32, time_to_reach_v_max: f32, weight: f32),
+    add_character(x: f32, y: f32, velocity: f32, time_to_reach_v_max: f32, weight: f32),
 }
 
 const WALL_GROUP:  u32 = 0b00000000000000000000000000000001;
@@ -75,8 +76,8 @@ pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f3
         .build();
 }
 
-pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity: f32, time_to_reach_vmax: f32, weight: f32) {
-    let shape = Shape::Circle(r);
+pub fn add_character(world: &mut specs::World, x: f32, y: f32, velocity: f32, time_to_reach_vmax: f32, weight: f32) {
+    let shape = Shape::Circle(0.5);
     let (force, damping) = physics::compute_force_damping(velocity, time_to_reach_vmax, weight);
     let char_entity = world.create_now()
         .with(PhysicState::new([x, y]))
@@ -92,7 +93,7 @@ pub fn add_character(world: &mut specs::World, x: f32, y: f32, r: f32, velocity:
         .with(Aim(0.5))
         .with(DrawPhysic {
             color: [1., 1., 1., 1.],
-            border: Some((0.3, [0., 0., 0., 1.])),
+            border: Some((0.15, [0., 0., 0., 1.])),
         })
         .build();
 }
