@@ -1,4 +1,9 @@
-pub const PHYSIC_RATE: f32 = 0.9;
+pub mod components;
+pub mod resources;
+pub mod update_systems;
+pub mod draw_systems;
+
+const PHYSIC_RATE: f32 = 0.9;
 
 pub fn compute_force_damping(velocity: f32, time_to_reach_v_max: f32, weight: f32) -> (f32, f32) {
     let damping = -weight * (1. - PHYSIC_RATE).ln() / time_to_reach_v_max;

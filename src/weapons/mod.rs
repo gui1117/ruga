@@ -1,3 +1,7 @@
+pub mod components;
+pub mod update_systems;
+pub mod draw_systems;
+
 #[derive(Clone)]
 pub enum State {
     Reload(f32),

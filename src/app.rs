@@ -4,11 +4,12 @@ use glium;
 use glium::backend::Facade;
 use graphics::{Graphics, Frame, Camera};
 use specs::Join;
-use systems;
+use update_systems;
+use draw_systems;
 use components;
 use resources;
 use entities;
-use weapon;
+use weapons;
 
 use std::rc::Rc;
 use std::io::{self, Write};
@@ -39,7 +40,7 @@ impl App {
         components::register_components(&mut world);
 
         let mut planner = specs::Planner::new(world, NUMBER_OF_THREADS);
-        systems::update::add_systems(&mut planner);
+        update_systems::add_systems(&mut planner);
 
         App {
             graphics: Graphics::new(facade).unwrap(),
@@ -66,7 +67,7 @@ impl App {
             Camera::new(pos[0], pos[1], zoom)
         };
         let mut frame = Frame::new(&mut self.graphics, frame, &camera);
-        systems::draw::run(self.planner.mut_world(), &mut frame);
+        draw_systems::run(self.planner.mut_world(), &mut frame);
         frame.finish().unwrap();
     }
     pub fn must_quit(&self) -> bool {
@@ -145,10 +146,10 @@ impl api::Caller for App {
         }
     }
     fn set_player_weapon(&mut self, kind: String, reload: f32, setup: f32, setdown: f32) {
-        if let Some(kind) = weapon::Kind::from_str(&*kind) {
+        if let Some(kind) = weapons::Kind::from_str(&*kind) {
             let next_weapon = components::NextWeapon(components::Weapon {
                 kind: kind,
-                state: weapon::State::Setup(0.),
+                state: weapons::State::Setup(0.),
                 reload_factor: 1./reload,
                 setup_factor: 1./setup,
                 setdown_factor: 1./setdown,

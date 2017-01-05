@@ -1,5 +1,5 @@
 use specs;
-use weapon;
+use weapons;
 use graphics::Layer;
 use specs::InsertResult;
 use components::*;

@@ -79,3 +79,24 @@ macro_rules! infer_type {
     ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt) => {::hlua::function8};
     ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt $t9:tt) => {::hlua::function9};
 }
+
+macro_rules! impl_component {
+    ($($typ:ident: $storage:ident,)*) => {
+        pub fn register_components(world: &mut ::specs::World) {
+            $(world.register::<::components::$typ>();)*
+        }
+
+        $(impl ::specs::Component for $typ {
+            type Storage = ::specs::$storage<Self>;
+        })*
+    };
+}
+
+macro_rules! impl_resource {
+    ($($typ:ident,)*) => { impl_resource!{ $($typ),* } };
+    ($($typ:ident),*) => {
+        pub fn add_resources(world: &mut ::specs::World) {
+            $(world.add_resource(::resources::$typ::new());)*
+        }
+    };
+}

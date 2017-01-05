@@ -1,17 +1,10 @@
-use app::UpdateContext;
-use fnv::FnvHashMap;
 use app;
-use specs;
-use physics::{EntityInformation, Resolution, ShapeCast, Collision, CollisionBehavior};
-use components::*;
-use resources::*;
-use specs::Join;
-use utils::math::*;
+use fnv::FnvHashMap;
+use specs::{self, Join};
 
-pub fn add_systems(planner: &mut ::specs::Planner<UpdateContext>) {
-    planner.add_system(PhysicSystem, "physic", 10);
-    planner.add_system(WeaponSystem, "weapon", 9);
-}
+use super::*;
+use super::components::*;
+use super::resources::*;
 
 pub struct PhysicSystem;
 #[allow(illegal_floating_point_constant_pattern)]
@@ -132,80 +125,6 @@ impl specs::System<app::UpdateContext> for PhysicSystem {
                 shape: typ.shape.clone(),
                 mask: typ.mask,
             });
-        }
-    }
-}
-
-pub struct WeaponSystem;
-impl specs::System<app::UpdateContext> for WeaponSystem {
-    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
-        use weapon::{State, Kind};
-        let (mut weapons, mut next_weapons, shoots, entities) = arg.fetch(|world| {
-            (
-                world.write::<Weapon>(),
-                world.write::<NextWeapon>(),
-                world.read::<Shoot>(),
-                world.entities(),
-            )
-        });
-
-        // create a fake weapon if next weapon and none weapon
-        for (next_weapon, entity) in (&mut next_weapons, &entities).iter() {
-            if weapons.get(entity).is_none() {
-                let fake_weapon =  Weapon {
-                    reload_factor: 0.,
-                    setup_factor: 0.,
-                    setdown_factor: 0.,
-                    state: State::Setdown(1.),
-                    kind: Kind::Sniper,
-                };
-                match weapons.insert(entity, fake_weapon) {
-                    specs::InsertResult::Inserted => (),
-                    _ => unreachable!(),
-                }
-            }
-        }
-
-        for (weapon, entity) in (&mut weapons, &entities).iter() {
-            let shoot = shoots.get(entity).is_some();
-
-            // set down
-            match weapon.state {
-                State::Setdown(_) => (),
-                ref mut state @ _ => if next_weapons.get(entity).is_some() {
-                    *state = State::Setdown(0.);
-                },
-            }
-
-            // update loading
-            match weapon.state {
-                State::Reload(ref mut t) => *t += context.dt*weapon.reload_factor,
-                State::Setup(ref mut t) => *t += context.dt*weapon.setup_factor,
-                State::Setdown(ref mut t) => *t += context.dt*weapon.setdown_factor,
-                State::Ready => (),
-            }
-
-            // update state and weapon if set down
-            match weapon.state {
-                State::Reload(t) | State::Setup(t) => if t >= 1. {
-                    if shoot {
-                        weapon.state = State::Reload(t-1.);
-                        if let Kind::Hammer(ref mut b) = weapon.kind {
-                            *b = !*b;
-                        }
-                        // TODO shoot
-                    } else {
-                        weapon.state = State::Ready;
-                    };
-                },
-                State::Ready => if shoot {
-                    weapon.state = State::Reload(context.dt*weapon.reload_factor);
-                },
-                State::Setdown(t) => if t >= 1. {
-                    *weapon = next_weapons.remove(entity).unwrap().0;
-                    weapon.state = State::Setup(t-1.);
-                },
-            };
         }
     }
 }

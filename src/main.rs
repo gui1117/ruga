@@ -26,19 +26,19 @@ use std::sync::Arc;
 use std::fs::File;
 use std::io::{self, Write};
 
-#[macro_use]
-mod utils;
-#[macro_use]
-mod entities;
+#[macro_use] mod utils;
+#[macro_use] mod entities;
 mod app;
 mod api;
 mod resources;
 mod graphics;
-mod systems;
+mod update_systems;
+mod draw_systems;
 mod components;
 mod colors;
 mod physics;
-mod weapon;
+mod weapons;
+mod notifications;
 
 pub use api::Caller;
 pub use api::Callee;
