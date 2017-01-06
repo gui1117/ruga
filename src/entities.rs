@@ -87,7 +87,7 @@ pub fn add_character(world: &mut specs::World, x: f32, y: f32, velocity: f32, ti
         .with(PhysicDamping(damping))
         .with(PhysicDynamic)
         .with(PlayerControl)
-        .with(Aim(0.5))
+        .with(Aim(0.0))
         .with(DrawPhysic {
             color: [1., 1., 1., 1.],
             border: Some((0.15, [0., 0., 0., 1.])),

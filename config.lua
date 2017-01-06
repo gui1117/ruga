@@ -1,6 +1,6 @@
-velocity = 30.0
+velocity = 30
 time_to_reach_vmax = 0.1
-weight = 1.0
+weight = 1
 zoom = 0.05
 
 run_keys = {z="up", s="down", q="left", d="right"}
@@ -14,7 +14,7 @@ function is_orthogonal(a, b)
 	end
 end
 
-last_run_angle = 0.0
+last_run_angle = 0
 run_dir_buf = {}
 
 function input(state, scancode, code)
@@ -97,9 +97,9 @@ function update_player_run_dir()
 		if horizontal == "left" then
 			angle = PI
 		elseif horizontal == "right" then
-			angle = 0.0
+			angle = 0
 		else
-			strength = 0.0
+			strength = 0
 		end
 	end
 	last_run_angle = angle
@@ -121,7 +121,7 @@ function update_zoom()
 end
 
 set_zoom(zoom)
-add_wall(0.0, 0.0, 5.0, 10.0)
-add_character(10.0, 10.0, 0.5, velocity, time_to_reach_vmax, weight)
+add_wall(0, 0, 5, 10)
+add_character(10, 10, velocity, time_to_reach_vmax, weight)
 set_player_weapon("sniper", 0.4, 1, 1)
 fill_physic_world()

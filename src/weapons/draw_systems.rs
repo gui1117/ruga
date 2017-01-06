@@ -22,7 +22,7 @@ pub fn draw_weapon(world: &mut specs::World, frame: &mut graphics::Frame) {
 }
 
 fn draw_arm(shoulder: [f32; 2], hand: [f32; 2], left: bool, pos: [f32; 2], angle: f32, dl: f32, da1: f32, da2: f32, frame: &mut graphics::Frame) {
-    let len = 2.0;
+    let len = 1.7;
     let width = 0.15;
 
     let shoulder = into_polar(shoulder);
