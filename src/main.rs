@@ -12,9 +12,25 @@ extern crate specs;
 extern crate fnv;
 extern crate regex;
 
+#[macro_use] extern crate ruga_utils as utils;
+extern crate ruga_graphics as graphics;
+extern crate ruga_physics as physics;
+
+#[macro_use] mod entities;
+mod app;
+mod api;
+mod resources;
+mod update_systems;
+mod draw_systems;
+mod components;
+mod colors;
+mod weapons;
+mod notifications;
+
 use glium::glutin;
 use rustyline::Editor;
 use rustyline::error::ReadlineError;
+use regex::Regex;
 
 use std::str::FromStr;
 use std::path::Path;
@@ -25,20 +41,6 @@ use std::sync::Mutex;
 use std::sync::Arc;
 use std::fs::File;
 use std::io::{self, Write};
-
-#[macro_use] mod utils;
-#[macro_use] mod entities;
-mod app;
-mod api;
-mod resources;
-mod graphics;
-mod update_systems;
-mod draw_systems;
-mod components;
-mod colors;
-mod physics;
-mod weapons;
-mod notifications;
 
 pub use api::Caller;
 pub use api::Callee;
@@ -51,63 +53,99 @@ fn ns_to_duration(ns: u64) -> Duration {
     Duration::new(secs, nanos)
 }
 
+struct MyCompleter {
+    filename_completer: ::rustyline::completion::FilenameCompleter,
+    function_names: Vec<String>,
+}
+impl MyCompleter {
+    fn new(names: Vec<String>) -> MyCompleter {
+        MyCompleter {
+            filename_completer: ::rustyline::completion::FilenameCompleter::default(),
+            function_names: names,
+        }
+    }
+}
+impl ::rustyline::completion::Completer for MyCompleter {
+    fn complete(&self, line: &str, pos: usize) -> ::rustyline::Result<(usize, Vec<String>)> {
+        let filename_result = self.filename_completer.complete(line, pos);
+        if let Ok((0, _)) = filename_result {
+            let last_word_re = Regex::new(r"(\w+)$").unwrap();
+            if let Some(the_match) = last_word_re.find(line) {
+                let start_re = Regex::new(&*format!(r"^{}", the_match.as_str())).unwrap();
+                let mut matches = vec!();
+                for name in &self.function_names {
+                    if start_re.is_match(&*name) {
+                        matches.push(name.clone())
+                    }
+                }
+                Ok((0, matches))
+            } else {
+                Ok((0, vec!()))
+            }
+        } else {
+            filename_result
+        }
+        // Ok((0,vec!()))
+    }
+}
+
 fn main() {
     let matches = clap::App::new("ruga")
         .version("0.3")
         .author("thiolliere <guillaume.thiolliere@opmbx.org>")
         .about("a game in rust")
         .arg(clap::Arg::with_name("vsync")
-            .short("s")
-            .long("vsync")
-            .help("Set vsync"))
+             .short("s")
+             .long("vsync")
+             .help("Set vsync"))
         .arg(clap::Arg::with_name("config")
-            .short("c")
-            .long("config")
-            .value_name("FILE")
-            .help("Set configuration file (lua)")
-            .validator(|s| {
-                if Path::new(&*s).exists() {
-                    Ok(())
-                } else {
-                    Err(format!("configuration file '{}' doesn't exist", s))
-                }
-            })
-            .takes_value(true))
+             .short("c")
+             .long("config")
+             .value_name("FILE")
+             .help("Set configuration file (lua)")
+             .validator(|s| {
+                 if Path::new(&*s).exists() {
+                     Ok(())
+                 } else {
+                     Err(format!("configuration file '{}' doesn't exist", s))
+                 }
+             })
+             .takes_value(true))
         .arg(clap::Arg::with_name("terminal")
-            .short("t")
-            .long("terminal")
-            .help("Set lua terminal"))
+             .short("t")
+             .long("terminal")
+             .help("Set lua terminal"))
         .arg(clap::Arg::with_name("dimension")
-            .short("d")
-            .long("dimensions")
-            .value_name("WIDTH> <HEIGHT")
-            .help("Set dimensions (and unset fullscreen)")
-            .validator(|s| {
-                u32::from_str(&*s)
-                    .map(|_| ())
-                    .map_err(|e| format!("'{}' dimension is invalid : {}", s, e))
-            })
-            .number_of_values(2)
-            .takes_value(true))
+             .short("d")
+             .long("dimensions")
+             .value_name("WIDTH> <HEIGHT")
+             .help("Set dimensions (and unset fullscreen)")
+             .validator(|s| {
+                 u32::from_str(&*s)
+                     .map(|_| ())
+                     .map_err(|e| format!("'{}' dimension is invalid : {}", s, e))
+             })
+             .number_of_values(2)
+             .takes_value(true))
         .arg(clap::Arg::with_name("fps")
-            .short("f")
-            .long("fps")
-            .value_name("INT")
-            .default_value("60")
-            .validator(|s| {
-                u64::from_str(&*s)
-                    .map(|_| ())
-                    .map_err(|e| format!("'{}' fps is invalid : {}", s, e))
-            })
-            .help("Set multisampling")
-            .takes_value(true))
+             .short("f")
+             .long("fps")
+             .value_name("INT")
+             .default_value("60")
+             .validator(|s| {
+                 u64::from_str(&*s)
+                     .map(|_| ())
+                     .map_err(|e| format!("'{}' fps is invalid : {}", s, e))
+             })
+             .help("Set multisampling")
+             .takes_value(true))
         .arg(clap::Arg::with_name("multisampling")
-            .short("m")
-            .long("multisampling")
-            .value_name("FACTOR")
-            .possible_values(&["2", "4", "8", "16"])
-            .help("Set multisampling")
-            .takes_value(true))
+             .short("m")
+             .long("multisampling")
+             .value_name("FACTOR")
+             .possible_values(&["2", "4", "8", "16"])
+             .help("Set multisampling")
+             .takes_value(true))
         .get_matches();
 
     let window = {
@@ -155,7 +193,13 @@ fn main() {
     let lua = Arc::new(Mutex::new(lua));
     let terminal = if matches.is_present("terminal") {
         let lua_clone = lua.clone();
-        let mut rl = Editor::<()>::new();
+
+        let mut function_names = api::callee_function_names();
+        function_names.append(&mut api::caller_function_names());
+
+        let mut rl = Editor::<_>::new();
+        rl.set_completer(Some(MyCompleter::new(function_names)));
+
         Some(thread::spawn(move || {
             loop {
                 let readline = rl.readline("> ");

@@ -74,6 +74,3 @@ pub struct DrawPhysic {
 pub struct PhysicDynamic;
 #[derive(Clone,Copy,Default)]
 pub struct PhysicStatic;
-
-#[derive(Clone,Copy,Default)]
-pub struct PlayerControl;

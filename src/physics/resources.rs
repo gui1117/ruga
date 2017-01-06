@@ -79,7 +79,6 @@ impl PhysicWorld {
         }
     }
     pub fn raycast<F: FnMut((&EntityInformation, f32, f32)) -> ContinueOrStop>(&self, ray: &RayCast, callback: &mut F) {
-        use ::std::f32::consts::FRAC_PI_2;
         use ::std::f32::consts::FRAC_PI_4;
         use ::std::f32::consts::PI;
         use ::std::cmp::Ordering;
@@ -116,10 +115,6 @@ impl PhysicWorld {
         let dx = ox + ray.length * angle.cos();
         let dy = oy + ray.length * angle.sin();
         let cells = grid_raycast(ox, oy, dx, dy);
-        let ray_min_x = ox.min(dx);
-        let ray_max_x = ox.max(dx);
-        let ray_min_y = oy.min(dy);
-        let ray_max_y = oy.max(dy);
 
         // equation ax + by + c = 0
         let equation = if angle.abs() == PI || angle == 0. {
@@ -158,13 +153,13 @@ impl PhysicWorld {
                 visited.insert(entity.entity);
 
                 if let Some((x0, y0, x1, y1)) = entity.shape.raycast(entity.pos, equation) {
-                    let mut l1 = ((ox - x0).powi(2) + (oy - y0).powi(2)).sqrt() *
+                    let l1 = ((ox - x0).powi(2) + (oy - y0).powi(2)).sqrt() *
                         direction.signum(x0, y0, ox, oy);
-                    let mut l2 = ((ox - x1).powi(2) + (oy - y1).powi(2)).sqrt() *
+                    let l2 = ((ox - x1).powi(2) + (oy - y1).powi(2)).sqrt() *
                         direction.signum(x1, y1, ox, oy);
 
-                    let mut min = l1.min(l2);
-                    let mut max = l1.max(l2);
+                    let min = l1.min(l2);
+                    let max = l1.max(l2);
 
                     if max < 0. || min > ray.length {
                         continue;

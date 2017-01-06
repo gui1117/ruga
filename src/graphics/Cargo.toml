@@ -1,0 +1,16 @@
+[package]
+name = "ruga_graphics"
+version = "0.0.1"
+authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+specs = "*"
+glium = "*"
+rusttype = "*"
+vecmath = "*"
+unicode-normalization = "*"
+arrayvec = "*"
+regex = "*"

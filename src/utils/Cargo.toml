@@ -1,0 +1,10 @@
+[package]
+name = "ruga_utils"
+version = "0.0.1"
+authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+rusttype = "*"

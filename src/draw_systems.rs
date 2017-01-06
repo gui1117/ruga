@@ -1,16 +1,7 @@
-use graphics::{self, Layer, obj, Transformed, Transformation};
-use weapons;
-use physics::Shape;
+use graphics::{self, Layer};
 use specs;
-use specs::Join;
-use app;
 use resources::*;
-use components::*;
 use colors;
-use utils::math::*;
-use utils::math;
-use std::f32::consts::PI;
-use itertools::Itertools;
 
 use physics::draw_systems::*;
 use weapons::draw_systems::*;

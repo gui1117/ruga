@@ -1,9 +1,8 @@
 use specs::{self, Join};
-use graphics::{self, Layer, obj, Transformed, Transformation};
+use graphics::{self, Layer};
 
 use super::*;
 use super::components::*;
-use super::resources::*;
 
 pub fn draw_physic(world: &mut specs::World, frame: &mut graphics::Frame) {
     let draws = world.read::<DrawPhysic>();

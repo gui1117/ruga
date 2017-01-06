@@ -1,16 +1,12 @@
-use graphics::{self, Layer, obj, Transformed, Transformation};
-use weapons;
-use physics::Shape;
+use graphics::{self, Layer, obj};
 use specs;
 use specs::Join;
-use app;
-use resources::*;
 use components::*;
-use colors;
 use utils::math::*;
 use utils::math;
-use std::f32::consts::PI;
+use colors;
 use itertools::Itertools;
+use super::*;
 
 pub fn draw_weapon(world: &mut specs::World, frame: &mut graphics::Frame) {
     let states = world.read::<PhysicState>();
@@ -19,7 +15,7 @@ pub fn draw_weapon(world: &mut specs::World, frame: &mut graphics::Frame) {
 
     for (weapons, state, aim) in (&weapons, &states, &aims).iter() {
         match weapons.kind {
-            weapons::Kind::Sniper => draw_sniper(state.pos, aim.0, weapons.state.clone(), frame),
+            Kind::Sniper => draw_sniper(state.pos, aim.0, weapons.state.clone(), frame),
             _ => unimplemented!(),
         }
     }
@@ -90,9 +86,7 @@ fn interpolation(time: f32, points: &[Point]) -> (f32, f32, f32) {
     unreachable!();
 }
 
-fn draw_sniper(pos: [f32; 2], aim: f32, state: weapons::State, frame: &mut graphics::Frame) {
-    use weapons::State;
-
+fn draw_sniper(pos: [f32; 2], aim: f32, state: State, frame: &mut graphics::Frame) {
     let left_hand = [-0.5, 0.1];
     let right_hand = [-1., -0.2];
     let left_shoulder = [0., 0.5];

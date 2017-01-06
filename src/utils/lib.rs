@@ -1,3 +1,10 @@
+extern crate rusttype;
+
+#[derive(Clone)]
+pub struct UpdateContext {
+    pub dt: f32,
+}
+
 /// return the angle in ]-PI,PI]
 #[inline]
 pub fn minus_pi_pi(a: f32) -> f32 {
@@ -21,7 +28,7 @@ pub fn minus_pi_pi(a: f32) -> f32 {
 }
 
 pub mod math {
-    use rusttype::Vector;
+    use ::rusttype::Vector;
 
     #[inline]
     pub fn angle_into_vector(angle: f32) -> Vector<f32> {
@@ -67,6 +74,7 @@ pub mod math {
     }
 }
 
+#[macro_export]
 macro_rules! infer_type {
     () => {::hlua::function0};
     ($t1:tt) => {::hlua::function1};
@@ -80,6 +88,7 @@ macro_rules! infer_type {
     ($t1:tt $t2:tt $t3:tt $t4:tt $t5:tt $t6:tt $t7:tt $t8:tt $t9:tt) => {::hlua::function9};
 }
 
+#[macro_export]
 macro_rules! impl_component {
     ($($typ:ident: $storage:ident,)*) => {
         pub fn register_components(world: &mut ::specs::World) {
@@ -92,6 +101,7 @@ macro_rules! impl_component {
     };
 }
 
+#[macro_export]
 macro_rules! impl_resource {
     ($($typ:ident,)*) => { impl_resource!{ $($typ),* } };
     ($($typ:ident),*) => {

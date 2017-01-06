@@ -1,3 +1,9 @@
+extern crate specs;
+extern crate fnv;
+
+#[macro_use] extern crate ruga_utils as utils;
+extern crate ruga_graphics as graphics;
+
 pub mod components;
 pub mod resources;
 pub mod update_systems;

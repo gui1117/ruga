@@ -1,12 +1,11 @@
-use app;
 use specs;
 use components::*;
 use specs::Join;
+use super::*;
 
 pub struct WeaponSystem;
-impl specs::System<app::UpdateContext> for WeaponSystem {
-    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
-        use weapons::{State, Kind};
+impl specs::System<::utils::UpdateContext> for WeaponSystem {
+    fn run(&mut self, arg: specs::RunArg, context: ::utils::UpdateContext) {
         let (mut weapons, mut next_weapons, shoots, entities) = arg.fetch(|world| {
             (
                 world.write::<Weapon>(),
@@ -17,7 +16,7 @@ impl specs::System<app::UpdateContext> for WeaponSystem {
         });
 
         // create a fake weapon if next weapon and none weapon
-        for (next_weapon, entity) in (&mut next_weapons, &entities).iter() {
+        for (_, entity) in (&mut next_weapons, &entities).iter() {
             if weapons.get(entity).is_none() {
                 let fake_weapon =  Weapon {
                     reload_factor: 0.,

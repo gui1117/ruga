@@ -1,4 +1,3 @@
-use app;
 use fnv::FnvHashMap;
 use specs::{self, Join};
 
@@ -8,8 +7,8 @@ use super::resources::*;
 
 pub struct PhysicSystem;
 #[allow(illegal_floating_point_constant_pattern)]
-impl specs::System<app::UpdateContext> for PhysicSystem {
-    fn run(&mut self, arg: specs::RunArg, context: app::UpdateContext) {
+impl specs::System<::utils::UpdateContext> for PhysicSystem {
+    fn run(&mut self, arg: specs::RunArg, context: ::utils::UpdateContext) {
         use std::f32::consts::PI;
         use std::f32;
 

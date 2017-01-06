@@ -1,5 +1,5 @@
 use api;
-use specs::{self, System};
+use specs;
 use glium;
 use glium::backend::Facade;
 use graphics::{Graphics, Frame, Camera};
@@ -8,21 +8,14 @@ use update_systems;
 use draw_systems;
 use components;
 use resources;
-use entities;
 use weapons;
+use utils::UpdateContext;
 
-use std::rc::Rc;
 use std::io::{self, Write};
-use std::ops::Deref;
 
 const NUMBER_OF_THREADS: usize = 2;
 const NOTIFICATION_DURATION: usize = 600;
 const NOTIFICATION_MAX: usize = 10;
-
-#[derive(Clone)]
-pub struct UpdateContext {
-    pub dt: f32,
-}
 
 pub struct App {
     must_quit: bool,
@@ -32,8 +25,6 @@ pub struct App {
 
 impl App {
     pub fn new<F: Facade>(facade: &F) -> Self {
-        use components::*;
-
         let mut world = specs::World::new();
 
         resources::add_resources(&mut world);
@@ -55,7 +46,7 @@ impl App {
     }
     pub fn draw(&mut self, frame: glium::Frame) {
         let camera = {
-            let mut world = self.planner.mut_world();
+            let world = self.planner.mut_world();
             let players = world.read::<components::PlayerControl>();
             let states = world.read::<components::PhysicState>();
             let zoom = world.read_resource::<resources::Zoom>().0;
@@ -81,17 +72,17 @@ impl App {
         cursor.x = x;
         cursor.y = y;
     }
-    pub fn cursor(&mut self) -> (f32, f32) {
-        let cursor = self.planner.mut_world().read_resource::<resources::Cursor>();
-        (cursor.x, cursor.y)
-    }
+    // pub fn cursor(&mut self) -> (f32, f32) {
+    //     let cursor = self.planner.mut_world().read_resource::<resources::Cursor>();
+    //     (cursor.x, cursor.y)
+    // }
 }
 
 impl_entity_builder!(App);
 
 impl api::Caller for App {
     fn set_player_aim(&mut self, angle: f32) {
-        let mut world = self.planner.mut_world();
+        let world = self.planner.mut_world();
         let players = world.read::<components::PlayerControl>();
         let mut aims = world.write::<components::Aim>();
         for (_, mut aim) in (&players, &mut aims).iter() {
@@ -99,7 +90,7 @@ impl api::Caller for App {
         }
     }
     fn set_player_force(&mut self, angle: f32, strength: f32) {
-        let mut world = self.planner.mut_world();
+        let world = self.planner.mut_world();
         let players = world.read::<components::PlayerControl>();
         let mut forces = world.write::<components::PhysicForce>();
         for (_, force) in (&players, &mut forces).iter() {
@@ -111,7 +102,7 @@ impl api::Caller for App {
         self.must_quit = true;
     }
     fn notify(&mut self, notification: String) {
-        let mut world = self.planner.mut_world();
+        let world = self.planner.mut_world();
         let ref mut notifications = world.write_resource::<resources::Notifications>().0;
         notifications.push((notification, NOTIFICATION_DURATION));
         if notifications.len() > NOTIFICATION_MAX {
@@ -123,17 +114,17 @@ impl api::Caller for App {
         io::stdout().flush().unwrap();
     }
     fn fill_physic_world(&mut self) {
-        let mut world = self.planner.mut_world();
+        let world = self.planner.mut_world();
         let mut physic_world = world.write_resource::<resources::PhysicWorld>();
         physic_world.fill(world);
     }
     fn set_zoom(&mut self, new_zoom: f32) {
-        let mut world = self.planner.mut_world();
+        let world = self.planner.mut_world();
         let ref mut zoom = world.write_resource::<resources::Zoom>().0;
         *zoom = new_zoom;
     }
     fn set_player_shoot(&mut self, shoot: bool) {
-        let mut world = self.planner.mut_world();
+        let world = self.planner.mut_world();
         let mut shoots = world.write::<components::Shoot>();
         let players = world.read::<components::PlayerControl>();
 
@@ -155,7 +146,7 @@ impl api::Caller for App {
                 setdown_factor: 1./setdown,
             });
 
-            let mut world = self.planner.mut_world();
+            let world = self.planner.mut_world();
             let mut next_weapons = world.write::<components::NextWeapon>();
             let players = world.read::<components::PlayerControl>();
 

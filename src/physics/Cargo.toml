@@ -1,0 +1,13 @@
+[package]
+name = "ruga_physics"
+version = "0.0.1"
+authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+ruga_utils = { path = "../utils" }
+ruga_graphics = { path = "../graphics" }
+specs = "*"
+fnv = "*"

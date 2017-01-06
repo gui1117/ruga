@@ -1,7 +1,4 @@
 use specs;
-use weapons;
-use graphics::Layer;
-use specs::InsertResult;
 use components::*;
 use physics::{self, Shape, CollisionBehavior};
 use std::f32;
@@ -79,7 +76,7 @@ pub fn add_wall(world: &mut specs::World, x: f32, y: f32, width: f32, height: f3
 pub fn add_character(world: &mut specs::World, x: f32, y: f32, velocity: f32, time_to_reach_vmax: f32, weight: f32) {
     let shape = Shape::Circle(0.5);
     let (force, damping) = physics::compute_force_damping(velocity, time_to_reach_vmax, weight);
-    let char_entity = world.create_now()
+    world.create_now()
         .with(PhysicState::new([x, y]))
         .with(PhysicType::new_movable(CHAR_GROUP, CHAR_MASK, shape, CollisionBehavior::Persist, weight))
         .with(PhysicForce {

@@ -19,5 +19,10 @@ unicode-normalization = "*"
 arrayvec = "*"
 specs = "*"
 fnv = "*"
-svg = "*"
 regex = "*"
+ruga_utils = { path = "src/utils" }
+ruga_physics = { path = "src/physics" }
+ruga_graphics = { path = "src/graphics" }
+
+[workspace]
+members = ["src/utils", "src/physics", "src/graphics"]

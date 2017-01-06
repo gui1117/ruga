@@ -1,6 +1,11 @@
-use arrayvec;
-use vecmath;
-use glium::{self, Blend, SwapBuffersError, Surface, VertexBuffer, IndexBuffer, index, vertex, Program, DrawParameters, Depth, DepthTest};
+#[macro_use] extern crate glium;
+extern crate unicode_normalization;
+extern crate rusttype;
+extern crate regex;
+extern crate vecmath;
+extern crate arrayvec;
+
+use glium::{Blend, SwapBuffersError, Surface, VertexBuffer, IndexBuffer, index, vertex, Program, DrawParameters, Depth, DepthTest};
 use glium::backend::{Facade, Context};
 use glium::program::ProgramCreationError;
 use glium::draw_parameters::Smooth;
@@ -94,7 +99,7 @@ macro_rules! obj {
 
         fn objs() -> Vec<&'static str> {
             vec!($(include_str!(concat!(
-                            "../assets/objs/",
+                            "../../assets/objs/",
                             stringify!($obj),
                             ".obj"
             )))*)
@@ -303,7 +308,7 @@ impl Graphics {
             ..Default::default()
         };
 
-        let font_data = include_bytes!("../assets/fonts/DejaVuSansMono-Bold.ttf");
+        let font_data = include_bytes!("../../assets/fonts/DejaVuSansMono-Bold.ttf");
         let font = FontCollection::from_bytes(SharedBytes::ByRef(font_data)).into_font()
             .ok_or(GraphicsError::InvalidFont)?;
 
