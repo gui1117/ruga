@@ -4,7 +4,6 @@ pub use ::notifications::resources::*;
 pub fn add_resources(world: &mut ::specs::World) {
     ::physics::resources::add_resources(world);
     ::notifications::resources::add_resources(world);
-    world.add_resource(Notifications::new());
     world.add_resource(Cursor::new());
     world.add_resource(Zoom::new());
 }
