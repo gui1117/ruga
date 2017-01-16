@@ -79,3 +79,14 @@ communication:
     à l'écrit visible directement à l'ecran
     morse ? bof
     possibilité de faire des cercles (comme l'eau) pour dire à l'autre se position
+
+## essai
+
+### 1
+
+juste avec les araignées. pas d'animation.
+coup d'épée
+
+### 2
+
+

@@ -10,10 +10,11 @@ use components;
 use resources;
 use weapons;
 use utils::UpdateContext;
+use num_cpus;
 
 use std::io::{self, Write};
 
-const NUMBER_OF_THREADS: usize = 2;
+lazy_static! { static ref NUMBER_OF_THREADS: usize = num_cpus::get(); }
 const NOTIFICATION_DURATION: usize = 600;
 const NOTIFICATION_MAX: usize = 10;
 
@@ -30,7 +31,7 @@ impl App {
         resources::add_resources(&mut world);
         components::register_components(&mut world);
 
-        let mut planner = specs::Planner::new(world, NUMBER_OF_THREADS);
+        let mut planner = specs::Planner::new(world, *NUMBER_OF_THREADS);
         update_systems::add_systems(&mut planner);
 
         App {

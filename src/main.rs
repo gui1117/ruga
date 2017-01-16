@@ -5,12 +5,14 @@ extern crate itertools;
 extern crate arrayvec;
 #[macro_use] extern crate glium;
 #[macro_use] extern crate hlua;
+#[macro_use] extern crate lazy_static;
 extern crate time;
 extern crate rustyline;
 extern crate rusttype;
 extern crate specs;
 extern crate fnv;
 extern crate regex;
+extern crate num_cpus;
 
 #[macro_use] extern crate ruga_utils as utils;
 extern crate ruga_graphics as graphics;

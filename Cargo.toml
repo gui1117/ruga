@@ -20,6 +20,8 @@ arrayvec = "*"
 specs = "*"
 fnv = "*"
 regex = "*"
+num_cpus = "*"
+lazy_static = "*"
 ruga_utils = { path = "src/utils" }
 ruga_physics = { path = "src/physics" }
 ruga_graphics = { path = "src/graphics" }

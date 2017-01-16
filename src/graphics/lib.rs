@@ -312,7 +312,7 @@ impl Graphics {
         let font = FontCollection::from_bytes(SharedBytes::ByRef(font_data)).into_font()
             .ok_or(GraphicsError::InvalidFont)?;
 
-        let dpi_factor = 1; // FIXME: different from one in retina display
+        let dpi_factor = 1; // FIXME: different than one in retina display
         let (screen_width, screen_height) = facade.get_context().get_framebuffer_dimensions();
         let (cache_width, cache_height) = (screen_width * dpi_factor, screen_height * dpi_factor);
 
@@ -400,7 +400,7 @@ impl Graphics {
         Ok(())
     }
     pub fn resize(&mut self) -> Result<(), GraphicsError> {
-        let dpi_factor = 1; // FIXME: different from one in retina display
+        let dpi_factor = 1; // FIXME: different than one in retina display
         let (screen_width, screen_height) = self.context.get_framebuffer_dimensions();
         let (cache_width, cache_height) = (screen_width * dpi_factor, screen_height * dpi_factor);
 
