@@ -188,9 +188,9 @@ fn main() {
             Event::GlutinEvent(glutin::Event::Focused(f)) => app.focused(f),
             Event::GlutinEvent(glutin::Event::Touch(t)) => app.touch(t),
             Event::GlutinEvent(_) => (),
-            Event::GilrsEvent(gilrs::Event::ButtonPressed(button)) => app.button_pressed(button),
-            Event::GilrsEvent(gilrs::Event::ButtonReleased(button)) => app.button_released(button),
-            Event::GilrsEvent(gilrs::Event::AxisChanged(axis,pos)) => app.axis_changed(axis,pos),
+            Event::GilrsEvent(gilrs::Event::ButtonPressed(button, _)) => app.button_pressed(button),
+            Event::GilrsEvent(gilrs::Event::ButtonReleased(button, _)) => app.button_released(button),
+            Event::GilrsEvent(gilrs::Event::AxisChanged(axis,pos, _)) => app.axis_changed(axis,pos),
             Event::GilrsEvent(_) => (),
             Event::Idle(args) => thread::sleep(args.dt),
         }

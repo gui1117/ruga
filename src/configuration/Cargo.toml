@@ -5,5 +5,5 @@ authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 
 [dependencies]
 lazy_static = "*"
-toml = "*"
+toml = "0.2"
 
