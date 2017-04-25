@@ -6,7 +6,7 @@ authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 [dependencies]
 glium = "*"
 vecmath = "*"
-toml = "*"
+toml = "0.2"
 configuration = { path = "../configuration" }
 rusttype = "*"
 unicode-normalization = "*"

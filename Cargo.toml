@@ -10,11 +10,11 @@ name = "ruga"
 graphics = { path = "src/graphics" }
 configuration = { path = "src/configuration" }
 baal = { git = "https://github.com/thiolliere/baal" }
-specs = { git = "https://github.com/slide-rs/specs" }
+specs = "0.7"
 glium = "*"
 time = "*"
 lazy_static = "*"
-toml = "*"
+toml = "0.2"
 rand = "*"
 png = "*"
 fnv = "*"
