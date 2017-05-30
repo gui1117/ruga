@@ -84,7 +84,7 @@ impl Transformed for Transformation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphicsSetting {
     pub colors: ColorsValue,
     pub mode: Mode,
@@ -216,8 +216,8 @@ impl Graphics {
         let circle_indices = index::NoIndices(index::PrimitiveType::TriangleFan);
 
         let vertex_shader_src = r#"
-            #version 150
-            in vec2 position;
+            #version 100
+            attribute vec2 position;
             uniform mat4 trans;
             uniform mat4 camera;
             void main() {
@@ -226,11 +226,11 @@ impl Graphics {
             }
         "#;
         let fragment_shader_src = r#"
-            #version 150
-            out vec4 out_color;
+            #version 100
+            precision mediump float;
             uniform vec4 color;
             void main() {
-                out_color = color;
+                gl_FragColor = color;
             }
         "#;
         let program = try!(Program::from_source(facade, vertex_shader_src, fragment_shader_src, None)
@@ -381,8 +381,13 @@ impl<'a> Frame<'a> {
         let ratio = width as f32/ height as f32;
 
         let camera_matrix = {
-            let kx = camera.zoom;
-            let ky = camera.zoom*ratio;
+            let (kx, ky) = if ratio > 1. {
+                (camera.zoom / ratio,
+                 camera.zoom)
+            } else {
+                (camera.zoom,
+                 camera.zoom * ratio)
+            };
             let dx = -camera.x;
             let dy = -camera.y;
             [
@@ -393,8 +398,11 @@ impl<'a> Frame<'a> {
             ]
         };
         let billboard_camera_matrix = {
-            let kx = 1.0;
-            let ky = ratio;
+            let (kx, ky) = if ratio > 1. {
+                (1. / ratio, 1.)
+            } else {
+                (1., ratio)
+            };
             [
                 [   kx,    0., 0., 0.],
                 [   0.,    ky, 0., 0.],
@@ -869,13 +877,13 @@ impl Into<f32> for Layer {
     }
 }
 
-#[derive(Debug,Clone,Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Mode {
     Light,
     Dark,
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ColorsValue {
     pub base03: [f32;4],
     pub base02: [f32;4],
