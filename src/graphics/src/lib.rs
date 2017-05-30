@@ -7,8 +7,6 @@ extern crate arrayvec;
 #[macro_use] extern crate glium;
 #[macro_use] extern crate configuration;
 
-// mod glium_text;
-
 use itertools::Itertools;
 use glium::{
     Blend,
@@ -97,7 +95,6 @@ pub struct GraphicsSetting {
     pub font: String,
 }
 
-
 #[derive(Clone,Copy)]
 struct Vertex {
     position: [f32;2],
@@ -127,6 +124,7 @@ pub struct Graphics {
     billboard_font_scale: f32,
     font: Font<'static>,
     font_cache: Cache,
+
     //TODO allow redimension
     font_cache_tex: Texture2d,
     font_program: Program,
@@ -149,11 +147,11 @@ impl Error for GraphicsCreationError {
     fn description(&self) -> &str {
         use self::GraphicsCreationError::*;
         match *self {
-            ProgramCreationError(_) => "program creation failed",
-            BufferCreationError(_) => "buffer creation failed",
-            FontFileOpenError(_) => "open font file failed",
-            FontFileReadError(_) => "an error occured while reading the font file",
-            Texture2dError(_) => "an error occured when creating a 2d texture",
+            ProgramCreationError(ref e) => e.description(),
+            BufferCreationError(ref e) => e.description(),
+            FontFileOpenError(ref e) => e.description(),
+            FontFileReadError(ref e) => e.description(),
+            Texture2dError(ref e) => e.description(),
             InvalidFont => "font not supported",
             FontTextureCreationError => "font texture creation failed",
         }
@@ -161,11 +159,11 @@ impl Error for GraphicsCreationError {
     fn cause(&self) -> Option<&Error> {
         use self::GraphicsCreationError::*;
         match *self {
-            ProgramCreationError(ref e) => e.cause(),
-            BufferCreationError(ref e) => e.cause(),
-            FontFileOpenError(ref e) => e.cause(),
-            FontFileReadError(ref e) => e.cause(),
-            Texture2dError(ref e) => e.cause(),
+            ProgramCreationError(ref e) => Some(e),
+            BufferCreationError(ref e) => Some(e),
+            FontFileOpenError(ref e) => Some(e),
+            FontFileReadError(ref e) => Some(e),
+            Texture2dError(ref e) => Some(e),
             InvalidFont => None,
             FontTextureCreationError => None,
         }
@@ -176,13 +174,13 @@ impl fmt::Display for GraphicsCreationError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         use self::GraphicsCreationError::*;
         match *self {
-            ProgramCreationError(ref e) => write!(fmt,"{}: {}",self.description(),e),
-            BufferCreationError(ref e) => write!(fmt,"{}: {}",self.description(),e),
-            FontFileOpenError(ref e) => write!(fmt,"{}: {}",self.description(),e),
-            FontFileReadError(ref e) => write!(fmt,"{}: {}",self.description(),e),
-            Texture2dError(ref e) => write!(fmt,"{}: {}",self.description(),e),
-            InvalidFont => write!(fmt,"{}",self.description()),
-            FontTextureCreationError => write!(fmt,"{}",self.description()),
+            ProgramCreationError(ref e) => write!(fmt,"Program creation error: {}",e),
+            BufferCreationError(ref e) => write!(fmt,"Buffer creation error: {}", e),
+            FontFileOpenError(ref e) => write!(fmt,"Font file opening error: {}", e),
+            FontFileReadError(ref e) => write!(fmt,"Font file reading error: {}", e),
+            Texture2dError(ref e) => write!(fmt,"2d texture creation error: {}", e),
+            InvalidFont => write!(fmt,"Font not supported")),
+            FontTextureCreationError => write!(fmt,"Font texture creation error"),
         }
     }
 }
