@@ -6,9 +6,9 @@ authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 [dependencies]
 glium = "*"
 vecmath = "*"
-toml = "0.2"
-configuration = { path = "../configuration" }
 rusttype = "*"
 unicode-normalization = "*"
 itertools = "*"
 arrayvec = "*"
+serde = "1.0"
+serde_derive = "1.0"

@@ -1,11 +1,10 @@
 extern crate vecmath;
-extern crate toml;
 extern crate rusttype;
 extern crate unicode_normalization;
 extern crate itertools;
 extern crate arrayvec;
 #[macro_use] extern crate glium;
-#[macro_use] extern crate configuration;
+#[macro_use] extern crate serde_derive;
 
 use itertools::Itertools;
 use glium::{
@@ -85,7 +84,7 @@ impl Transformed for Transformation {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct GraphicsSetting {
     pub colors: ColorsValue,
     pub mode: Mode,
@@ -95,7 +94,7 @@ pub struct GraphicsSetting {
     pub font: String,
 }
 
-#[derive(Clone,Copy)]
+#[derive(Clone, Copy)]
 struct Vertex {
     position: [f32;2],
 }
@@ -179,11 +178,12 @@ impl fmt::Display for GraphicsCreationError {
             FontFileOpenError(ref e) => write!(fmt,"Font file opening error: {}", e),
             FontFileReadError(ref e) => write!(fmt,"Font file reading error: {}", e),
             Texture2dError(ref e) => write!(fmt,"2d texture creation error: {}", e),
-            InvalidFont => write!(fmt,"Font not supported")),
+            InvalidFont => write!(fmt,"Font not supported"),
             FontTextureCreationError => write!(fmt,"Font texture creation error"),
         }
     }
 }
+
 impl Graphics {
     pub fn new<F: Facade>(facade: &F, setting: GraphicsSetting) -> Result<Graphics,GraphicsCreationError> {
         use std::io::Read;
@@ -358,7 +358,7 @@ pub struct Frame<'a> {
     billboard_camera_matrix: [[f32;4];4],
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct Camera {
     pub x: f32,
     pub y: f32,
@@ -798,7 +798,7 @@ impl<'a> Frame<'a> {
     }
 }
 
-#[derive(Debug,Clone,Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Color {
     Base1,
     Base2,
@@ -815,61 +815,7 @@ pub enum Color {
     Green,
 }
 
-impl_from_into_toml_for_enum!{
-    Color {
-        Base1,
-        Base2,
-        Base3,
-        Base4,
-        Base5,
-        Yellow,
-        Orange,
-        Red,
-        Magenta,
-        Violet,
-        Blue,
-        Cyan,
-        Green,
-    }
-}
-
 impl Color {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "base5" => Color::Base5,
-            "base4" => Color::Base4,
-            "base3" => Color::Base3,
-            "base2" => Color::Base2,
-            "base1" => Color::Base1,
-            "yellow" => Color::Yellow,
-            "orange" => Color::Orange,
-            "red" => Color::Red,
-            "magenta" => Color::Magenta,
-            "violet" => Color::Violet,
-            "blue" => Color::Blue,
-            "cyan" => Color::Cyan,
-            "green" => Color::Green,
-            _ => unreachable!(),
-        }
-    }
-    pub fn from_string(s: &String) -> Self {
-        match &**s {
-            "base5" => Color::Base5,
-            "base4" => Color::Base4,
-            "base3" => Color::Base3,
-            "base2" => Color::Base2,
-            "base1" => Color::Base1,
-            "yellow" => Color::Yellow,
-            "orange" => Color::Orange,
-            "red" => Color::Red,
-            "magenta" => Color::Magenta,
-            "violet" => Color::Violet,
-            "blue" => Color::Blue,
-            "cyan" => Color::Cyan,
-            "green" => Color::Green,
-            _ => unreachable!(),
-        }
-    }
     fn into_vec4(self, mode: Mode, colors_value: &ColorsValue) -> [f32;4] {
         match self {
             Color::Base1 => match mode {
@@ -904,33 +850,12 @@ impl Color {
     }
 }
 
-#[derive(Debug,Clone,Copy,PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Layer {
     Floor,
     Middle,
     Ceil,
     BillBoard,
-}
-
-impl_from_into_toml_for_enum!{
-    Layer {
-        Floor,
-        Middle,
-        Ceil,
-        BillBoard,
-    }
-}
-
-impl Layer {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "floor" => Layer::Floor,
-            "middle" => Layer::Middle,
-            "ceil" => Layer::Ceil,
-            "billboard" => Layer::BillBoard,
-            _ => unreachable!(),
-        }
-    }
 }
 
 impl Into<f32> for Layer {
