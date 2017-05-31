@@ -1,18 +1,15 @@
 extern crate vecmath;
-extern crate rusttype;
-extern crate unicode_normalization;
-extern crate itertools;
-extern crate arrayvec;
+extern crate glium_text_rusttype as glium_text;
 #[macro_use] extern crate glium;
 #[macro_use] extern crate serde_derive;
 
-use itertools::Itertools;
 use glium::{
     Blend,
     SwapBuffersError,
     Surface,
     VertexBuffer,
     index,
+    vertex,
     Program,
     DrawParameters,
     Depth,
@@ -20,21 +17,17 @@ use glium::{
 };
 use glium::backend::{Facade, Context};
 use glium::program::ProgramCreationError;
-use glium::vertex::BufferCreationError;
 use glium::draw_parameters::Smooth;
-use glium::texture::Texture2d;
-use rusttype::{
-    FontCollection,
-    Font,
-    Scale,
-    point,
-    vector,
-    Rect,
-};
-use rusttype::gpu_cache::Cache;
 
+use glium_text::{
+    TextSystem,
+    FontTexture,
+    TextDisplay,
+};
+
+use std::fs::File;
+use std::path::Path;
 use std::rc::Rc;
-use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
@@ -79,8 +72,64 @@ impl Transformed for Transformation {
 
     #[inline(always)]
     fn identity() -> Self {
-        [[1.,0.,0.],
-        [0.,1.,0.]]
+        [[1., 0., 0.],
+        [0., 1., 0.]]
+    }
+}
+
+#[derive(Debug)]
+pub enum GraphicsCreationError {
+    ProgramCreation(ProgramCreationError),
+    VertexBufferCreation(vertex::BufferCreationError),
+    FontTexture(glium_text::Error),
+    FontFileOpen(std::io::Error),
+}
+
+impl Error for GraphicsCreationError {
+    fn description(&self) -> &str {
+        use self::GraphicsCreationError::*;
+        match *self {
+            ProgramCreation(ref e) => e.description(),
+            VertexBufferCreation(ref e) => e.description(),
+            FontTexture(ref _e) => "glium_text_rusttype: font texture error: {}",
+            FontFileOpen(ref e) => e.description(),
+        }
+    }
+    fn cause(&self) -> Option<&Error> {
+        use self::GraphicsCreationError::*;
+        match *self {
+            ProgramCreation(ref e) => Some(e),
+            VertexBufferCreation(ref e) => Some(e),
+            FontTexture(ref _e) => None,
+            FontFileOpen(ref e) => Some(e),
+        }
+    }
+}
+
+impl fmt::Display for GraphicsCreationError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        use self::GraphicsCreationError::*;
+        match *self {
+            ProgramCreation(ref e) => write!(fmt, "Program creation error: {}", e),
+            VertexBufferCreation(ref e) => write!(fmt, "Buffer creation error: {}", e),
+            FontTexture(ref e) => write!(fmt, "Font Texture creation error: {:?}", e),
+            FontFileOpen(ref e) => write!(fmt, "Font file opening error: {}", e),
+        }
+    }
+}
+impl From<ProgramCreationError> for GraphicsCreationError {
+    fn from(err: ProgramCreationError) -> GraphicsCreationError {
+        GraphicsCreationError::ProgramCreation(err)
+    }
+}
+impl From<vertex::BufferCreationError> for GraphicsCreationError {
+    fn from(err: vertex::BufferCreationError) -> GraphicsCreationError {
+        GraphicsCreationError::VertexBufferCreation(err)
+    }
+}
+impl From<glium_text::Error> for GraphicsCreationError {
+    fn from(err: glium_text::Error) -> GraphicsCreationError {
+        GraphicsCreationError::FontTexture(err)
     }
 }
 
@@ -90,8 +139,8 @@ pub struct GraphicsSetting {
     pub mode: Mode,
     pub luminosity: f32,
     pub circle_precision: usize,
-    pub billboard_font_scale: f32,
     pub font: String,
+    pub font_size: u32,
 }
 
 #[derive(Clone, Copy)]
@@ -107,6 +156,8 @@ struct FontVertex {
 }
 implement_vertex!(FontVertex, position, tex_coords);
 
+pub struct TextElement(usize);
+
 pub struct Graphics {
     context: Rc<Context>,
 
@@ -120,82 +171,21 @@ pub struct Graphics {
     program: Program,
     luminosity: f32,
 
-    billboard_font_scale: f32,
-    font: Font<'static>,
-    font_cache: Cache,
-
-    //TODO allow redimension
-    font_cache_tex: Texture2d,
-    font_program: Program,
+    text_system: TextSystem,
+    font_texture: Rc<FontTexture>,
 
     draw_parameters: DrawParameters<'static>,
 }
 
-#[derive(Debug)]
-pub enum GraphicsCreationError {
-    ProgramCreationError(ProgramCreationError),
-    BufferCreationError(BufferCreationError),
-    FontFileOpenError(std::io::Error),
-    FontFileReadError(std::io::Error),
-    Texture2dError(glium::texture::TextureCreationError),
-    FontTextureCreationError,
-    InvalidFont,
-}
-
-impl Error for GraphicsCreationError {
-    fn description(&self) -> &str {
-        use self::GraphicsCreationError::*;
-        match *self {
-            ProgramCreationError(ref e) => e.description(),
-            BufferCreationError(ref e) => e.description(),
-            FontFileOpenError(ref e) => e.description(),
-            FontFileReadError(ref e) => e.description(),
-            Texture2dError(ref e) => e.description(),
-            InvalidFont => "font not supported",
-            FontTextureCreationError => "font texture creation failed",
-        }
-    }
-    fn cause(&self) -> Option<&Error> {
-        use self::GraphicsCreationError::*;
-        match *self {
-            ProgramCreationError(ref e) => Some(e),
-            BufferCreationError(ref e) => Some(e),
-            FontFileOpenError(ref e) => Some(e),
-            FontFileReadError(ref e) => Some(e),
-            Texture2dError(ref e) => Some(e),
-            InvalidFont => None,
-            FontTextureCreationError => None,
-        }
-    }
-}
-
-impl fmt::Display for GraphicsCreationError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        use self::GraphicsCreationError::*;
-        match *self {
-            ProgramCreationError(ref e) => write!(fmt,"Program creation error: {}",e),
-            BufferCreationError(ref e) => write!(fmt,"Buffer creation error: {}", e),
-            FontFileOpenError(ref e) => write!(fmt,"Font file opening error: {}", e),
-            FontFileReadError(ref e) => write!(fmt,"Font file reading error: {}", e),
-            Texture2dError(ref e) => write!(fmt,"2d texture creation error: {}", e),
-            InvalidFont => write!(fmt,"Font not supported"),
-            FontTextureCreationError => write!(fmt,"Font texture creation error"),
-        }
-    }
-}
-
 impl Graphics {
-    pub fn new<F: Facade>(facade: &F, setting: GraphicsSetting) -> Result<Graphics,GraphicsCreationError> {
-        use std::io::Read;
-
+    pub fn new<F: Facade>(facade: &F, setting: GraphicsSetting) -> Result<Graphics, GraphicsCreationError> {
         let quad_vertex = vec![
             Vertex { position: [-1., -1.] },
             Vertex { position: [ 1., -1.] },
             Vertex { position: [-1.,  1.] },
             Vertex { position: [ 1.,  1.] }
         ];
-        let quad_vertex_buffer = try!(VertexBuffer::new(facade, &quad_vertex)
-            .map_err(|bce| GraphicsCreationError::BufferCreationError(bce)));
+        let quad_vertex_buffer = VertexBuffer::new(facade, &quad_vertex)?;
 
         let quad_indices = index::NoIndices(index::PrimitiveType::TriangleStrip);
 
@@ -203,15 +193,14 @@ impl Graphics {
         {
             let delta_angle = std::f32::consts::PI * 2. / setting.circle_precision as f32;
             let mut angle = 0f32;
-            circle_vertex.push(Vertex { position: [angle.cos(),angle.sin()]});
+            circle_vertex.push(Vertex { position: [angle.cos(), angle.sin()]});
             for _ in 0..setting.circle_precision {
                 angle += delta_angle;
-                circle_vertex.push(Vertex { position: [angle.cos(),angle.sin()]});
+                circle_vertex.push(Vertex { position: [angle.cos(), angle.sin()]});
             }
         }
 
-        let circle_vertex_buffer = try!(VertexBuffer::new(facade, &circle_vertex)
-            .map_err(|bce| GraphicsCreationError::BufferCreationError(bce)));
+        let circle_vertex_buffer = VertexBuffer::new(facade, &circle_vertex)?;
 
         let circle_indices = index::NoIndices(index::PrimitiveType::TriangleFan);
 
@@ -233,8 +222,7 @@ impl Graphics {
                 gl_FragColor = color;
             }
         "#;
-        let program = try!(Program::from_source(facade, vertex_shader_src, fragment_shader_src, None)
-            .map_err(|pce| GraphicsCreationError::ProgramCreationError(pce)));
+        let program = Program::from_source(facade, vertex_shader_src, fragment_shader_src, None)?;
 
         let mut colors = setting.colors.clone();
         colors.apply(&mut |color: &mut [f32;4]| {
@@ -254,53 +242,8 @@ impl Graphics {
             .. Default::default()
         };
 
-        let mut font_file = try!(std::fs::File::open(&std::path::Path::new(&setting.font)).map_err(|ioe| GraphicsCreationError::FontFileOpenError(ioe)));
-        let mut font_data = vec!();
-        try!(font_file.read_to_end(&mut font_data).map_err(|e| GraphicsCreationError::FontFileReadError(e)));
-        let font = try!(FontCollection::from_bytes(font_data).into_font().ok_or(GraphicsCreationError::InvalidFont));
-
-        let dpi_factor = 1; // FIXME: different from one in retina display
-        let (screen_width, screen_height) = facade.get_context().get_framebuffer_dimensions();
-        let (cache_width, cache_height) = (screen_width * dpi_factor, screen_height * dpi_factor);
-
-        let font_cache = Cache::new(cache_width, cache_height, 0.1, 0.1);
-
-        let font_vertex_shader_src = r#"
-                #version 150
-                uniform float z;
-                in vec2 position;
-                in vec2 tex_coords;
-                out vec2 v_tex_coords;
-
-                void main() {
-                    gl_Position = vec4(position, z, 1.0);
-                    v_tex_coords = tex_coords;
-                }
-        "#;
-        let font_fragment_shader_src = r#"
-                #version 150
-                uniform sampler2D tex;
-                uniform vec4 color;
-                in vec2 v_tex_coords;
-                out vec4 f_colour;
-
-                void main() {
-                    f_colour = color * vec4(1.0, 1.0, 1.0, texture(tex, v_tex_coords).r);
-                }
-        "#;
-        let font_program = try!(Program::from_source(facade, font_vertex_shader_src, font_fragment_shader_src, None)
-            .map_err(|pce| GraphicsCreationError::ProgramCreationError(pce)));
-
-        let font_cache_tex = try!(glium::texture::Texture2d::with_format(
-            facade,
-            glium::texture::RawImage2d {
-                data: Cow::Owned(vec![128u8; cache_width as usize * cache_height as usize]),
-                width: cache_width,
-                height: cache_height,
-                format: glium::texture::ClientFormat::U8
-            },
-            glium::texture::UncompressedFloatFormat::U8,
-            glium::texture::MipmapsOption::NoMipmap).map_err(|e| GraphicsCreationError::Texture2dError(e)));
+        let font_file = File::open(&Path::new(&setting.font))
+            .map_err(|ioe| GraphicsCreationError::FontFileOpen(ioe))?;
 
         Ok(Graphics {
             context: facade.get_context().clone(),
@@ -314,14 +257,15 @@ impl Graphics {
             program: program,
             luminosity: setting.luminosity,
 
-            billboard_font_scale: setting.billboard_font_scale,
-            font_cache: font_cache,
-            font: font,
-            font_cache_tex: font_cache_tex,
-            font_program: font_program,
+            text_system: TextSystem::new(facade),
+            font_texture: Rc::new(FontTexture::new(facade, font_file, setting.font_size, FontTexture::ascii_character_list())?),
 
             draw_parameters: draw_parameters,
         })
+    }
+
+    pub fn new_text_display(&self, text: &str) -> TextDisplay<Rc<FontTexture>> {
+        TextDisplay::new(&self.text_system, self.font_texture.clone(), text)
     }
 
     pub fn set_luminosity(&mut self, luminosity: f32) {
@@ -353,7 +297,6 @@ impl Graphics {
 pub struct Frame<'a> {
     frame: glium::Frame,
     graphics: &'a mut  Graphics,
-    camera: &'a Camera,
     camera_matrix: [[f32;4];4],
     billboard_camera_matrix: [[f32;4];4],
 }
@@ -377,7 +320,7 @@ impl Camera {
 
 impl<'a> Frame<'a> {
     pub fn new(graphics: &'a mut Graphics, mut frame: glium::Frame, camera: &'a Camera) -> Frame<'a> {
-        let (width,height) = graphics.context.get_framebuffer_dimensions();
+        let (width, height) = graphics.context.get_framebuffer_dimensions();
         let ratio = width as f32/ height as f32;
 
         let camera_matrix = {
@@ -433,14 +376,13 @@ impl<'a> Frame<'a> {
         Frame {
             billboard_camera_matrix: billboard_camera_matrix,
             camera_matrix: camera_matrix,
-            camera: camera,
             frame: frame,
             graphics: graphics,
         }
     }
 
     pub fn draw_square(&mut self, x: f32, y: f32, radius: f32, layer: Layer, color: Color) {
-        self.draw_rectangle(x,y,radius*2.,radius*2.,layer,color);
+        self.draw_rectangle(x, y, radius*2., radius*2., layer, color);
     }
 
     pub fn draw_rectangle(&mut self, x: f32, y: f32, width: f32, height: f32, layer: Layer, color: Color) {
@@ -456,7 +398,7 @@ impl<'a> Frame<'a> {
         let uniform = uniform!{
             trans: trans,
             camera: if layer == Layer::BillBoard { self.billboard_camera_matrix } else { self.camera_matrix },
-            color: color.into_vec4(self.graphics.mode,&self.graphics.colors),
+            color: color.into_vec4(self.graphics.mode, &self.graphics.colors),
         };
 
         self.frame.draw(
@@ -480,7 +422,7 @@ impl<'a> Frame<'a> {
         let uniform = uniform!{
             trans: trans,
             camera: if layer == Layer::BillBoard { self.billboard_camera_matrix } else { self.camera_matrix },
-            color: color.into_vec4(self.graphics.mode,&self.graphics.colors),
+            color: color.into_vec4(self.graphics.mode, &self.graphics.colors),
         };
 
         self.frame.draw(
@@ -489,278 +431,6 @@ impl<'a> Frame<'a> {
             &self.graphics.program,
             &uniform,
             &self.graphics.draw_parameters).unwrap();
-    }
-
-    pub fn draw_billboard_centered_text(&mut self, text: &str, color: Color) {
-        let (screen_width, screen_height) = {
-            let (w,h) = self.graphics.context.get_framebuffer_dimensions();
-            (w as f32, h as f32)
-        };
-
-        let glyphs = {
-            use unicode_normalization::UnicodeNormalization;
-            let scale = Scale::uniform(self.graphics.billboard_font_scale * screen_height);
-
-            let mut lines = vec!();
-            let mut current_line = vec!();
-            for chr in text.nfc() {
-                if let '\n' = chr {
-                    lines.push(current_line.drain(..).collect());
-                } else if let Some(glyph) = self.graphics.font.glyph(chr) {
-                    current_line.push(glyph.scaled(scale));
-                }
-            };
-            lines.push(current_line);
-
-            let v_metrics = self.graphics.font.v_metrics(scale);
-            let advance_height = v_metrics.ascent - v_metrics.descent + v_metrics.line_gap;
-
-            let nbr_of_lines = lines.len();
-            let glyphs = lines.drain(..).enumerate().flat_map(|(id, mut line)| {
-                if line.len() == 0 { return vec!() };
-
-                let height = if nbr_of_lines % 2 == 0 {
-                    - (((nbr_of_lines/2) as i32 - id as i32) as f32 - 0.5) * advance_height
-                } else {
-                    - ((nbr_of_lines/2) as i32 - id as i32) as f32 * advance_height
-                };
-
-                let first_width = line.first().unwrap().h_metrics().advance_width;
-                let total_width = line.iter().tuple_windows().fold(first_width, |mut sum, (a, b)| {
-                    sum += self.graphics.font.pair_kerning(scale, a.id(), b.id());
-                    sum += b.h_metrics().advance_width;
-
-                    sum
-                });
-
-                let mut caret = {
-                    let px = -total_width / 2.;
-                    let py = height;
-                    let (ppx,ppy) = pixel_perfect((px,py), screen_width, screen_height);
-                    point(ppx,ppy)
-                };
-                let mut last_glyph_id = None;
-
-                line.drain(..).map(|glyph| {
-                    if let Some(id) = last_glyph_id.take() {
-                        caret.x += self.graphics.font.pair_kerning(scale, id, glyph.id());
-                    }
-                    last_glyph_id = Some(glyph.id());
-                    let glyph = glyph.positioned(caret);
-                    caret.x += glyph.unpositioned().h_metrics().advance_width;
-                    glyph
-                }).collect::<Vec<_>>()
-            }).collect::<Vec<_>>();
-
-            glyphs
-        };
-
-        for glyph in &glyphs {
-            self.graphics.font_cache.queue_glyph(0, glyph.clone());
-        }
-
-        {
-            let ref mut font_cache_tex = self.graphics.font_cache_tex;
-            self.graphics.font_cache.cache_queued(|rect, data| {
-                font_cache_tex.main_level().write(glium::Rect {
-                    left: rect.min.x,
-                    bottom: rect.min.y,
-                    width: rect.width(),
-                    height: rect.height()
-                }, glium::texture::RawImage2d {
-                    data: Cow::Borrowed(data),
-                    width: rect.width(),
-                    height: rect.height(),
-                    format: glium::texture::ClientFormat::U8
-                });
-            }).unwrap();
-        }
-
-        let z: f32 = Layer::BillBoard.into();
-        let uniforms = uniform! {
-            tex: self.graphics.font_cache_tex.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
-            color: color.into_vec4(self.graphics.mode,&self.graphics.colors),
-            z: z,
-        };
-
-        let vertex_buffer = {
-            let origin = point(1.0, -1.0);
-            let vertices: Vec<FontVertex> = glyphs.iter().flat_map(|g| {
-                if let Ok(Some((uv_rect, screen_rect))) = self.graphics.font_cache.rect_for(0, g) {
-                    let gl_rect = Rect {
-                        min: origin
-                            + (vector(screen_rect.min.x as f32 / screen_width - 0.5,
-                                      1.0 - screen_rect.min.y as f32 / screen_height - 0.5)) * 2.0,
-                        max: origin
-                            + (vector(screen_rect.max.x as f32 / screen_width - 0.5,
-                                      1.0 - screen_rect.max.y as f32 / screen_height - 0.5)) * 2.0
-                    };
-                    arrayvec::ArrayVec::<[FontVertex; 6]>::from([
-                        FontVertex {
-                            position: [gl_rect.min.x, gl_rect.max.y],
-                            tex_coords: [uv_rect.min.x, uv_rect.max.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.min.x,  gl_rect.min.y],
-                            tex_coords: [uv_rect.min.x, uv_rect.min.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.max.x,  gl_rect.min.y],
-                            tex_coords: [uv_rect.max.x, uv_rect.min.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.max.x,  gl_rect.min.y],
-                            tex_coords: [uv_rect.max.x, uv_rect.min.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.max.x, gl_rect.max.y],
-                            tex_coords: [uv_rect.max.x, uv_rect.max.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.min.x, gl_rect.max.y],
-                            tex_coords: [uv_rect.min.x, uv_rect.max.y],
-                        }])
-                } else {
-                    arrayvec::ArrayVec::new()
-                }
-            }).collect();
-            glium::VertexBuffer::new(&self.graphics.context, &vertices).unwrap()
-        };
-
-        self.frame.draw(&vertex_buffer,
-                    &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
-                    &self.graphics.font_program,
-                    &uniforms,
-                    &self.graphics.draw_parameters).unwrap();
-    }
-
-    /// (x,y) correspond to the down-left anchor
-    pub fn draw_text(&mut self, x: f32, y: f32, scale: f32, text: &str, layer: Layer, color: Color) {
-        let glyphs = {
-            use unicode_normalization::UnicodeNormalization;
-
-            let (screen_width,_) = {
-                let (w,h) = self.graphics.context.get_framebuffer_dimensions();
-                (w as f32, h as f32)
-            };
-
-            let scale = if layer == Layer::BillBoard {
-                Scale::uniform(scale * screen_width)
-            } else {
-                Scale::uniform(scale * self.camera.zoom * screen_width)
-            };
-
-            let mut caret = point(0.0, 0.0);
-            let mut last_glyph_id = None;
-            let mut res = vec!();
-
-            for chr in text.nfc() {
-                if let Some(glyph) = self.graphics.font.glyph(chr) {
-                    let glyph = glyph.scaled(scale);
-                    if let Some(id) = last_glyph_id.take() {
-                        caret.x += self.graphics.font.pair_kerning(scale, id, glyph.id());
-                    }
-                    last_glyph_id = Some(glyph.id());
-                    let glyph = glyph.positioned(caret);
-                    caret.x += glyph.unpositioned().h_metrics().advance_width;
-                    res.push(glyph);
-                }
-            };
-
-            res
-        };
-
-        for glyph in &glyphs {
-            self.graphics.font_cache.queue_glyph(0, glyph.clone());
-        }
-
-        {
-            let ref mut font_cache_tex = self.graphics.font_cache_tex;
-            self.graphics.font_cache.cache_queued(|rect, data| {
-                font_cache_tex.main_level().write(glium::Rect {
-                    left: rect.min.x,
-                    bottom: rect.min.y,
-                    width: rect.width(),
-                    height: rect.height()
-                }, glium::texture::RawImage2d {
-                    data: Cow::Borrowed(data),
-                    width: rect.width(),
-                    height: rect.height(),
-                    format: glium::texture::ClientFormat::U8
-                });
-            }).unwrap();
-        }
-
-        let z: f32 = Layer::BillBoard.into();
-        let uniforms = uniform! {
-            tex: self.graphics.font_cache_tex.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest),
-            color: color.into_vec4(self.graphics.mode,&self.graphics.colors),
-            z: z,
-        };
-
-        let vertex_buffer = {
-            let (screen_width, screen_height) = {
-                let (w,h) = self.graphics.context.get_framebuffer_dimensions();
-                (w as f32, h as f32)
-            };
-
-            let origin = if layer == Layer::BillBoard {
-                unimplemented!();
-            } else {
-                let px = 1.0 + (x - self.camera.x)*self.camera.zoom;
-                let py = -1.0 + (y - self.camera.y)*self.camera.zoom*screen_width/screen_height;
-
-                let (ppx,ppy) = pixel_perfect((px,py), screen_width, screen_height);
-                point(ppx,ppy)
-            };
-
-            let vertices: Vec<FontVertex> = glyphs.iter().flat_map(|g| {
-                if let Ok(Some((uv_rect, screen_rect))) = self.graphics.font_cache.rect_for(0, g) {
-                    let gl_rect = Rect {
-                        min: origin
-                            + (vector(screen_rect.min.x as f32 / screen_width - 0.5,
-                                      1.0 - screen_rect.min.y as f32 / screen_height - 0.5)) * 2.0,
-                        max: origin
-                            + (vector(screen_rect.max.x as f32 / screen_width - 0.5,
-                                      1.0 - screen_rect.max.y as f32 / screen_height - 0.5)) * 2.0
-                    };
-                    arrayvec::ArrayVec::<[FontVertex; 6]>::from([
-                        FontVertex {
-                            position: [gl_rect.min.x, gl_rect.max.y],
-                            tex_coords: [uv_rect.min.x, uv_rect.max.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.min.x,  gl_rect.min.y],
-                            tex_coords: [uv_rect.min.x, uv_rect.min.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.max.x,  gl_rect.min.y],
-                            tex_coords: [uv_rect.max.x, uv_rect.min.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.max.x,  gl_rect.min.y],
-                            tex_coords: [uv_rect.max.x, uv_rect.min.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.max.x, gl_rect.max.y],
-                            tex_coords: [uv_rect.max.x, uv_rect.max.y],
-                        },
-                        FontVertex {
-                            position: [gl_rect.min.x, gl_rect.max.y],
-                            tex_coords: [uv_rect.min.x, uv_rect.max.y],
-                        }])
-                } else {
-                    arrayvec::ArrayVec::new()
-                }
-            }).collect();
-            glium::VertexBuffer::new(&self.graphics.context, &vertices).unwrap()
-        };
-
-        self.frame.draw(&vertex_buffer,
-                    &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
-                    &self.graphics.font_program,
-                    &uniforms,
-                    &self.graphics.draw_parameters).unwrap();
     }
 
     pub fn draw_quad(&mut self, trans: Transformation, layer: Layer, color: Color) {
@@ -773,7 +443,7 @@ impl<'a> Frame<'a> {
         let uniform = uniform!{
             trans: trans,
             camera: if layer == Layer::BillBoard { self.billboard_camera_matrix } else { self.camera_matrix },
-            color: color.into_vec4(self.graphics.mode,&self.graphics.colors),
+            color: color.into_vec4(self.graphics.mode, &self.graphics.colors),
         };
 
         self.frame.draw(
@@ -782,6 +452,36 @@ impl<'a> Frame<'a> {
             &self.graphics.program,
             &uniform,
             &self.graphics.draw_parameters).unwrap();
+    }
+
+    pub fn draw_text(&mut self, text: &TextDisplay<Rc<FontTexture>>, x: f32, y: f32, size: f32, layer: Layer, color: Color) {
+        let trans = [
+            [                    1.,                     0.,           0., 0.],
+            [                    0.,                   size,           0., 0.],
+            [                    0.,                     0.,           1., 0.],
+            [ x-text.get_width()/2., y-text.get_height()/3., layer.into(), 1.]
+        ];
+
+        let camera = if layer == Layer::BillBoard { self.billboard_camera_matrix } else { self.camera_matrix };
+        let matrix = vecmath::col_mat4_mul(camera, trans);
+
+        let color = color.into_vec4(self.graphics.mode, &self.graphics.colors);
+        let color = (color[0], color[1], color[2] , color[3]);
+
+        let behavior = glium::uniforms::SamplerBehavior {
+            magnify_filter: glium::uniforms::MagnifySamplerFilter::Linear,
+            minify_filter: glium::uniforms::MinifySamplerFilter::Linear,
+            .. Default::default()
+        };
+        glium_text::draw_with_params(
+            text,
+            &self.graphics.text_system,
+            &mut self.frame,
+            matrix,
+            color,
+            behavior,
+            self.graphics.draw_parameters.clone(),
+            ).unwrap();
     }
 
     pub fn draw_line(&mut self, x: f32, y: f32, angle: f32, length: f32, width: f32, layer: Layer, color: Color) {
@@ -797,7 +497,7 @@ impl<'a> Frame<'a> {
             [l2*sina,  w2*cosa, cy]
         ];
 
-        self.draw_quad(trans,layer,color);
+        self.draw_quad(trans, layer, color);
     }
 
     #[inline]
@@ -922,11 +622,4 @@ impl ColorsValue {
         callback(&mut self.cyan);
         callback(&mut self.green);
     }
-}
-
-fn pixel_perfect(p: (f32,f32), screen_width: f32, screen_height: f32) -> (f32,f32) {
-    (
-        (p.0*screen_width/2.0).round()/screen_width*2.0,
-        (p.1*screen_height/2.0).round()/screen_height*2.0
-    )
 }
