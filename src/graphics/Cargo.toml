@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 
 [dependencies]
-glium = "*"
-glium_text_rusttype = "*"
-vecmath = "*"
+glium = "0.16.0"
+glium_text_rusttype = "0.1.0"
+vecmath = "0.3.0"
 serde = "1.0"
 serde_derive = "1.0"
