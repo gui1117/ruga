@@ -7,14 +7,14 @@ authors = ["thiolliere <guillaume.thiolliere@opmbx.org>"]
 name = "ruga"
 
 [dependencies]
+serde = "1.0"
+serde_derive = "1.0"
 graphics = { path = "src/graphics" }
-configuration = { path = "src/configuration" }
-baal = { git = "https://github.com/thiolliere/baal" }
 specs = "0.7"
 glium = "*"
 time = "*"
 lazy_static = "*"
-toml = "0.2"
+toml = "0.4"
 rand = "*"
 png = "*"
 fnv = "*"

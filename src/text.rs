@@ -1,6 +1,6 @@
 use specs;
 
-#[derive(Clone,Default)]
+#[derive(Clone, Default)]
 pub struct FixedCamera;
 impl specs::Component for FixedCamera {
     type Storage = specs::NullStorage<Self>;

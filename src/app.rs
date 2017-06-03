@@ -1,6 +1,5 @@
 use graphics;
 use specs;
-use reset_static_persistent_snd;
 use utils::{self, Direction, HorizontalVerticalAxis};
 use event_loop;
 use config;
@@ -10,7 +9,6 @@ use levels;
 use systems::*;
 use components::*;
 use std::sync::mpsc;
-use baal;
 use std::rc::Rc;
 use std::sync::Arc;
 use entities;
@@ -18,7 +16,7 @@ use std::fmt;
 use gilrs;
 
 static HELP: &'static str = "
-use up,down,left,right or w,s,a,d to move
+use up, down, left, right or w, s, a, d to move
 
 use escape to go to or escape from menu
 
@@ -75,7 +73,7 @@ pub enum Effect {
     },
 }
 impl Effect {
-    fn next(self,dt: f32) -> Option<Effect> {
+    fn next(self, dt: f32) -> Option<Effect> {
         match self {
             Effect::Line { origin: o, length: le, angle: a, persistance: mut p, thickness: t, layer: la, color: c, } => {
                 p -= dt;
@@ -98,7 +96,7 @@ impl Effect {
                 layer: la,
                 color: co,
             } => {
-                frame.draw_line(o[0],o[1],a,le,t,la,co);
+                frame.draw_line(o[0], o[1], a, le, t, la, co);
             },
         }
     }
@@ -109,7 +107,7 @@ pub enum Control {
     ResetLevel,
     ResetGame,
     ResetCastle,
-    CreateBall([f32;2],Arc<()>),
+    CreateBall([f32;2], Arc<()>),
 }
 
 #[derive(Clone)]
@@ -119,11 +117,11 @@ pub struct UpdateContext {
     pub dt: f32,
 }
 
-#[derive(PartialEq,Clone)]
+#[derive(PartialEq, Clone)]
 enum State {
     Game,
     Menu(usize),
-    Text(usize,String),
+    Text(usize, String),
 }
 
 struct MenuEntry {
@@ -151,7 +149,7 @@ impl MenuEntry {
 
 enum PlayerControlState {
     Keyboard(Vec<Direction>),
-    Joystick(f32,f32),
+    Joystick(f32, f32),
 }
 
 impl PlayerControlState {
@@ -171,24 +169,24 @@ impl PlayerControlState {
     }
     fn set_axis_x_state(&mut self, x: f32) {
         if let PlayerControlState::Keyboard(_) = *self {
-            *self = PlayerControlState::Joystick(0.,0.);
+            *self = PlayerControlState::Joystick(0., 0.);
         }
-        if let &mut PlayerControlState::Joystick(ref mut x_ref,_) = self {
+        if let &mut PlayerControlState::Joystick(ref mut x_ref, _) = self {
             *x_ref = x;
         }
     }
     fn set_axis_y_state(&mut self, y: f32) {
         if let PlayerControlState::Keyboard(_) = *self {
-            *self = PlayerControlState::Joystick(0.,0.);
+            *self = PlayerControlState::Joystick(0., 0.);
         }
-        if let &mut PlayerControlState::Joystick(_,ref mut y_ref) = self {
+        if let &mut PlayerControlState::Joystick(_, ref mut y_ref) = self {
             *y_ref = y;
         }
     }
 }
 
 enum JoystickMenuState {
-    Pressed(Direction,f32),
+    Pressed(Direction, f32),
     Released,
 }
 
@@ -222,14 +220,14 @@ impl fmt::Display for AppError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         use self::AppError::*;
         match *self {
-            InitGraphics(ref e) => write!(fmt,"graphics init failed: {}",e),
-            LevelCreation(ref s) =>write!(fmt,"level creation error: {}",s),
+            InitGraphics(ref e) => write!(fmt, "graphics init failed: {}", e),
+            LevelCreation(ref s) =>write!(fmt, "level creation error: {}", s),
         }
     }
 }
 
 impl App {
-    pub fn new<F: glium::backend::Facade>(facade: &F, castles: Vec<levels::Castle>) -> Result<App,AppError> {
+    pub fn new<F: glium::backend::Facade>(facade: &F, castles: Vec<levels::Castle>) -> Result<App, AppError> {
         // init graphics
         let graphics = try!(graphics::Graphics::new(facade, graphics::GraphicsSetting {
             colors: graphics::ColorsValue {
@@ -250,15 +248,11 @@ impl App {
                 cyan: config.graphics.cyan,
                 green: config.graphics.green,
             },
-            mode: match &*config.graphics.mode {
-                "light" => graphics::Mode::Light,
-                "dark" => graphics::Mode::Dark,
-                _ => unreachable!(),
-            },
+            mode: config.graphics.mode,
             luminosity: config.graphics.luminosity,
             circle_precision: config.graphics.circle_precision,
-            font: config.graphics.font_file.val.clone(),
-            billboard_font_scale: config.graphics.billboard_font_scale,
+            font: config.graphics.font_file.clone(),
+            font_size: config.graphics.font_size,
         }).map_err(|e| AppError::InitGraphics(e)));
 
         // init camera
@@ -291,35 +285,17 @@ impl App {
         world.register::<Text>();
         world.register::<FixedCamera>();
 
-        world.register::<DynPersistentSnd>();
-        world.register::<StaticPersistentSnd>();
-
-        // check levels
-        let check_level = match &*config.levels.check_level {
-            "always" => true,
-            "debug" => {
-                let mut check_level = false;
-                debug_assert!({
-                    check_level = true;
-                    true
-                });
-                check_level
-            },
-            "never" => false,
-            _ => unreachable!(),
-        };
-
-        if check_level {
-            for (c,castle) in castles.iter().enumerate() {
-                for (d,dungeon) in castle.dungeons.iter().enumerate() {
-                    for (r,_) in dungeon.rooms.iter().enumerate() {
+        if config.levels.check_level {
+            for (c, castle) in castles.iter().enumerate() {
+                for (d, dungeon) in castle.dungeons.iter().enumerate() {
+                    for (r, _) in dungeon.rooms.iter().enumerate() {
                         let level = levels::Level::Room {
                             castle: c,
                             dungeon: d,
                             room: r,
                         };
                         try!(levels::load_level(&level, &castles, &mut world)
-                                .map_err(|e| AppError::LevelCreation(format!("load level {}.{}.{} failed: {}",castle.name,dungeon.name,r,e))));
+                                .map_err(|e| AppError::LevelCreation(format!("load level {}.{}.{} failed: {}", castle.name, dungeon.name, r, e))));
                     }
                 }
             }
@@ -328,11 +304,10 @@ impl App {
         // load level
         let level = levels::Level::Entry;
         try!(levels::load_level(&level, &castles, &mut world)
-             .map_err(|e| AppError::LevelCreation(format!("load entry level failed: {}",e))));
-        reset_static_persistent_snd(&world);
+             .map_err(|e| AppError::LevelCreation(format!("load entry level failed: {}", e))));
 
         // init planner
-        let mut planner = specs::Planner::new(world,config.general.number_of_thread);
+        let mut planner = specs::Planner::new(world, config.number_of_thread);
         planner.add_system(PhysicSystem, "physic", 10);
         planner.add_system(PlayerSystem::default(), "player", 5);
         planner.add_system(MonsterSystem, "monster", 5);
@@ -342,19 +317,18 @@ impl App {
         planner.add_system(PortalSystem, "portal", 5);
         planner.add_system(ColumnSystem, "column", 5);
         planner.add_system(LifeSystem, "life", 1);
-        planner.add_system(PersistentSndSystem::default(), "life", 2);
 
         let (effect_tx, effect_rx) = mpsc::channel();
         let (control_tx, control_rx) = mpsc::channel();
 
         // create menu
-        let menu_interline = vec!(0,1,4,7,9,11);
+        let menu_interline = vec!(0, 1, 4, 7, 9, 11);
         let menu = vec!(
             MenuEntry::new_button(
                 Box::new(|_| "continue".into()),
                 Rc::new(Box::new(|app| app.goto_state_game()))),
             MenuEntry::new_left_right(
-                Box::new(|app| format!("difficulty: {}",((app.difficulty*10.).round() as usize))),
+                Box::new(|app| format!("difficulty: {}", ((app.difficulty*10.).round() as usize))),
                 Rc::new(Box::new(|app| {
                     app.difficulty = (app.difficulty - 0.1).max(0.1);
                     app.save();
@@ -379,33 +353,33 @@ impl App {
                     app.control_tx.send(Control::ResetGame).unwrap();
                 }))),
             MenuEntry::new_left_right(
-                Box::new(|_| format!("global volume: {}",(baal::global_volume()*10.).round() as usize)),
+                Box::new(|_| format!("global volume: ")), //(baal::global_volume()*10.).round() as usize)),
                 Rc::new(Box::new(|app| {
-                    baal::set_global_volume((baal::global_volume()-0.1).max(0.0));
+                    // baal::set_global_volume((baal::global_volume()-0.1).max(0.0));
                     app.save();
                 })),
                 Rc::new(Box::new(|app| {
-                    baal::set_global_volume((baal::global_volume()+0.1).min(1.0));
-                    app.save();
-                }))),
-            MenuEntry::new_left_right(
-                Box::new(|_| format!("music volume: {}",(baal::music::volume()*10.).round() as usize)),
-                Rc::new(Box::new(|app| {
-                    baal::music::set_volume((baal::music::volume()-0.1).max(0.0));
-                    app.save()
-                })),
-                Rc::new(Box::new(|app| {
-                    baal::music::set_volume((baal::music::volume()+0.1).min(1.0));
+                    // baal::set_global_volume((baal::global_volume()+0.1).min(1.0));
                     app.save();
                 }))),
             MenuEntry::new_left_right(
-                Box::new(|_| format!("effects volume: {}",(baal::effect::volume()*10.).round() as usize)),
+                Box::new(|_| format!("music volume: ")), //, (baal::music::volume()*10.).round() as usize)),
                 Rc::new(Box::new(|app| {
-                    baal::effect::set_volume((baal::effect::volume()-0.1).max(0.0));
+                    // baal::music::set_volume((baal::music::volume()-0.1).max(0.0));
                     app.save()
                 })),
                 Rc::new(Box::new(|app| {
-                    baal::effect::set_volume((baal::effect::volume()+0.1).min(1.0));
+                    // baal::music::set_volume((baal::music::volume()+0.1).min(1.0));
+                    app.save();
+                }))),
+            MenuEntry::new_left_right(
+                Box::new(|_| format!("effects volume: ")), //, (baal::effect::volume()*10.).round() as usize)),
+                Rc::new(Box::new(|app| {
+                    // baal::effect::set_volume((baal::effect::volume()-0.1).max(0.0));
+                    app.save()
+                })),
+                Rc::new(Box::new(|app| {
+                    // baal::effect::set_volume((baal::effect::volume()+0.1).min(1.0));
                     app.save();
                 }))),
             MenuEntry::new_button(
@@ -444,7 +418,7 @@ impl App {
             );
 
         Ok(App {
-            difficulty: config.general.difficulty,
+            difficulty: config.difficulty,
             menu_interline: menu_interline,
             menu: menu,
             state: State::Game,
@@ -465,24 +439,24 @@ impl App {
         })
     }
     pub fn save(&self) {
-        use conf;
-        use std;
-        use std::io::Write;
+        //TODO
+        // use std;
+        // use std::io::Write;
 
-        let result =  conf::save(conf::Save {
-            difficulty: self.difficulty,
-            global_volume: baal::music::volume(),
-            effect_volume: baal::effect::volume(),
-            music_volume: baal::effect::volume(),
-            luminosity: self.graphics.luminosity(),
-            mode: match self.graphics.mode() {
-                graphics::Mode::Light => "light".into(),
-                graphics::Mode::Dark => "dark".into(),
-            },
-        });
-        if let Some(err) = result.err() {
-            writeln!(&mut std::io::stderr(), "ERROR failed to save save_file: {}", err).unwrap();
-        }
+        // let result =  conf::save(conf::Save {
+        //     difficulty: self.difficulty,
+        //     global_volume: 0., //baal::music::volume(),
+        //     effect_volume: 0., //baal::effect::volume(),
+        //     music_volume: 0., //baal::effect::volume(),
+        //     luminosity: self.graphics.luminosity(),
+        //     mode: match self.graphics.mode() {
+        //         graphics::Mode::Light => "light".into(),
+        //         graphics::Mode::Dark => "dark".into(),
+        //     },
+        // });
+        // if let Some(err) = result.err() {
+        //     writeln!(&mut std::io::stderr(), "ERROR failed to save save_file: {}", err).unwrap();
+        // }
     }
     fn update_player_control(&mut self) {
         use std::f32::consts::PI;
@@ -490,7 +464,7 @@ impl App {
         let world = self.planner.mut_world();
 
         match self.player_control_state {
-            PlayerControlState::Joystick(x,y) => {
+            PlayerControlState::Joystick(x, y) => {
                 let angle = y.atan2(x);
                 let intensity = (x.powi(2)+y.powi(2)).sqrt();
                 let characters = world.read::<PlayerControl>();
@@ -558,45 +532,44 @@ impl App {
         }
     }
     pub fn goto_state_menu(&mut self) {
-        baal::effect::short::stop_all();
-        baal::effect::persistent::clear_positions_for_all();
-        baal::effect::persistent::update_volume_for_all();
+        // baal::effect::short::stop_all();
+        // baal::effect::persistent::clear_positions_for_all();
+        // baal::effect::persistent::update_volume_for_all();
 
         match self.state {
             State::Game => self.state = State::Menu(0),
             State::Menu(_) => (),
-            State::Text(entry,_) => self.state = State::Menu(entry),
+            State::Text(entry, _) => self.state = State::Menu(entry),
         }
     }
     pub fn goto_state_game(&mut self) {
         self.joystick_menu_state = JoystickMenuState::Released;
-        reset_static_persistent_snd(self.planner.mut_world());
 
         self.state = State::Game;
     }
     pub fn goto_state_text(&mut self, text: String) {
-        baal::effect::pause();
+        // baal::effect::pause();
 
         match self.state {
-            State::Game => self.state = State::Text(0,text),
-            State::Text(entry,_) | State::Menu(entry) => self.state = State::Text(entry,text),
+            State::Game => self.state = State::Text(0, text),
+            State::Text(entry, _) | State::Menu(entry) => self.state = State::Text(entry, text),
         }
     }
     pub fn goto_level(&mut self, level: levels::Level) {
         while let Ok(_) = self.control_rx.try_recv() {}
         while let Ok(_) = self.effect_rx.try_recv() {}
 
-        if let Some(e) = levels::load_level(&level,&self.castles,self.planner.mut_world()).err() {
+        if let Some(e) = levels::load_level(&level, &self.castles, self.planner.mut_world()).err() {
             let level_name = match level {
                 levels::Level::Room { castle: c, dungeon: d, room: r } => format!("room (castle: {:?}, dungeon: {:?}, room: {:?})",
                 self.castles.get(c),
                 self.castles.get(c).and_then(|c| c.dungeons.get(d)),
                 self.castles.get(c).and_then(|c| c.dungeons.get(d)).and_then(|d| d.rooms.get(r)),
                 ),
-                levels::Level::Corridor { castle: c } => format!("corridor (castle: {:?})",self.castles.get(c)),
+                levels::Level::Corridor { castle: c } => format!("corridor (castle: {:?})", self.castles.get(c)),
                 levels::Level::Entry => "entry".into(),
             };
-            panic!(format!("ERROR: failed to load level {}: {}",level_name,e));
+            panic!(format!("ERROR: failed to load level {}: {}", level_name, e));
         }
 
         self.current_level = level;
@@ -606,11 +579,11 @@ impl App {
         self.focus = focus;
 
         if focus {
-            baal::effect::resume();
-            baal::music::resume();
+            // baal::effect::resume();
+            // baal::music::resume();
         } else {
-            baal::effect::pause();
-            baal::music::pause();
+            // baal::effect::pause();
+            // baal::music::pause();
         }
     }
     pub fn update(&mut self, args: event_loop::UpdateArgs) {
@@ -627,7 +600,7 @@ impl App {
                 self.planner.dispatch(context);
                 self.planner.wait();
             },
-            State::Menu(_) | State::Text(_,_) => {
+            State::Menu(_) | State::Text(_, _) => {
                 let dir = if let JoystickMenuState::Pressed(dir, ref mut time) = self.joystick_menu_state {
                     if *time <= 0. {
                         *time = config.joystick.time_to_repeat;
@@ -664,7 +637,7 @@ impl App {
                     self.goto_level(levels::Level::Entry);
                     self.goto_state_game();
                 }
-                Control::CreateBall(pos,arc) => entities::add_ball(self.planner.mut_world(),pos,arc),
+                Control::CreateBall(pos, arc) => entities::add_ball(self.planner.mut_world(), pos, arc),
             }
         }
     }
@@ -704,28 +677,28 @@ impl App {
 
                     for (square, graphic) in (&squares, &graphics).iter() {
                         let p = square.position;
-                        frame.draw_square(p[0],p[1],0.5,graphic.layer,graphic.color);
+                        frame.draw_square(p[0], p[1], 0.5, graphic.layer, graphic.color);
                     }
 
                     for (state, typ, graphic) in (&states, &types, &graphics).iter() {
                         let x = state.position[0];
                         let y = state.position[1];
                         match typ.shape {
-                            Shape::Circle(radius) => frame.draw_circle(x,y,radius,graphic.layer,graphic.color),
-                            Shape::Square(radius) => frame.draw_square(x,y,radius,graphic.layer,graphic.color),
+                            Shape::Circle(radius) => frame.draw_circle(x, y, radius, graphic.layer, graphic.color),
+                            Shape::Square(radius) => frame.draw_square(x, y, radius, graphic.layer, graphic.color),
                         }
                     }
 
                     if config.text.right > config.text.left {
                         for text in fixed_camera_texts.iter() {
-                            for (y,text_line) in (config.text.bottom+3..config.text.top+1).rev().zip(text.string.lines()) {
-                                frame.draw_text(config.text.left as f32, y as f32, config.graphics.font_scale, text_line,graphics::Layer::Floor, config.entities.text_color);
+                            for (_y, _text_line) in (config.text.bottom+3..config.text.top+1).rev().zip(text.string.lines()) {
+                                // frame.draw_text(config.text.left as f32, y as f32, config.graphics.font_scale, text_line, graphics::Layer::Floor, config.entities.text_color);
                             }
                         }
                     }
 
-                    for text in texts.iter() {
-                        frame.draw_text(text.x, text.y, text.scale, &*text.string, graphics::Layer::Floor, config.entities.text_color);
+                    for _text in texts.iter() {
+                        // frame.draw_text(text.x, text.y, text.scale, &*text.string, graphics::Layer::Floor, config.entities.text_color);
                     }
                 }
 
@@ -753,7 +726,7 @@ impl App {
             State::Menu(entry) => {
                 let mut menu = String::new();
                 let mut cursor = String::new();
-                for (index,menu_entry) in self.menu.iter().enumerate() {
+                for (index, menu_entry) in self.menu.iter().enumerate() {
                     if index == entry {
                         cursor.push_str("<<                     >>\n");
                     } else {
@@ -767,15 +740,15 @@ impl App {
                         menu.push('\n');
                     }
                 }
-                let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
-                frame.draw_billboard_centered_text(&*cursor,config.menu.cursor_color);
-                frame.draw_billboard_centered_text(&*menu,config.menu.entry_color);
+                let frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
+                // frame.draw_billboard_centered_text(&*cursor, config.menu.cursor_color);
+                // frame.draw_billboard_centered_text(&*menu, config.menu.entry_color);
                 frame.finish().unwrap();
             }
-            State::Text(_,ref text) => {
+            State::Text(_, ref _text) => {
                 let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
-                frame.draw_rectangle(0.,0.,25.0,18.0,graphics::Layer::BillBoard,config.menu.background_color);
-                frame.draw_billboard_centered_text(&*text,config.menu.entry_color);
+                frame.draw_rectangle(0., 0., 25.0, 18.0, graphics::Layer::BillBoard, config.menu.background_color);
+                // frame.draw_billboard_centered_text(&*text, config.menu.entry_color);
                 frame.finish().unwrap();
             }
         }
@@ -790,7 +763,7 @@ impl App {
                 self.update_player_control();
             },
             State::Menu(entry) => {
-                baal::effect::short::play_on_listener(config.menu.clic_snd);
+                // baal::effect::short::play_on_listener(config.menu.clic_snd);
                 match direction {
                     Direction::Up => self.state = State::Menu(if entry == 0 { self.menu.len()-1 } else { entry-1 }),
                     Direction::Down => self.state = State::Menu((entry+1).rem(self.menu.len())),
@@ -798,8 +771,8 @@ impl App {
                     Direction::Left => (*self.menu[entry].left.clone())(self),
                 }
             }
-            State::Text(entry,_) => {
-                baal::effect::short::play_on_listener(config.menu.clic_snd);
+            State::Text(entry, _) => {
+                // baal::effect::short::play_on_listener(config.menu.clic_snd);
                 self.state = State::Menu(entry)
             }
         }
@@ -814,9 +787,9 @@ impl App {
         }
     }
     pub fn escape_pressed(&mut self) {
-        baal::effect::short::play_on_listener(config.menu.clic_snd);
+        // baal::effect::short::play_on_listener(config.menu.clic_snd);
         match self.state {
-            State::Game | State::Text(_,_) => self.goto_state_menu(),
+            State::Game | State::Text(_, _) => self.goto_state_menu(),
             State::Menu(_) => self.goto_state_game(),
         }
     }
@@ -867,12 +840,12 @@ impl App {
     }
     pub fn touch(&mut self, touch: glutin::Touch) {
         use glium::glutin::TouchPhase::*;
-        let loc = [touch.location.0,touch.location.1];
-        if utils::inside_rectangle(loc,config.touch.escape_rec) {
+        let loc = [touch.location.0, touch.location.1];
+        if utils::inside_rectangle(loc, config.touch.escape_rec) {
             if let Started = touch.phase {
                 self.escape_pressed();
             }
-        } else if utils::inside_rectangle(loc,config.touch.joystick_rec) {
+        } else if utils::inside_rectangle(loc, config.touch.joystick_rec) {
             let rec = config.touch.joystick_rec;
 
             match touch.phase {
@@ -887,12 +860,12 @@ impl App {
                         .max(-config.touch.joystick_radius)
                         as f32;
 
-                    self.axis_changed(gilrs::Axis::LeftStickX,pos_x);
-                    self.axis_changed(gilrs::Axis::LeftStickY,pos_y);
+                    self.axis_changed(gilrs::Axis::LeftStickX, pos_x);
+                    self.axis_changed(gilrs::Axis::LeftStickY, pos_y);
                 },
                 Ended | Cancelled => {
-                    self.axis_changed(gilrs::Axis::LeftStickX,0.);
-                    self.axis_changed(gilrs::Axis::LeftStickY,0.);
+                    self.axis_changed(gilrs::Axis::LeftStickX, 0.);
+                    self.axis_changed(gilrs::Axis::LeftStickY, 0.);
                 }
             }
         }
@@ -912,21 +885,21 @@ impl App {
                     self.update_player_control();
                 }
             },
-            State::Text(_,_) | State::Menu(_) => {
+            State::Text(_, _) | State::Menu(_) => {
                 match self.joystick_menu_state {
                     JoystickMenuState::Released => {
                         if pos.abs() >= config.joystick.press_epsilon {
                             let direction = match (axis.is_horizontal(), pos > 0.) {
-                                (true,true)  => Direction::Right,
-                                (true,false) => Direction::Left,
-                                (false,true) => Direction::Up,
-                                (false,false) => Direction::Down,
+                                (true, true)  => Direction::Right,
+                                (true, false) => Direction::Left,
+                                (false, true) => Direction::Up,
+                                (false, false) => Direction::Down,
                             };
-                            self.joystick_menu_state = JoystickMenuState::Pressed(direction,config.joystick.time_to_start_repeating);
+                            self.joystick_menu_state = JoystickMenuState::Pressed(direction, config.joystick.time_to_start_repeating);
                             self.dir_pressed(direction);
                         }
                     },
-                    JoystickMenuState::Pressed(direction,_) => {
+                    JoystickMenuState::Pressed(direction, _) => {
                         if pos.abs() <= config.joystick.release_epsilon && !(direction.perpendicular(&Direction::Up) ^ axis.is_horizontal()) {
                             self.joystick_menu_state = JoystickMenuState::Released;
                         }

@@ -1,20 +1,19 @@
-#[macro_use] extern crate configuration;
 #[macro_use] extern crate lazy_static;
-extern crate baal;
+extern crate toml;
 extern crate graphics;
 extern crate glium;
 extern crate specs;
 extern crate time;
-extern crate toml;
 extern crate rand;
 extern crate fnv;
 extern crate png;
 extern crate gilrs;
+#[macro_use] extern crate serde_derive;
+extern crate serde;
 
-mod persistent_snd;
 mod levels;
 mod app;
-mod conf;
+mod configuration;
 mod event_loop;
 mod control;
 mod physic;
@@ -55,10 +54,6 @@ mod components {
         FixedCamera,
         Text,
     };
-    pub use persistent_snd::{
-        DynPersistentSnd,
-        StaticPersistentSnd,
-    };
 }
 mod resource {
     pub use physic::PhysicWorld;
@@ -77,11 +72,9 @@ mod systems {
         TowardPlayerSystem,
     };
     pub use portal::PortalSystem;
-    pub use persistent_snd::PersistentSndSystem;
 }
 
-pub use conf::CONFIG as config;
-pub use persistent_snd::reset_static_persistent_snd;
+pub use configuration::CONFIG as config;
 
 use glium::glutin;
 use std::time::Duration;
@@ -91,37 +84,37 @@ use event_loop::{
     Event,
 };
 
-fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event_loop::WindowEvents,gilrs::Gilrs),String> {
+fn init() -> Result<(app::App, glium::backend::glutin_backend::GlutinFacade, event_loop::WindowEvents, gilrs::Gilrs), String> {
     use glium::DisplayBuild;
 
     let mut musics = vec!();
-    musics.push(config.levels.entry_music.val.clone());
+    musics.push(config.levels.entry_music.clone());
 
     // load casltes
-    let (castles,mut musics) = try!(levels::load_castles(musics).map_err(|e| format!("ERROR: levels castles load failed: {}",e)));
+    let (castles, mut musics) = levels::load_castles(musics).map_err(|e| format!("ERROR: levels castles load failed: {}", e))?;
 
     // init baal
-    try!(baal::init(&baal::Setting {
-        effect_dir: config.audio.effect_dir.val.clone().into(),
-        music_dir: config.audio.music_dir.val.clone().into(),
-        global_volume: config.audio.global_volume,
-        music_volume: config.audio.music_volume,
-        effect_volume: config.audio.effect_volume,
-        distance_model: match &*config.audio.distance_model {
-            "linear" => baal::effect::DistanceModel::Linear(config.audio.distance_model_min,config.audio.distance_model_max),
-            "pow2" => baal::effect::DistanceModel::Pow2(config.audio.distance_model_min,config.audio.distance_model_max),
-            _ => unreachable!(),
-        },
-        short_effects: config.audio.short_effects.iter().cloned().map(|n| n.val.into()).collect(),
-        persistent_effects: config.audio.persistent_effects.iter().cloned().map(|n| n.val.into()).collect(),
-        musics: musics.drain(..).map(|music| music.into()).collect(),
-        music_transition: match &*config.audio.transition_type {
-            "instant" => baal::music::MusicTransition::Instant,
-            "smooth" => baal::music::MusicTransition::Smooth(Duration::from_millis(config.audio.transition_time)),
-            "overlap" => baal::music::MusicTransition::Overlap(Duration::from_millis(config.audio.transition_time)),
-            _ => unreachable!(),
-        },
-    }).map_err(|e| format!("ERROR: audio init failed: {}",e)));
+    // try!(baal::init(&baal::Setting {
+    //     effect_dir: config.audio.effect_dir.val.clone().into(),
+    //     music_dir: config.audio.music_dir.val.clone().into(),
+    //     global_volume: config.audio.global_volume,
+    //     music_volume: config.audio.music_volume,
+    //     effect_volume: config.audio.effect_volume,
+    //     distance_model: match &*config.audio.distance_model {
+    //         "linear" => baal::effect::DistanceModel::Linear(config.audio.distance_model_min, config.audio.distance_model_max),
+    //         "pow2" => baal::effect::DistanceModel::Pow2(config.audio.distance_model_min, config.audio.distance_model_max),
+    //         _ => unreachable!(),
+    //     },
+    //     short_effects: config.audio.short_effects.iter().cloned().map(|n| n.val.into()).collect(),
+    //     persistent_effects: config.audio.persistent_effects.iter().cloned().map(|n| n.val.into()).collect(),
+    //     musics: musics.drain(..).map(|music| music.into()).collect(),
+    //     music_transition: match &*config.audio.transition_type {
+    //         "instant" => baal::music::MusicTransition::Instant,
+    //         "smooth" => baal::music::MusicTransition::Smooth(Duration::from_millis(config.audio.transition_time)),
+    //         "overlap" => baal::music::MusicTransition::Overlap(Duration::from_millis(config.audio.transition_time)),
+    //         _ => unreachable!(),
+    //     },
+    // }).map_err(|e| format!("ERROR: audio init failed: {}", e)));
 
     // init window
     // TODO if fail then disable vsync and then multisampling and then vsync and multisamping
@@ -145,12 +138,12 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
             builder = builder.with_dimensions(config.window.dimension[0], config.window.dimension[1])
                 .with_title(format!("ruga"));
         }
-        try!(builder.build_glium().map_err(|e| format!("ERROR: window init failed: {}",e)))
+        try!(builder.build_glium().map_err(|e| format!("ERROR: window init failed: {}", e)))
     };
     window.get_window().unwrap().set_cursor_state(glium::glutin::CursorState::Hide).unwrap();
 
     // init app
-    let app = try!(app::App::new(&window,castles).map_err(|e| format!("ERROR: app creation failed: {}",e)));
+    let app = try!(app::App::new(&window, castles).map_err(|e| format!("ERROR: app creation failed: {}", e)));
 
     // init event loop
     let window_events = window.events(&event_loop::Setting {
@@ -159,15 +152,15 @@ fn init() -> Result<(app::App,glium::backend::glutin_backend::GlutinFacade,event
     });
 
 
-    Ok((app,window,window_events,gilrs::Gilrs::new()))
+    Ok((app, window, window_events, gilrs::Gilrs::new()))
 }
 
 fn main() {
     // init
-    let (mut app,mut window,mut window_events, mut gamepad) = match init() {
+    let (mut app, mut window, mut window_events, mut gamepad) = match init() {
         Ok(t) => t,
         Err(err) => {
-            println!("{}",err);
+            println!("{}", err);
             std::process::exit(1);
         },
     };
@@ -178,7 +171,7 @@ fn main() {
             Event::Update(args) => app.update(args),
             Event::Render(args) => app.render(args),
             Event::GlutinEvent(glutin::Event::Closed) => break,
-            Event::GlutinEvent(glutin::Event::KeyboardInput(state,keycode,_)) => {
+            Event::GlutinEvent(glutin::Event::KeyboardInput(state, keycode, _)) => {
                 if state == glutin::ElementState::Pressed {
                     app.key_pressed(keycode);
                 } else {
@@ -190,13 +183,13 @@ fn main() {
             Event::GlutinEvent(_) => (),
             Event::GilrsEvent(gilrs::Event::ButtonPressed(button, _)) => app.button_pressed(button),
             Event::GilrsEvent(gilrs::Event::ButtonReleased(button, _)) => app.button_released(button),
-            Event::GilrsEvent(gilrs::Event::AxisChanged(axis,pos, _)) => app.axis_changed(axis,pos),
+            Event::GilrsEvent(gilrs::Event::AxisChanged(axis, pos, _)) => app.axis_changed(axis, pos),
             Event::GilrsEvent(_) => (),
             Event::Idle(args) => thread::sleep(args.dt),
         }
 
         if app.quit {
-            baal::close();
+            // baal::close();
             return;
         }
     }
@@ -205,7 +198,7 @@ fn main() {
 #[test]
 fn main_test() {
     if let Err(err) = init() {
-        println!("{}",err);
+        println!("{}", err);
         std::process::exit(1);
     }
 }

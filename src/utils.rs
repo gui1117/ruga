@@ -1,6 +1,6 @@
 use gilrs;
 
-#[derive(Debug,Clone,Copy,PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Direction {
     Left,
     Right,
@@ -40,7 +40,7 @@ impl Direction {
     }
 }
 
-///return the angle in ]-PI,PI]
+///return the angle in ]-PI, PI]
 #[inline]
 pub fn minus_pi_pi(a: f32) -> f32 {
     use std::f32::consts::PI;
@@ -69,7 +69,7 @@ pub trait Into3D {
 impl Into3D for [f32;2] {
     #[inline]
     fn into_3d(&self) -> [f32;3] {
-        [self[0],self[1],0f32]
+        [self[0], self[1], 0f32]
     }
 }
 

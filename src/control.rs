@@ -6,10 +6,10 @@ use specs;
 use config;
 use rand;
 use rand::distributions::{IndependentSample, Range};
-use baal;
+// use baal;
 use utils::Into3D;
 
-#[derive(Debug,Clone,Default)]
+#[derive(Debug, Clone, Default)]
 pub struct PlayerControl;
 impl specs::Component for PlayerControl {
     type Storage = specs::NullStorage<Self>;
@@ -34,9 +34,9 @@ impl specs::System<app::UpdateContext> for PlayerSystem {
             )
         });
 
-        if let Some((_,entity)) = (&players, &entities).iter().nth(0) {
+        if let Some((_, entity)) = (&players, &entities).iter().nth(0) {
             let state = states.get(entity).expect("playrcontrol expect state component");
-            baal::effect::set_listener(state.position.into_3d());
+            // baal::effect::set_listener(state.position.into_3d());
             self.restart_cooldown = Some(config.entities.char_restart);
         } else {
             self.restart_cooldown = if let Some(cooldown) = self.restart_cooldown {
@@ -53,7 +53,7 @@ impl specs::System<app::UpdateContext> for PlayerSystem {
     }
 }
 
-#[derive(Debug,Clone,Default)]
+#[derive(Debug, Clone, Default)]
 pub struct TowardPlayerControl;
 impl specs::Component for TowardPlayerControl {
     type Storage = specs::NullStorage<Self>;
@@ -99,7 +99,7 @@ impl specs::Component for MonsterControl {
 impl MonsterControl {
     pub fn new() -> Self {
         let mut rng = rand::thread_rng();
-        let range = Range::new(0.,config.entities.monster_vision_time);
+        let range = Range::new(0., config.entities.monster_vision_time);
         MonsterControl {
             next_lookup: range.ind_sample(&mut rng),
         }
@@ -144,11 +144,11 @@ impl specs::System<app::UpdateContext> for MonsterSystem {
                         origin: pos,
                         angle: angle,
                         length: length,
-                        mask: config.entities.monster_vision_mask.val,
+                        mask: config.entities.monster_vision_mask,
                     };
 
                     let mut player_visible = false;
-                    physic_world.raycast(&ray, &mut |(other_entity,_,_)| {
+                    physic_world.raycast(&ray, &mut |(other_entity, _, _)| {
                         if players.get(other_entity).is_some() {
                             player_visible = true;
                         }

@@ -29,7 +29,7 @@ pub enum Event {
     GilrsEvent(gilrs::Event),
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct Setting {
     pub ups: u64,
     pub max_fps: u64,
@@ -152,7 +152,7 @@ pub const _DEFAULT_MAX_FPS: u64 = 60;
 
 fn poll_next_window_or_gamepad_events(window: &mut GlutinFacade, gamepad: &mut Gilrs) -> Option<Event> {
     window.poll_events().next().map(|x| Event::GlutinEvent(x))
-        .or(gamepad.poll_events().next().map(|(_,x)| Event::GilrsEvent(x)))
+        .or(gamepad.poll_events().next().map(|(_, x)| Event::GilrsEvent(x)))
 }
 
 impl WindowEvents {
@@ -211,7 +211,7 @@ impl WindowEvents {
                         let next_update = self.last_update + self.dt_update_in_ns;
                         let next_event = cmp::min(next_frame, next_update);
                         if next_event > current_time {
-                            if let Some(x) = poll_next_window_or_gamepad_events(window,gamepad) {
+                            if let Some(x) = poll_next_window_or_gamepad_events(window, gamepad) {
                                 *idle = Idle::No;
                                 return Some(x);
                             } else if *idle == Idle::No {
@@ -231,13 +231,13 @@ impl WindowEvents {
                 State::HandleEvents => {
                     if self.bench_mode {
                         // Ignore input to prevent it affecting the benchmark.
-                        match poll_next_window_or_gamepad_events(window,gamepad) {
+                        match poll_next_window_or_gamepad_events(window, gamepad) {
                             None => State::Update,
                             Some(_) => State::HandleEvents,
                         }
                     } else {
                         // Handle all events before updating.
-                        match poll_next_window_or_gamepad_events(window,gamepad) {
+                        match poll_next_window_or_gamepad_events(window, gamepad) {
                             None => State::Update,
                             Some(x) => { return Some(x); },
                         }

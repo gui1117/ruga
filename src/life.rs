@@ -5,7 +5,7 @@ use resource::*;
 use specs::Join;
 use specs;
 use utils::Into3D;
-use baal;
+// use baal;
 use config;
 use std::sync::Arc;
 
@@ -61,7 +61,7 @@ impl specs::System<app::UpdateContext> for LifeSystem {
                     }).unwrap();
                 }
 
-                baal::effect::short::play(life.die_snd,state.position.into_3d());
+                // baal::effect::short::play(life.die_snd, state.position.into_3d());
                 arg.delete(entity);
             }
         }
@@ -93,9 +93,9 @@ impl specs::System<app::UpdateContext> for KillerSystem {
 
         for (killer, state, typ, entity) in (&killers, &states, &types, &entities).iter() {
             let mut kill = false;
-            physic_world.apply_on_shape(&state.position, killer.mask, &typ.shape, &mut |other_entity,_| {
+            physic_world.apply_on_shape(&state.position, killer.mask, &typ.shape, &mut |other_entity, _| {
                 if let Some(life) = lives.get_mut(*other_entity) {
-                    baal::effect::short::play(killer.kill_snd,state.position.into_3d());
+                    // baal::effect::short::play(killer.kill_snd, state.position.into_3d());
                     life.kill();
                     kill = true;
                 }
@@ -148,7 +148,7 @@ impl specs::System<app::UpdateContext> for BallSystem {
 
             if ball.snd_timer <= 0. {
                 ball.snd_timer += 1.0;
-                baal::effect::short::play(config.entities.ball_vel_snd,state.position.into_3d());
+                // baal::effect::short::play(config.entities.ball_vel_snd, state.position.into_3d());
             }
 
             if trigger.active {
@@ -191,8 +191,8 @@ impl specs::System<app::UpdateContext> for ColumnSystem {
                     Some(cooldown - context.dt)
                 } else {
                     let state = states.get(entity).expect("column component expect state component");
-                    context.control_tx.send(app::Control::CreateBall(state.position,column.arc.clone())).unwrap();
-                    baal::effect::short::play(column.spawn_snd,state.position.into_3d());
+                    context.control_tx.send(app::Control::CreateBall(state.position, column.arc.clone())).unwrap();
+                    // baal::effect::short::play(column.spawn_snd, state.position.into_3d());
                     None
                 }
             } else if let Some(_) = Arc::get_mut(&mut column.arc) {
