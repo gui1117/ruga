@@ -7,7 +7,6 @@ use toml;
 use png;
 use specs::Join;
 
-use std::path::Path;
 use std::path::PathBuf;
 use std::ffi;
 use std::fs;
@@ -38,9 +37,9 @@ impl fmt::Display for LoadCastlesError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         use self::LoadCastlesError::*;
         match *self {
-            Io(ref e) => write!(fmt, "io error: {}", e),
+            Io(ref e) => write!(fmt, "io: {}", e),
             Filename(ref filename) => write!(fmt, "file name invalid: {:?}", filename),
-            Toml(ref e) => write!(fmt, "toml decode error: {}", e),
+            Toml(ref e) => write!(fmt, "toml decode: {}", e),
         }
     }
 }
@@ -60,13 +59,15 @@ impl From<::std::io::Error> for LoadCastlesError {
 /// return a vector of castle and a vector of music name
 /// the order of music name in the vector correspond to the music id
 /// in the castles definitions
-pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>, Vec<String>), LoadCastlesError> {
+pub fn load_castles() -> Result<Vec<Castle>, LoadCastlesError> {
     let mut castles = Vec::new();
 
-    for dir_entry in fs::read_dir(config.levels.dir.clone())? {
+    for dir_entry in fs::read_dir(&config.levels.dir.0)? {
         let dir_entry = dir_entry?;
 
-        let castle_name = dir_entry.file_name().into_string().map_err(|filename| LoadCastlesError::Filename(filename))?;
+        let castle_name = dir_entry.file_name()
+            .into_string()
+            .map_err(|filename| LoadCastlesError::Filename(filename))?;
 
         if !dir_entry.file_type()?.is_dir() {
             continue
@@ -78,42 +79,42 @@ pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>, Vec<String>
 
         let castle_setting: CastleSetting = toml::from_str(&file_string)?;
 
-        let castle_music = PathBuf::new()
-            .join(&config.levels.dir)
-            .join(&castle_name)
-            .join("musics")
-            .join(&castle_setting.music)
-            .into_os_string()
-            .into_string()
-            .map_err(|filename| LoadCastlesError::Filename(filename))?;
+        // let castle_music = PathBuf::new()
+        //     .join(&config.levels.dir)
+        //     .join(&castle_name)
+        //     .join("musics")
+        //     .join(&castle_setting.music)
+        //     .into_os_string()
+        //     .into_string()
+        //     .map_err(|filename| LoadCastlesError::Filename(filename))?;
 
-        musics.push(castle_music);
+        // musics.push(castle_music);
 
         let mut castle = Castle {
-            music: musics.len()-1,
+            // music: musics.len()-1,
             name: castle_name,
             dungeons: vec!(),
         };
 
         for dungeon in castle_setting.dungeons {
-            let dungeon_music = PathBuf::new()
-                .join(&config.levels.dir)
-                .join(&castle.name)
-                .join("musics")
-                .join(&dungeon.music)
-                .into_os_string()
-                .into_string()
-                .map_err(|filename| LoadCastlesError::Filename(filename))?;
+            // let dungeon_music = PathBuf::new()
+            //     .join(&config.levels.dir)
+            //     .join(&castle.name)
+            //     .join("musics")
+            //     .join(&dungeon.music)
+            //     .into_os_string()
+            //     .into_string()
+            //     .map_err(|filename| LoadCastlesError::Filename(filename))?;
 
-            let index = if let Some(index) = musics.iter().position(|m| m.eq(&dungeon_music)) {
-                index
-            } else {
-                musics.push(dungeon_music);
-                musics.len()-1
-            };
+            // let index = if let Some(index) = musics.iter().position(|m| m.eq(&dungeon_music)) {
+            //     index
+            // } else {
+            //     musics.push(dungeon_music);
+            //     musics.len()-1
+            // };
 
             castle.dungeons.push(Dungeon {
-                music: index,
+                // music: index,
                 name: dungeon.name,
                 rooms: dungeon.rooms,
             });
@@ -122,7 +123,7 @@ pub fn load_castles(mut musics: Vec<String>) -> Result<(Vec<Castle>, Vec<String>
         castles.push(castle);
     }
 
-    Ok((castles, musics))
+    Ok(castles)
 }
 
 
@@ -164,13 +165,13 @@ impl Level {
 #[derive(Debug)]
 pub struct Castle {
     pub name: String,
-    pub music: usize,
+    // pub music: usize,
     pub dungeons: Vec<Dungeon>,
 }
 #[derive(Debug, Clone)]
 pub struct Dungeon {
     pub name: String,
-    pub music: usize,
+    // pub music: usize,
     pub rooms: Vec<String>,
 }
 
@@ -194,8 +195,8 @@ impl fmt::Display for LoadLevelError {
             GetDungeonError => write!(fmt, "dungeon id out of bounds"),
             GetRoomError => write!(fmt, "room id out of bounds"),
             UnexpectedColor => write!(fmt, "unexpected color in png file"),
-            IoError(ref e) => write!(fmt, "io error: {}", e),
-            PngDecodingError(ref e) => write!(fmt, "png decoding error: {}", e),
+            IoError(ref e) => write!(fmt, "io: {}", e),
+            PngDecodingError(ref e) => write!(fmt, "png decoding: {}", e),
             AmbiguousLevelDefinition => write!(fmt, "ambiguous level definition: both .txt and .png file exists"),
             InvalidUTF8 => write!(fmt, "text level invalid UTF-8"),
             NoLevelDefinition => write!(fmt, "level doesn't exist"),
@@ -236,16 +237,16 @@ pub fn load_level<'l>(level: &Level, castles: &Vec<Castle>, world: &mut specs::W
             let room = try!(dungeon.rooms.get(room_id).ok_or(LoadLevelError::GetRoomError));
 
             let txt_path = PathBuf::new()
-                .join(Path::new(&*config.levels.dir))
-                .join(Path::new(&*castle.name))
-                .join(Path::new("texts"))
-                .join(Path::new(&*room));
+                .join(&config.levels.dir.0)
+                .join(&castle.name)
+                .join("texts")
+                .join(&room);
 
             let png_path = PathBuf::new()
-                .join(Path::new(&*config.levels.dir))
-                .join(Path::new(&*castle.name))
-                .join(Path::new("maps"))
-                .join(Path::new(&*room));
+                .join(&config.levels.dir.0)
+                .join(&castle.name)
+                .join("maps")
+                .join(&room);
 
             match (txt_path.exists(), png_path.exists()) {
                 (true, true) => return Err(LoadLevelError::AmbiguousLevelDefinition),

@@ -4,7 +4,7 @@ use components::*;
 use resource::*;
 use specs::Join;
 use specs;
-use utils::Into3D;
+// use utils::Into3D;
 // use baal;
 use config;
 use std::sync::Arc;

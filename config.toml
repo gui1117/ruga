@@ -1,10 +1,9 @@
-[general]
 number_of_thread = 2
 persistent_snd_cooldown = 10
 difficulty = 1.0 # override by save.toml
 
 [effect]
-color = "base5"
+color = "Base5"
 angles = [ 0.7853981633975
          , 2.3561944901925
          , 3.9269908169875
@@ -76,25 +75,25 @@ monster_weight = 1.0
 char_weight = 1.0
 
 #colors
-ball_color = "cyan"
-laser_color = "violet"
-column_color = "base3"
-char_color = "red"
-wall_color = "base4"
-monster_color = "green"
-portal_start_color = "base5"
-portal_end_color = "base2"
-text_color = "base5"
+ball_color = "Cyan"
+laser_color = "Violet"
+column_color = "Base3"
+char_color = "Red"
+wall_color = "Base4"
+monster_color = "Green"
+portal_start_color = "Base5"
+portal_end_color = "Base2"
+text_color = "Base5"
 
 #layers
-ball_layer = "middle"
-laser_layer = "floor"
-column_layer = "ceil"
-char_layer = "middle"
-wall_layer = "ceil"
-monster_layer = "middle"
-portal_start_layer = "floor"
-portal_end_layer = "floor"
+ball_layer = "Middle"
+laser_layer = "Floor"
+column_layer = "Ceil"
+char_layer = "Middle"
+wall_layer = "Ceil"
+monster_layer = "Middle"
+portal_start_layer = "Floor"
+portal_end_layer = "Floor"
 
 #others
 monster_vision_time = 0.2
@@ -103,9 +102,9 @@ char_restart = 1.0
 ball_vel_snd_coef = 0.01
 
 [menu]
-entry_color = "base4"
-cursor_color = "red"
-background_color = "base1"
+entry_color = "Base4"
+cursor_color = "Red"
+background_color = "Base1"
 
 clic_snd = 1
 background_width = 25.0
@@ -116,7 +115,7 @@ rate = 0.9
 unit = 2.0
 
 [levels]
-check_level = "debug"
+check_level = false
 dir = ["levels"]
 entry_music = ["assets","musics","todo.ogg"]
 corridor_length = 3
@@ -210,11 +209,12 @@ blue    = [ 0.14901961, 0.54509807, 0.82352940, 1.0 ]
 cyan    = [ 0.16470589, 0.63137260, 0.59607846, 1.0 ]
 green   = [ 0.52156866, 0.60000000, 0.00000000, 1.0 ]
 
-mode = "dark" # override by save.toml
+mode = "Dark" # override by save.toml
 luminosity = 1.0 # override by save.toml
 circle_precision = 64
 font_file = ["assets","fonts","DejaVuSansMono-Bold.ttf"]
 billboard_font_scale = 0.04
+font_size = 1
 font_scale = 0.4
 
 [text]

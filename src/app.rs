@@ -220,8 +220,8 @@ impl fmt::Display for AppError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         use self::AppError::*;
         match *self {
-            InitGraphics(ref e) => write!(fmt, "graphics init failed: {}", e),
-            LevelCreation(ref s) =>write!(fmt, "level creation error: {}", s),
+            InitGraphics(ref e) => write!(fmt, "graphics init: {}", e),
+            LevelCreation(ref s) =>write!(fmt, "level creation: {}", s),
         }
     }
 }
@@ -251,7 +251,7 @@ impl App {
             mode: config.graphics.mode,
             luminosity: config.graphics.luminosity,
             circle_precision: config.graphics.circle_precision,
-            font: config.graphics.font_file.clone(),
+            font: config.graphics.font_file.0.clone().into(),
             font_size: config.graphics.font_size,
         }).map_err(|e| AppError::InitGraphics(e)));
 

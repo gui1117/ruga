@@ -6,8 +6,6 @@ use specs;
 use config;
 use rand;
 use rand::distributions::{IndependentSample, Range};
-// use baal;
-use utils::Into3D;
 
 #[derive(Debug, Clone, Default)]
 pub struct PlayerControl;
@@ -35,7 +33,7 @@ impl specs::System<app::UpdateContext> for PlayerSystem {
         });
 
         if let Some((_, entity)) = (&players, &entities).iter().nth(0) {
-            let state = states.get(entity).expect("playrcontrol expect state component");
+            let state = states.get(entity).expect("playercontrol expect state component");
             // baal::effect::set_listener(state.position.into_3d());
             self.restart_cooldown = Some(config.entities.char_restart);
         } else {
@@ -144,7 +142,7 @@ impl specs::System<app::UpdateContext> for MonsterSystem {
                         origin: pos,
                         angle: angle,
                         length: length,
-                        mask: config.entities.monster_vision_mask,
+                        mask: config.entities.monster_vision_mask.0,
                     };
 
                     let mut player_visible = false;

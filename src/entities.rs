@@ -9,8 +9,8 @@ pub fn add_character(world: &mut specs::World, pos: [isize;2]) {
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicDynamic>(PhysicDynamic)
         .with::<PhysicType>(PhysicType::new_movable(
-                config.entities.char_group,
-                config.entities.char_mask,
+                config.entities.char_group.0,
+                config.entities.char_mask.0,
                 Shape::Circle(config.entities.char_radius),
                 CollisionBehavior::Persist,
                 config.entities.char_velocity,
@@ -36,8 +36,8 @@ pub fn add_wall(world: &mut specs::World, pos: [isize;2]) {
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
         .with::<PhysicType>(PhysicType::new_static(
-                config.entities.wall_group,
-                config.entities.wall_mask,
+                config.entities.wall_group.0,
+                config.entities.wall_mask.0,
                 Shape::Square(config.entities.wall_radius)))
         .with::<Graphic>(Graphic::new(
                 config.entities.wall_color,
@@ -51,8 +51,8 @@ pub fn add_column(world: &mut specs::World, pos: [isize;2]) {
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
         .with::<PhysicType>(PhysicType::new_static(
-                config.entities.column_group,
-                config.entities.column_mask,
+                config.entities.column_group.0,
+                config.entities.column_mask.0,
                 Shape::Square(config.entities.column_radius)))
         .with::<Graphic>(Graphic::new(
                 config.entities.column_color,
@@ -66,8 +66,8 @@ pub fn add_ball(world: &mut specs::World, pos: [f32;2], arc: Arc<()>) {
         .with::<Ball>(Ball::new(arc))
         .with::<PhysicDynamic>(PhysicDynamic)
         .with::<PhysicType>(PhysicType::new_movable(
-                config.entities.ball_group,
-                config.entities.ball_mask,
+                config.entities.ball_group.0,
+                config.entities.ball_mask.0,
                 Shape::Circle(config.entities.ball_radius),
                 CollisionBehavior::Persist,
                 config.entities.ball_velocity,
@@ -82,7 +82,7 @@ pub fn add_ball(world: &mut specs::World, pos: [f32;2], arc: Arc<()>) {
         .with::<TowardPlayerControl>(TowardPlayerControl)
         .with::<Killer>(Killer {
             kamikaze: false,
-            mask: config.entities.ball_killer_mask,
+            mask: config.entities.ball_killer_mask.0,
             kill_snd: config.entities.ball_kill_snd,
         })
         .build();
@@ -93,8 +93,8 @@ pub fn add_monster(world: &mut specs::World, pos: [isize;2]) {
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicDynamic>(PhysicDynamic)
         .with::<PhysicType>(PhysicType::new_movable(
-                config.entities.monster_group,
-                config.entities.monster_mask,
+                config.entities.monster_group.0,
+                config.entities.monster_mask.0,
                 Shape::Circle(config.entities.monster_radius),
                 CollisionBehavior::Persist,
                 config.entities.monster_velocity,
@@ -108,7 +108,7 @@ pub fn add_monster(world: &mut specs::World, pos: [isize;2]) {
         .with::<MonsterControl>(MonsterControl::new())
         .with::<Killer>(Killer {
             kamikaze: true,
-            mask: config.entities.monster_killer_mask,
+            mask: config.entities.monster_killer_mask.0,
             kill_snd: config.entities.monster_kill_snd,
         })
         // .with::<DynPersistentSnd>(DynPersistentSnd::new(
@@ -121,15 +121,15 @@ pub fn add_laser(world: &mut specs::World, pos: [isize;2]) {
         .with::<PhysicState>(PhysicState::new(pos))
         .with::<PhysicStatic>(PhysicStatic)
         .with::<PhysicType>(PhysicType::new_static(
-                config.entities.laser_group,
-                config.entities.laser_mask,
+                config.entities.laser_group.0,
+                config.entities.laser_mask.0,
                 Shape::Square(config.entities.laser_radius)))
         .with::<Graphic>(Graphic::new(
                 config.entities.laser_color,
                 config.entities.laser_layer))
         .with::<Killer>(Killer {
             kamikaze: false,
-            mask: config.entities.laser_killer_mask,
+            mask: config.entities.laser_killer_mask.0,
             kill_snd: config.entities.laser_kill_snd,
         })
         // .with::<StaticPersistentSnd>(StaticPersistentSnd::new(

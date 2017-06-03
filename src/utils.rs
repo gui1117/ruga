@@ -1,5 +1,22 @@
 use gilrs;
 
+pub trait OkOrExit {
+    type OkType;
+    fn ok_or_exit(self) -> Self::OkType;
+}
+impl<T, E: ::std::fmt::Display> OkOrExit for Result<T,E> {
+    type OkType = T;
+    fn ok_or_exit(self) -> T {
+        match self {
+            Ok(t) => t,
+            Err(err) => {
+                println!("ERROR: {}", err);
+                ::std::process::exit(1);
+            },
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Direction {
     Left,

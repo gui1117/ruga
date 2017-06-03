@@ -26,7 +26,7 @@ use glium_text::{
 };
 
 use std::fs::File;
-use std::path::Path;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::error::Error;
 use std::fmt;
@@ -139,7 +139,7 @@ pub struct GraphicsSetting {
     pub mode: Mode,
     pub luminosity: f32,
     pub circle_precision: usize,
-    pub font: String,
+    pub font: PathBuf,
     pub font_size: u32,
 }
 
@@ -242,7 +242,7 @@ impl Graphics {
             .. Default::default()
         };
 
-        let font_file = File::open(&Path::new(&setting.font))
+        let font_file = File::open(&setting.font)
             .map_err(|ioe| GraphicsCreationError::FontFileOpen(ioe))?;
 
         Ok(Graphics {
