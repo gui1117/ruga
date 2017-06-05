@@ -22,6 +22,7 @@ mod utils;
 mod life;
 mod portal;
 mod text;
+mod ui;
 
 mod components {
     pub use control::{
