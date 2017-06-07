@@ -31,6 +31,8 @@ use std::rc::Rc;
 use std::error::Error;
 use std::fmt;
 
+pub type Text = TextDisplay<Rc<FontTexture>>;
+
 pub type Transformation = vecmath::Matrix2x3<f32>;
 
 pub trait Transformed {
@@ -264,7 +266,7 @@ impl Graphics {
         })
     }
 
-    pub fn new_text_display(&self, text: &str) -> TextDisplay<Rc<FontTexture>> {
+    pub fn new_text_display(&self, text: &str) -> Text {
         TextDisplay::new(&self.text_system, self.font_texture.clone(), text)
     }
 
@@ -454,12 +456,12 @@ impl<'a> Frame<'a> {
             &self.graphics.draw_parameters).unwrap();
     }
 
-    pub fn draw_text(&mut self, text: &TextDisplay<Rc<FontTexture>>, x: f32, y: f32, size: f32, layer: Layer, color: Color) {
+    pub fn draw_text(&mut self, text: &Text, x: f32, y: f32, size: f32, layer: Layer, color: Color) {
         let trans = [
-            [                    1.,                     0.,           0., 0.],
+            [                  size,                     0.,           0., 0.],
             [                    0.,                   size,           0., 0.],
             [                    0.,                     0.,           1., 0.],
-            [ x-text.get_width()/2., y-text.get_height()/3., layer.into(), 1.]
+            [ x-text.get_width()/2.*size, y-text.get_height()/3.*size, layer.into(), 1.]
         ];
 
         let camera = if layer == Layer::BillBoard { self.billboard_camera_matrix } else { self.camera_matrix };

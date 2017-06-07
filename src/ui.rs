@@ -1,4 +1,15 @@
+// TODO : maybe add a title to each menu
+use app;
 use app::App;
+use graphics;
+use graphics::Layer::BillBoard;
+use graphics::Color;
+
+
+const WIDTH: f32 = 0.3;
+const HEIGHT: f32 = 0.3;
+const OUTER: f32 = 0.25;
+const INNER: f32 = 0.22;
 
 #[derive(Clone, Copy)]
 pub struct MenuId(usize);
@@ -10,12 +21,12 @@ pub enum Widget {
     Spin {
         left_callback: Box<Fn(&mut App)>,
         right_callback: Box<Fn(&mut App)>,
-        left_text: Box<Fn(&App) -> String>,
-        right_text: Box<Fn(&App) -> String>,
-        text: Box<Fn(&App) -> String>,
+        left_text: Box<Fn(&app::UITexts) -> &graphics::Text>,
+        right_text: Box<Fn(&app::UITexts) -> &graphics::Text>,
+        text: Box<Fn(&app::UITexts) -> &graphics::Text>,
     },
     Button {
-        text: Box<Fn(&App) -> String>,
+        text: Box<Fn(&app::UITexts) -> &graphics::Text>,
         callback: Box<Fn(&mut App)>,
     },
 }
@@ -33,6 +44,20 @@ impl Widget {
         match *self {
             Spin { ref right_callback, .. } => right_callback(app),
             Button { ref callback, .. } => callback(app),
+        }
+    }
+    fn draw(&self, y: f32, app_ui_texts: &app::UITexts, frame: &mut graphics::Frame) {
+        match self {
+            &Widget::Spin { ref left_text, ref right_text, ref text, ..  } => {
+                frame.draw_rectangle(0., y*HEIGHT, WIDTH, OUTER, BillBoard, Color::Base4);
+                frame.draw_rectangle(0., y*HEIGHT, WIDTH, INNER, BillBoard, Color::Base2);
+                frame.draw_text(text(app_ui_texts), 0., y*HEIGHT, HEIGHT/2., BillBoard, Color::Base2);
+            },
+            &Widget::Button { ref text, .. } => {
+                frame.draw_rectangle(0., y*HEIGHT, WIDTH, OUTER, BillBoard, Color::Base4);
+                frame.draw_rectangle(0., y*HEIGHT, WIDTH, INNER, BillBoard, Color::Base2);
+                frame.draw_text(text(app_ui_texts), 0., y*HEIGHT, HEIGHT/2., BillBoard, Color::Base2);
+            }
         }
     }
 }
@@ -262,4 +287,27 @@ impl UI {
     //         },
     //     }
     }
+
+    pub fn draw(&mut self, app_ui_texts: &app::UITexts, frame: &mut graphics::Frame) {
+        match &self.state {
+            &State::CursorMenu {
+                current_menu,
+                ref focus,
+                ..
+            } => {
+                let ref widgets = self.menus[current_menu.0].widgets;
+                let len = widgets.len();
+                let iterator = widgets.iter()
+                    .enumerate()
+                    .map(|(i, widget)| ((len - 1) as f32 / 2. - i as f32, widget));
+                for (y, widget) in iterator {
+                    widget.draw(y, app_ui_texts, frame);
+                }
+            },
+            _ => (),
+        }
+    }
+}
+
+fn main() {
 }

@@ -190,6 +190,12 @@ enum JoystickMenuState {
     Released,
 }
 
+pub struct UITexts {
+    toto: graphics::Text,
+    plus: graphics::Text,
+    minus: graphics::Text,
+}
+
 pub struct App {
     difficulty: f32,
     menu: Vec<MenuEntry>,
@@ -208,6 +214,7 @@ pub struct App {
     effect_storage: Vec<Effect>,
     effect_tx: mpsc::Sender<Effect>,
     focus: bool,
+    ui_texts: UITexts,
     pub quit: bool,
 }
 
@@ -418,6 +425,11 @@ impl App {
             );
 
         Ok(App {
+            ui_texts: UITexts {
+                toto: graphics.new_text_display("toto"),
+                minus: graphics.new_text_display("-"),
+                plus: graphics.new_text_display("+"),
+            },
             difficulty: config.difficulty,
             menu_interline: menu_interline,
             menu: menu,
@@ -644,114 +656,130 @@ impl App {
     pub fn render(&mut self, args: event_loop::RenderArgs) {
         let dt = 1. / config.event_loop.max_fps as f32;
 
-        match self.state {
-            State::Game => {
-                let world = self.planner.mut_world();
+        let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
+        let mut ui = ::ui::UI::new();
+        let main_menu = ui.main_menu();
+        ui.add_widget(main_menu, ::ui::Widget::Button {
+            text: Box::new(|ui_texts| &ui_texts.toto),
+            callback: Box::new(|_app| println!("toto")),
+        });
+        ui.add_widget(main_menu, ::ui::Widget::Spin {
+            text: Box::new(|ui_texts| &ui_texts.toto),
+            left_text: Box::new(|ui_texts| &ui_texts.minus),
+            right_text: Box::new(|ui_texts| &ui_texts.plus),
+            left_callback: Box::new(|_app| println!("left toto")),
+            right_callback: Box::new(|_app| println!("right toto")),
+        });
+        ui.draw(&self.ui_texts, &mut frame);
+        frame.finish().unwrap();
+        // match self.state {
+        //     State::Game => {
+        //         let world = self.planner.mut_world();
 
-                // update camera
-                {
-                    let characters = world.read::<PlayerControl>();
-                    let fixed_cameras = world.read::<FixedCamera>();
-                    let states = world.read::<PhysicState>();
+        //         // update camera
+        //         {
+        //             let characters = world.read::<PlayerControl>();
+        //             let fixed_cameras = world.read::<FixedCamera>();
+        //             let states = world.read::<PhysicState>();
 
-                    for (_, state) in (&characters, &states).iter() {
-                        self.camera.x = state.position[0];
-                        self.camera.y = state.position[1];
-                    }
-                    if fixed_cameras.iter().next().is_some() {
-                        self.camera.x = 0.;
-                        self.camera.y = 0.;
-                    }
-                }
+        //             for (_, state) in (&characters, &states).iter() {
+        //                 self.camera.x = state.position[0];
+        //                 self.camera.y = state.position[1];
+        //             }
+        //             if fixed_cameras.iter().next().is_some() {
+        //                 self.camera.x = 0.;
+        //                 self.camera.y = 0.;
+        //             }
+        //         }
 
-                let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
+        //         let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
 
-                // draw entities
-                {
-                    let states = world.read::<PhysicState>();
-                    let fixed_camera_texts = world.read::<FixedCameraText>();
-                    let texts = world.read::<Text>();
-                    let types = world.read::<PhysicType>();
-                    let graphics = world.read::<Graphic>();
-                    let squares = world.read::<GridSquare>();
+        //         // draw entities
+        //         {
+        //             let states = world.read::<PhysicState>();
+        //             let fixed_camera_texts = world.read::<FixedCameraText>();
+        //             let texts = world.read::<Text>();
+        //             let types = world.read::<PhysicType>();
+        //             let graphics = world.read::<Graphic>();
+        //             let squares = world.read::<GridSquare>();
 
-                    for (square, graphic) in (&squares, &graphics).iter() {
-                        let p = square.position;
-                        frame.draw_square(p[0], p[1], 0.5, graphic.layer, graphic.color);
-                    }
+        //             for (square, graphic) in (&squares, &graphics).iter() {
+        //                 let p = square.position;
+        //                 frame.draw_square(p[0], p[1], 0.5, graphic.layer, graphic.color);
+        //             }
 
-                    for (state, typ, graphic) in (&states, &types, &graphics).iter() {
-                        let x = state.position[0];
-                        let y = state.position[1];
-                        match typ.shape {
-                            Shape::Circle(radius) => frame.draw_circle(x, y, radius, graphic.layer, graphic.color),
-                            Shape::Square(radius) => frame.draw_square(x, y, radius, graphic.layer, graphic.color),
-                        }
-                    }
+        //             for (state, typ, graphic) in (&states, &types, &graphics).iter() {
+        //                 let x = state.position[0];
+        //                 let y = state.position[1];
+        //                 match typ.shape {
+        //                     Shape::Circle(radius) => frame.draw_circle(x, y, radius, graphic.layer, graphic.color),
+        //                     Shape::Square(radius) => frame.draw_square(x, y, radius, graphic.layer, graphic.color),
+        //                 }
+        //             }
 
-                    if config.text.right > config.text.left {
-                        for text in fixed_camera_texts.iter() {
-                            for (_y, _text_line) in (config.text.bottom+3..config.text.top+1).rev().zip(text.string.lines()) {
-                                // frame.draw_text(config.text.left as f32, y as f32, config.graphics.font_scale, text_line, graphics::Layer::Floor, config.entities.text_color);
-                            }
-                        }
-                    }
+        //             if config.text.right > config.text.left {
+        //                 for text in fixed_camera_texts.iter() {
+        //                     for (_y, _text_line) in (config.text.bottom+3..config.text.top+1).rev().zip(text.string.lines()) {
+        //                         // frame.draw_text(config.text.left as f32, y as f32, config.graphics.font_scale, text_line, graphics::Layer::Floor, config.entities.text_color);
+        //                     }
+        //                 }
+        //             }
 
-                    for _text in texts.iter() {
-                        // frame.draw_text(text.x, text.y, text.scale, &*text.string, graphics::Layer::Floor, config.entities.text_color);
-                    }
-                }
+        //             for _text in texts.iter() {
+        //                 // frame.draw_text(text.x, text.y, text.scale, &*text.string, graphics::Layer::Floor, config.entities.text_color);
+        //             }
+        //         }
 
-                // draw effects
-                //TODO draw effects: do not next if pause
-                for effect in &self.effect_storage {
-                    effect.draw(&mut frame);
-                }
-                let old_effect_storage = self.effect_storage.drain(..).collect::<Vec<Effect>>();;
-                for effect in old_effect_storage {
-                    if let Some(effect) = effect.next(dt) {
-                        self.effect_storage.push(effect)
-                    }
-                }
+        //         // draw effects
+        //         //TODO draw effects: do not next if pause
+        //         for effect in &self.effect_storage {
+        //             effect.draw(&mut frame);
+        //         }
+        //         let old_effect_storage = self.effect_storage.drain(..).collect::<Vec<Effect>>();;
+        //         for effect in old_effect_storage {
+        //             if let Some(effect) = effect.next(dt) {
+        //                 self.effect_storage.push(effect)
+        //             }
+        //         }
 
-                while let Ok(effect) = self.effect_rx.try_recv() {
-                    effect.draw(&mut frame);
-                    if let Some(effect) = effect.next(dt) {
-                        self.effect_storage.push(effect);
-                    }
-                }
+        //         while let Ok(effect) = self.effect_rx.try_recv() {
+        //             effect.draw(&mut frame);
+        //             if let Some(effect) = effect.next(dt) {
+        //                 self.effect_storage.push(effect);
+        //             }
+        //         }
 
-                frame.finish().unwrap();
-            },
-            State::Menu(entry) => {
-                let mut menu = String::new();
-                let mut cursor = String::new();
-                for (index, menu_entry) in self.menu.iter().enumerate() {
-                    if index == entry {
-                        cursor.push_str("<<                     >>\n");
-                    } else {
-                        cursor.push('\n');
-                    }
-                    menu.push_str(&*(*menu_entry.name)(&self));
-                    menu.push('\n');
+        //         frame.finish().unwrap();
+        //     },
+        //     State::Menu(entry) => {
+        //         let mut menu = String::new();
+        //         let mut cursor = String::new();
+        //         for (index, menu_entry) in self.menu.iter().enumerate() {
+        //             if index == entry {
+        //                 cursor.push_str("<<                     >>\n");
+        //             } else {
+        //                 cursor.push('\n');
+        //             }
+        //             menu.push_str(&*(*menu_entry.name)(&self));
+        //             menu.push('\n');
 
-                    if self.menu_interline.contains(&index) {
-                        cursor.push('\n');
-                        menu.push('\n');
-                    }
-                }
-                let frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
-                // frame.draw_billboard_centered_text(&*cursor, config.menu.cursor_color);
-                // frame.draw_billboard_centered_text(&*menu, config.menu.entry_color);
-                frame.finish().unwrap();
-            }
-            State::Text(_, ref _text) => {
-                let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
-                frame.draw_rectangle(0., 0., 25.0, 18.0, graphics::Layer::BillBoard, config.menu.background_color);
-                // frame.draw_billboard_centered_text(&*text, config.menu.entry_color);
-                frame.finish().unwrap();
-            }
-        }
+        //             if self.menu_interline.contains(&index) {
+        //                 cursor.push('\n');
+        //                 menu.push('\n');
+        //             }
+        //         }
+        //         let frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
+        //         // frame.draw_billboard_centered_text(&*cursor, config.menu.cursor_color);
+        //         // frame.draw_billboard_centered_text(&*menu, config.menu.entry_color);
+        //         frame.finish().unwrap();
+        //     }
+        //     State::Text(_, ref _text) => {
+        //         let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
+        //         frame.draw_rectangle(0., 0., 25.0, 18.0, graphics::Layer::BillBoard, config.menu.background_color);
+        //         // frame.draw_billboard_centered_text(&*text, config.menu.entry_color);
+        //         frame.finish().unwrap();
+        //     }
+        // }
 
     }
     pub fn dir_pressed(&mut self, direction: Direction) {
