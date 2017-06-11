@@ -5,11 +5,12 @@ use graphics;
 use graphics::Layer::BillBoard;
 use graphics::Color;
 
-
-const WIDTH: f32 = 0.3;
-const HEIGHT: f32 = 0.3;
-const OUTER: f32 = 0.25;
-const INNER: f32 = 0.22;
+const WIDTH: f32 = 0.66;
+const HEIGHT: f32 = 0.1;
+const OUTER: f32 = 0.01;
+const INNER: f32 = 0.01;
+const FONT_SIZE: f32 = 0.5;
+const SPIN_CENTER_WIDTH: f32 = 0.5;
 
 #[derive(Clone, Copy)]
 pub struct MenuId(usize);
@@ -31,6 +32,12 @@ pub enum Widget {
     },
 }
 
+fn draw_button(x: f32, y: f32, width: f32, text: &graphics::Text, focus: bool, pressed: bool, frame: &mut graphics::Frame) {
+    frame.draw_rectangle(x*WIDTH, y*HEIGHT, width*WIDTH-OUTER, HEIGHT-OUTER, BillBoard, Color::Base4);
+    frame.draw_rectangle(x*WIDTH, y*HEIGHT, width*WIDTH-OUTER-INNER, HEIGHT-OUTER-INNER, BillBoard, Color::Base2);
+    frame.draw_text(text, x*WIDTH, y*HEIGHT, HEIGHT*FONT_SIZE, BillBoard, Color::Base4);
+}
+
 impl Widget {
     fn left(&self, app: &mut App) {
         use self::Widget::*;
@@ -46,17 +53,18 @@ impl Widget {
             Button { ref callback, .. } => callback(app),
         }
     }
-    fn draw(&self, y: f32, app_ui_texts: &app::UITexts, frame: &mut graphics::Frame) {
+    fn draw(&self, y: f32, app_ui_texts: &app::UITexts, focus: Option<Position>, frame: &mut graphics::Frame) {
         match self {
             &Widget::Spin { ref left_text, ref right_text, ref text, ..  } => {
-                frame.draw_rectangle(0., y*HEIGHT, WIDTH, OUTER, BillBoard, Color::Base4);
-                frame.draw_rectangle(0., y*HEIGHT, WIDTH, INNER, BillBoard, Color::Base2);
-                frame.draw_text(text(app_ui_texts), 0., y*HEIGHT, HEIGHT/2., BillBoard, Color::Base2);
+                let border_size = (1. - SPIN_CENTER_WIDTH) / 2.;
+                let x = SPIN_CENTER_WIDTH/2. + border_size/2.;
+
+                draw_button(0., y, SPIN_CENTER_WIDTH, text(app_ui_texts), false, false, frame);
+                draw_button(-x, y, border_size, left_text(app_ui_texts), false, false, frame);
+                draw_button(x, y, border_size, right_text(app_ui_texts), false, false, frame);
             },
             &Widget::Button { ref text, .. } => {
-                frame.draw_rectangle(0., y*HEIGHT, WIDTH, OUTER, BillBoard, Color::Base4);
-                frame.draw_rectangle(0., y*HEIGHT, WIDTH, INNER, BillBoard, Color::Base2);
-                frame.draw_text(text(app_ui_texts), 0., y*HEIGHT, HEIGHT/2., BillBoard, Color::Base2);
+                draw_button(0., y, 1., text(app_ui_texts), false, false, frame);
             }
         }
     }
@@ -74,12 +82,18 @@ impl Menu {
     }
 }
 
-type Focus = Option<(WidgetId, Position)>;
+#[derive(Clone, Copy)]
+struct Focus {
+    widget_id: WidgetId,
+    position: Position,
+}
 
+#[derive(Clone, Copy)]
 enum Position {
     Left,
     Right,
     Middle,
+    All,
 }
 
 enum State {
@@ -89,7 +103,7 @@ enum State {
     CursorMenu {
         menu_stack: Vec<(MenuId, WidgetId)>,
         current_menu: MenuId,
-        focus: Focus,
+        focus: Option<Focus>,
     },
     ButtonGame,
     ButtonMenu {
@@ -100,6 +114,13 @@ enum State {
 }
 
 impl State {
+    fn is_in_menu(&self) -> bool {
+        use self::State::*;
+        match *self {
+            ButtonMenu { .. } | CursorMenu { .. } => true,
+            ButtonGame | CursorGame { .. } => false,
+        }
+    }
     fn is_button_mode(&self) -> bool {
         use self::State::*;
         match *self {
@@ -137,7 +158,7 @@ impl State {
     }
 }
 
-enum Event {
+pub enum Event {
     CursorMove(f32, f32),
     CursorDown,
     CursorUp,
@@ -214,7 +235,7 @@ impl UI {
         }
     }
 
-    pub fn do_back(&mut self, app: &mut App) {
+    pub fn do_escape(&mut self) {
         self.state.switch_to_button_mode();
         self.state = match self.state {
             State::ButtonGame => State::ButtonMenu {
@@ -235,7 +256,7 @@ impl UI {
         }
     }
 
-    pub fn do_cursor_move(&mut self) {
+    pub fn do_cursor_move(&mut self, x: f32, y: f32) {
         self.state.switch_to_cursor_mode();
         unimplemented!();
     }
@@ -245,69 +266,58 @@ impl UI {
         unimplemented!();
     }
 
-    pub fn do_cursor_uo(&mut self, _app: &mut App) {
+    pub fn do_cursor_up(&mut self, _app: &mut App) {
         self.state.switch_to_cursor_mode();
         unimplemented!();
     }
 
-    pub fn handle_event(&mut self, event: Event) {
-    //     // self.active = if let Some((MenuId(menu_id), WidgetId(widget_id))) = self.active {
-    //     //     let widget_len = self.menus[menu_id].widgets.len();
-    //     match action {
-    //         Left => {
-    //             match self.menus[menu_id].widgets[widget_id] {
-    //                 Widget::Spin { left_callback: ref callback, .. } | Widget::Button { ref callback, .. } => {
-    //                     callback(app);
-    //                     Some((MenuId(menu_id), WidgetId(widget_id)))
-    //                 },
-    //             }
-    //         },
-    //         Right => {
-    //             match self.menus[menu_id].widgets[widget_id] {
-    //                 Widget::Spin { right_callback: ref callback, .. } | Widget::Button { ref callback, .. } => {
-    //                     callback(app);
-    //                     Some((MenuId(menu_id), WidgetId(widget_id)))
-    //                 },
-    //             }
-    //         },
-    //         Up => if widget_id == 0 {
-    //             Some((MenuId(menu_id), WidgetId(widget_len)))
-    //         } else {
-    //             Some((MenuId(menu_id), WidgetId(widget_id-1)))
-    //         },
-    //         Down => if widget_id == widget_len-1 {
-    //             Some((MenuId(menu_id), WidgetId(0)))
-    //         } else {
-    //             Some((MenuId(menu_id), WidgetId(widget_id+1)))
-    //         },
-    //         Back => if let Some(menu_id) = self.menus[menu_id].parent {
-    //             Some((menu_id, WidgetId(0)))
-    //         } else {
-    //             None
-    //         },
-    //     }
+    pub fn handle_event(&mut self, event: Event, app: &mut App) {
+        use ui::Event::*;
+        match event {
+            CursorMove(x, y) => self.do_cursor_move(x, y),
+            CursorDown => self.do_cursor_down(),
+            CursorUp => self.do_cursor_up(app),
+            Up => self.do_up(),
+            Down => self.do_down(),
+            Right => self.do_right(app),
+            Left => self.do_left(app),
+            Escape => self.do_escape(),
+        }
     }
 
     pub fn draw(&mut self, app_ui_texts: &app::UITexts, frame: &mut graphics::Frame) {
-        match &self.state {
-            &State::CursorMenu {
-                current_menu,
-                ref focus,
-                ..
-            } => {
-                let ref widgets = self.menus[current_menu.0].widgets;
-                let len = widgets.len();
-                let iterator = widgets.iter()
-                    .enumerate()
-                    .map(|(i, widget)| ((len - 1) as f32 / 2. - i as f32, widget));
-                for (y, widget) in iterator {
-                    widget.draw(y, app_ui_texts, frame);
+        if self.state.is_in_menu() {
+            let focus = match &self.state {
+                &State::CursorMenu { focus, ..  } => focus,
+                &State::ButtonMenu { focus, ..  } => Some(Focus {
+                    widget_id: focus,
+                    position: Position::All
+                }),
+                _ => unreachable!(),
+            };
+            match &self.state {
+                &State::CursorMenu { current_menu, .. }  | &State::ButtonMenu { current_menu, ..  } => {
+                    let ref widgets = self.menus[current_menu.0].widgets;
+                    let len = widgets.len();
+                    let iterator = widgets.iter()
+                        .enumerate()
+                        .map(|(i, widget)| (i, (len - 1) as f32 / 2. - i as f32, widget));
+                    for (id, y, widget) in iterator {
+                        let focus = focus.and_then(|focus| {
+                            if focus.widget_id.0 == id {
+                                Some(focus.position)
+                            } else {
+                                None
+                            }
+                        });
+                        widget.draw(y, app_ui_texts, focus, frame);
+                    }
                 }
-            },
-            _ => (),
+                _ => unreachable!(),
+            }
+            // TODO in Cursor Menu draw topright return button
+        } else {
+            // TODO in Cursor Game draw topright escape button
         }
     }
-}
-
-fn main() {
 }

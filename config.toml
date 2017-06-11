@@ -214,7 +214,7 @@ luminosity = 1.0 # override by save.toml
 circle_precision = 64
 font_file = ["assets","fonts","DejaVuSansMono-Bold.ttf"]
 billboard_font_scale = 0.04
-font_size = 120
+font_size = 60
 font_scale = 0.4
 
 [text]
