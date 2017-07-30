@@ -656,7 +656,6 @@ impl App {
     pub fn render(&mut self, args: event_loop::RenderArgs) {
         let dt = 1. / config.event_loop.max_fps as f32;
 
-        let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
         let mut ui = ::ui::UI::new();
         let main_menu = ui.main_menu();
         ui.add_widget(main_menu, ::ui::Widget::Button {
@@ -670,6 +669,8 @@ impl App {
             left_callback: Box::new(|_app| println!("left toto")),
             right_callback: Box::new(|_app| println!("right toto")),
         });
+        ui.handle_event(::ui::Event::Up, self);
+        let mut frame = graphics::Frame::new(&mut self.graphics, args.frame, &self.camera);
         ui.draw(&self.ui_texts, &mut frame);
         frame.finish().unwrap();
         // match self.state {

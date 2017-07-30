@@ -4,6 +4,7 @@ use app::App;
 use graphics;
 use graphics::Layer::BillBoard;
 use graphics::Color;
+use glium::glutin;
 
 const WIDTH: f32 = 0.66;
 const HEIGHT: f32 = 0.1;
@@ -104,12 +105,14 @@ enum State {
         menu_stack: Vec<(MenuId, WidgetId)>,
         current_menu: MenuId,
         focus: Option<Focus>,
+        pressed: bool,
     },
     ButtonGame,
     ButtonMenu {
         menu_stack: Vec<(MenuId, WidgetId)>,
         current_menu: MenuId,
         focus: WidgetId,
+        pressed: bool
     },
 }
 
@@ -136,15 +139,17 @@ impl State {
         *self = match self {
             &mut CursorGame { .. } => ButtonGame,
             &mut ButtonGame => CursorGame { focus: false },
-            &mut ButtonMenu { ref menu_stack, ref current_menu, .. } => CursorMenu {
+            &mut ButtonMenu { ref menu_stack, ref current_menu, ref pressed, .. } => CursorMenu {
                 menu_stack: menu_stack.clone(),
                 current_menu: *current_menu,
-                focus: None
+                focus: None,
+                pressed: *pressed,
             },
-            &mut CursorMenu { ref menu_stack, ref current_menu, .. } => ButtonMenu {
+            &mut CursorMenu { ref menu_stack, ref current_menu, ref pressed, .. } => ButtonMenu {
                 menu_stack: menu_stack.clone(),
                 current_menu: *current_menu,
-                focus: WidgetId(0)
+                focus: WidgetId(0),
+                pressed: *pressed,
             },
         };
     }
@@ -182,6 +187,7 @@ impl UI {
                 menu_stack: vec!(),
                 current_menu: MenuId(0),
                 focus: None,
+                pressed: false,
             }
         }
     }
@@ -242,12 +248,14 @@ impl UI {
                 current_menu: MenuId(0),
                 focus: WidgetId(0),
                 menu_stack: vec!(),
+                pressed: false,
             },
-            State::ButtonMenu { ref mut current_menu, ref mut focus, ref mut menu_stack } => if let Some(new_menu) = menu_stack.pop() {
+            State::ButtonMenu { ref mut current_menu, ref mut focus, ref mut menu_stack, .. } => if let Some(new_menu) = menu_stack.pop() {
                 State::ButtonMenu {
                     menu_stack: menu_stack.clone(),
                     current_menu: new_menu.0,
                     focus: new_menu.1,
+                    pressed: false,
                 }
             } else {
                 State::ButtonGame
